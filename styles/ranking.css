@@ -1,0 +1,37 @@
+body {
+  font-family: system-ui, sans-serif;
+  padding: 1.5rem;
+  background: #f4f4f4;
+}
+
+h1 {
+  margin-bottom: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th,
+td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+th[data-sort] {
+  cursor: pointer;
+  user-select: none;
+}
+
+th[data-sort]:hover {
+  background: #f0f0f0;
+}
+
+.sort-indicator {
+  font-size: 0.75em;
+  margin-left: 0.25rem;
+  opacity: 0.7;
+}

@@ -1,0 +1,150 @@
+import { IPlayer } from '@/models/player.interface';
+import { getDisplayElo } from '@/utils/get-display-elo.util';
+
+/**
+ * Service handling storage and management of player records.
+ */
+export class PlayerService {
+  /**
+   * Internal store of players, mapping player id -> player.
+   */
+  private static readonly _players = new Map<string, IPlayer>();
+  /**
+   * Memoized mapping of player id -> rank.
+   *
+   * This is computed lazily and invalidated whenever players change.
+   */
+  private static _rankMemo: Map<string, number> | null = null;
+
+  /**
+   * Find a player by identifier.
+   *
+   * @param id - Player id.
+   * @returns The matching player, or `undefined` if none exists.
+   */
+  public static getPlayerById(id: string): IPlayer | undefined {
+    return PlayerService._players.get(id);
+  }
+
+  /**
+   * Find a player by name (partial match).
+   *
+   * @param name - Name or substring to search.
+   * @returns The first matching player, or `undefined` if not found.
+   */
+  public static getPlayerByName(name: string): IPlayer | undefined {
+    for (const [, player] of PlayerService._players) {
+      if (player.name.includes(name)) {
+        return player;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Get an array of all stored players.
+   *
+   * @returns All players currently registered.
+   */
+  public static getAllPlayers(): IPlayer[] {
+    return Array.from(PlayerService._players.values());
+  }
+
+  /**
+   * Get the ranking position of a player based on Elo.
+   *
+   * Players are sorted by Elo descending. Players that share the same
+   * Elo share the same rank number. Computation is memoized and only
+   * recomputed when the player list or their Elo changes.
+   *
+   * @param id - Player id.
+   * @returns The rank of the player, or `undefined` if not found.
+   */
+  public static getRank(id: string): number | undefined {
+    if (!PlayerService._rankMemo) {
+      PlayerService.recomputeRanks();
+    }
+
+    return PlayerService._rankMemo?.get(id);
+  }
+
+  /**
+   * Update a player's elo and match count after a match.
+   *
+   * If the player is not found, nothing happens.
+   *
+   * @param id - Player id.
+   * @param delta - Elo delta (positive or negative).
+   */
+  public static updateAfterMatch(id: string, delta: number): void {
+    const player = PlayerService.getPlayerById(id);
+    if (!player) {
+      return;
+    }
+
+    PlayerService._players.set(id, {
+      ...player,
+      elo: player.elo + delta,
+      matches: player.matches + 1
+    });
+
+    PlayerService.invalidateRankMemo();
+  }
+
+  /**
+   * Import an array of players into the service.
+   *
+   * Existing players with the same id will be overwritten.
+   *
+   * @param players - The list of players to load.
+   */
+  public static loadPlayers(players: IPlayer[]): void {
+    for (const player of players) {
+      PlayerService._players.set(player.id, player);
+    }
+
+    PlayerService.invalidateRankMemo();
+  }
+
+  /**
+   * Remove all stored player records.
+   */
+  public static clearPlayers(): void {
+    PlayerService._players.clear();
+    PlayerService.invalidateRankMemo();
+  }
+
+  /**
+   * Mark the rank memo as stale so it will be recomputed
+   * on the next call to getRank().
+   */
+  private static invalidateRankMemo(): void {
+    PlayerService._rankMemo = null;
+  }
+
+  /**
+   * Recompute rank mapping (player id -> rank) based on Elo.
+   *
+   * Players are sorted by Elo descending. Players with the same Elo
+   * receive the same rank number.
+   */
+  private static recomputeRanks(): void {
+    const players = PlayerService.getAllPlayers().toSorted((a, b) => b.elo - a.elo);
+
+    const cache = new Map<string, number>();
+    let rank = 1;
+    let previousElo: number | null = null;
+
+    for (const player of players) {
+      const elo = getDisplayElo(player);
+      if (previousElo !== null && elo !== previousElo) {
+        rank++;
+      }
+
+      cache.set(player.id, rank);
+      previousElo = elo;
+    }
+
+    PlayerService._rankMemo = cache;
+  }
+}

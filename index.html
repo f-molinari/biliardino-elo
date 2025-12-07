@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Biliardino Elo</title>
+    <link rel="stylesheet" href="./styles/ranking.css" />
+  </head>
+  <body>
+    <h1>Ranking</h1>
+
+    <p><a href="./players.html">Players</a></p>
+
+    <table id="ranking">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th data-sort="name">
+            Name
+            <span class="sort-indicator"></span>
+          </th>
+          <th data-sort="elo">
+            Elo
+            <span class="sort-indicator">▼</span>
+          </th>
+          <th data-sort="matches">
+            Matches
+            <span class="sort-indicator"></span>
+          </th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script type="module" src="./src/ranking.ts"></script>
+  </body>
+</html>
