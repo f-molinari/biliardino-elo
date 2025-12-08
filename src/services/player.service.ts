@@ -92,13 +92,16 @@ export class PlayerService {
   }
 
   /**
-   * Import an array of players into the service.
+   * Replace all stored players with the provided list.
    *
-   * Existing players with the same id will be overwritten.
+   * Clears any previously stored players and then loads each player
+   * from the given array. If two players share the same id in the
+   * provided list, the last one will take precedence.
    *
-   * @param players - The list of players to load.
+   * @param players - Array of players to load into the store.
    */
   public static loadPlayers(players: IPlayer[]): void {
+    PlayerService.clearPlayers();
     for (const player of players) {
       PlayerService._players.set(player.id, player);
     }

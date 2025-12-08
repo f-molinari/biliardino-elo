@@ -33,13 +33,16 @@ export class MatchService {
   }
 
   /**
-   * Load an array of already existing matches into the service.
+   * Replace all stored matches with the provided list.
    *
-   * If an id already exists, the existing entry will be overwritten.
+   * Clears any previously stored matches and then loads each match
+   * from the given array. If two matches share the same id in the
+   * provided list, the last one will take precedence.
    *
-   * @param matches - Array of matches to import.
+   * @param matches - Array of matches to load into the store.
    */
   public static loadMatches(matches: IMatch[]): void {
+    MatchService.clearMatches();
     for (const match of matches) {
       MatchService._matches.set(match.id, match);
     }
