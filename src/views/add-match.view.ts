@@ -1,5 +1,7 @@
 import { IMatch } from '@/models/match.interface';
 import { ITeam } from '@/models/team.interface';
+import { RepositoryService } from '@/services/repository.service';
+import { formatDate } from '@/utils/format-date.util';
 import { MatchService } from '../services/match.service';
 import { PlayerService } from '../services/player.service';
 
@@ -135,14 +137,14 @@ export class AddMatchView {
         match = existing;
 
         // If you add a MatchService.updateMatch, call it here instead of mutating directly.
-        // await RepositoryService.saveMatch(match);
+        await RepositoryService.saveMatch(match);
         // updateElo(match);
 
         messageEl.textContent = 'Match updated successfully.';
       } else {
         // ➕ CREATE NEW MATCH
         match = MatchService.addMatch(teamA, teamB, [scoreA, scoreB]);
-        // await RepositoryService.saveMatch(match);
+        await RepositoryService.saveMatch(match);
         // updateElo(match);
 
         messageEl.textContent = 'Match saved successfully.';
@@ -173,7 +175,7 @@ export class AddMatchView {
     const tbody = table.querySelector('tbody') ?? table.createTBody();
     tbody.innerHTML = '';
 
-    const matches = MatchService.getAllMatches();
+    const matches = MatchService.getAllMatches().toSorted((a, b) => b.createdAt - a.createdAt);
 
     for (const match of matches) {
       const row = AddMatchView.createMatchRow(match);
@@ -201,6 +203,7 @@ export class AddMatchView {
       <td>${teamAP1} / ${teamAP2}</td>
       <td>${teamBP1} / ${teamBP2}</td>
       <td>${match.score[0]} - ${match.score[1]}</td>
+      <td>${formatDate(match.createdAt)}</td>
       <td><button type="button" class="edit-match">Edit</button></td>
     `;
 

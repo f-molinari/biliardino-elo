@@ -20,4 +20,11 @@ export interface IMatch {
    * - scoreB is the number of goals scored by {@link IMatch.teamB}.
    */
   score: [number, number];
+  /**
+   * Timestamp representing when the match was created.
+   *
+   * Expressed as the number of milliseconds elapsed since
+   * the Unix epoch (January 1, 1970 UTC).
+   */
+  createdAt: number;
 }

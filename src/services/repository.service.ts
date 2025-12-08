@@ -79,7 +79,8 @@ export class RepositoryService {
         id: d.id,
         teamA: data.teamA,
         teamB: data.teamB,
-        score: data.score
+        score: data.score,
+        createdAt: data.createdAt
       };
     });
 

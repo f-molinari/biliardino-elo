@@ -29,7 +29,7 @@ export class MatchService {
    */
   public static addMatch(teamA: ITeam, teamB: ITeam, score: [number, number]): IMatch {
     const id = Guid.create().toString();
-    const newMatch = { id, teamA, teamB, score };
+    const newMatch: IMatch = { id, teamA, teamB, score, createdAt: Date.now() };
     MatchService._matches.set(id, newMatch);
     return newMatch;
   }
