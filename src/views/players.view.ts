@@ -113,11 +113,16 @@ export class PlayersView {
         <li><strong>Matches:</strong> ${stats?.matches}</li>        
         <li><strong>Matches as attack:</strong> ${stats?.matchesAsAttack}</li>        
         <li><strong>Matches as defence:</strong> ${stats?.matchesAsDefence}</li>
+        <li><strong>Total goals for:</strong> ${stats?.totalGoalsFor}</li>    
         <li><strong>Total goals against:</strong> ${stats?.totalGoalsAgainst}</li>        
-        <li><strong>Total goals for:</strong> ${stats?.totalGoalsFor}</li>        
+        <li><strong>Average goals for:</strong> ${stats?.totalGoalsFor / stats?.matches}</li>      
+        <li><strong>Average goals against:</strong> ${stats?.totalGoalsAgainst / stats?.matches}</li>        
         <li><strong>Wins:</strong> ${stats?.wins}</li>        
         <li><strong>Wins as attack:</strong> ${stats?.winsAsAttack}</li>        
-        <li><strong>Wins as defence:</strong> ${stats?.winsAsDefence}</li>        
+        <li><strong>Wins as defence:</strong> ${stats?.winsAsDefence}</li>      
+        <li><strong>Wins percentage:</strong> ${stats?.wins / stats?.matches * 100}%</li>        
+        <li><strong>Wins percentage as attack:</strong> ${stats?.winsAsAttack / stats?.matchesAsAttack * 100}%</li>        
+        <li><strong>Wins percentage as defence:</strong> ${stats?.winsAsDefence / stats?.matchesAsDefence * 100}%</li> 
         <li><strong>Worst defeat by elo:</strong> ${stats?.worstDefeatByElo}</li>        
         <li><strong>Worst defeat by score:</strong> ${stats?.worstDefeatByScore}</li>        
         <li><strong>Worst elo:</strong> ${stats?.worstElo}</li>        
