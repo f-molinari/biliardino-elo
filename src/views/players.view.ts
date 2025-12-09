@@ -90,8 +90,13 @@ export class PlayersView {
 
     console.log('Best victory by elo: ', stats?.bestVictoryByElo);
     console.log('Best victory by score: ', stats?.bestVictoryByScore);
-    console.log('Worst victory by elo: ', stats?.worstDefeatByElo);
-    console.log('Worst victory by score: ', stats?.worstDefeatByScore);
+    console.log('Worst defeat by elo: ', stats?.worstDefeatByElo);
+    console.log('Worst defeat by score: ', stats?.worstDefeatByScore);
+
+    console.log('Best teammate: ', stats?.bestTeammate);
+    console.log('Worst teammate: ', stats?.worstTeammate);
+    console.log('Best opponent: ', stats?.bestOpponent);
+    console.log('Worst opponent: ', stats?.worstOpponent);
 
     container.innerHTML = `
       <ul>

@@ -2,13 +2,16 @@ import { IMatch } from '@/models/match.interface';
 import { EloService } from '@/services/elo.service';
 import { PlayerService } from '@/services/player.service';
 
-export function updateElo(match: IMatch): void {
+export function updateElo(match: IMatch, log = true): void {
   const { deltaA, deltaB } = EloService.getDelta(match) ?? {};
 
   if (deltaA == null || deltaB == null) {
     return;
   }
-  console.log(Math.round(deltaA), Math.round(deltaB));
+
+  if (log) {
+    console.log(Math.round(deltaA), Math.round(deltaB));
+  }
 
   PlayerService.updateAfterMatch(match.teamA.defence, deltaA);
   PlayerService.updateAfterMatch(match.teamA.attack, deltaA);
@@ -20,8 +23,10 @@ export function updateElo(match: IMatch): void {
   const tbp1 = PlayerService.getPlayerById(match.teamB.defence);
   const tbp2 = PlayerService.getPlayerById(match.teamB.attack);
 
-  console.log(tap1?.name, tap1?.elo, tap1?.matches);
-  console.log(tap2?.name, tap2?.elo, tap2?.matches);
-  console.log(tbp1?.name, tbp1?.elo, tbp1?.matches);
-  console.log(tbp2?.name, tbp2?.elo, tbp2?.matches);
+  if (log) {
+    console.log(tap1?.name, tap1?.elo, tap1?.matches);
+    console.log(tap2?.name, tap2?.elo, tap2?.matches);
+    console.log(tbp1?.name, tbp1?.elo, tbp1?.matches);
+    console.log(tbp2?.name, tbp2?.elo, tbp2?.matches);
+  }
 }

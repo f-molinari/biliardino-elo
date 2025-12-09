@@ -1,5 +1,9 @@
 import { IMatch } from '@/models/match.interface';
+import { IPlayer } from '@/models/player.interface';
+import { ITeam } from '@/models/team.interface';
+import { updateElo } from '@/utils/update-elo.util';
 import { EloService } from './elo.service';
+import { PlayerService } from './player.service';
 
 // record elo
 // record vittorie di fila
@@ -17,6 +21,7 @@ import { EloService } from './elo.service';
 // TODO elo guadagnato da portiere o attaccante @@@@@@@@@@@@@@@@@
 
 export type MatchResult = { match: IMatch; delta: number };
+export type PlayerResult = { player: IPlayer; score: number };
 
 export interface PlayerStats {
   history: MatchResult[];
@@ -38,10 +43,10 @@ export interface PlayerStats {
   bestWinStreak: number;
   worstLossStreak: number;
 
-  bestTeammate: string; // by Elo gain
-  worstTeammate: string; // by Elo loss
-  bestOpponent: string; // by Elo gain
-  worstOpponent: string; // by Elo loss
+  bestTeammate: PlayerResult | null; // by Elo gain
+  worstTeammate: PlayerResult | null; // by Elo loss
+  bestOpponent: PlayerResult | null; // by Elo gain
+  worstOpponent: PlayerResult | null; // by Elo loss
 
   bestVictoryByElo: MatchResult | null; // TODO array if multiple?
   worstDefeatByElo: MatchResult | null; // TODO array if multiple?
@@ -70,10 +75,10 @@ export class StatsService {
       lossesAsDefence: 0,
       bestWinStreak: 0,
       worstLossStreak: 0,
-      bestTeammate: '',
-      worstTeammate: '',
-      bestOpponent: '',
-      worstOpponent: '',
+      bestTeammate: null,
+      worstTeammate: null,
+      bestOpponent: null,
+      worstOpponent: null,
       bestVictoryByElo: null,
       worstDefeatByElo: null,
       bestVictoryByScore: null,
@@ -82,6 +87,8 @@ export class StatsService {
       totalGoalsAgainst: 0
     };
 
+    const teammateList: Record<string, number> = {};
+    const opponentList: Record<string, number> = {};
     let currentStreak = 0;
     let bestVictoryElo = -Infinity;
     let worstDefeatElo = Infinity;
@@ -91,20 +98,22 @@ export class StatsService {
     for (const match of matches) {
       const team = getTeam(player, match);
       if (team === -1) {
-        EloService.getDelta(match); // update elo for other players only
+        updateElo(match, false); // update elo for other players only
         continue;
       }
 
       const role = getRole(player, team, match);
-      const matchResult = updateElo(team, match);
+      const matchResult = updateEloResult(team, match);
       result.history.push(matchResult);
 
       updateMatchCount(role, matchResult);
       updateStreak(matchResult.delta);
-      updateOtherPlayers();
+      updateOtherPlayers(team, role, matchResult);
       updateBestMatch(matchResult);
       updateGoalsCount(team, match);
     }
+
+    finalizeOtherPlayers();
 
     return result;
 
@@ -121,7 +130,15 @@ export class StatsService {
       return +(match.teamB.attack === player);
     }
 
-    function updateElo(team: number, match: IMatch): MatchResult {
+    function getTeammate(team: number, role: number, match: IMatch): string {
+      return match[team === 0 ? 'teamA' : 'teamB'][role === 0 ? 'attack' : 'defence'];
+    }
+
+    function getOpponentTeam(team: number, match: IMatch): ITeam {
+      return match[team === 0 ? 'teamB' : 'teamA'];
+    }
+
+    function updateEloResult(team: number, match: IMatch): MatchResult {
       const matchResult = EloService.getDelta(match);
       const delta = team === 0 ? matchResult!.deltaA : matchResult!.deltaB;
 
@@ -160,8 +177,17 @@ export class StatsService {
       }
     }
 
-    function updateOtherPlayers(): void {
-      // TODO
+    function updateOtherPlayers(team: number, role: number, matchResult: MatchResult): void {
+      const delta = matchResult.delta;
+      const teammate = getTeammate(team, role, matchResult.match);
+      const { attack: opponentA, defence: opponentB } = getOpponentTeam(team, matchResult.match);
+
+      teammateList[teammate] ??= 0;
+      teammateList[teammate] += delta;
+      opponentList[opponentA] ??= 0;
+      opponentList[opponentA] += delta;
+      opponentList[opponentB] ??= 0;
+      opponentList[opponentB] += delta;
     }
 
     function updateBestMatch(matchResult: MatchResult): void {
@@ -196,6 +222,48 @@ export class StatsService {
     function updateGoalsCount(team: number, match: IMatch): void {
       result.totalGoalsFor += match.score[team];
       result.totalGoalsAgainst += match.score[team ^ 1];
+    }
+
+    function finalizeOtherPlayers(): void {
+      let bestTeammateId = '';
+      let bestTeammateScore = -Infinity;
+      let worstTeammateId = '';
+      let worstTeammateScore = Infinity;
+
+      for (const teammate in teammateList) {
+        if (teammateList[teammate] > bestTeammateScore) {
+          bestTeammateScore = teammateList[teammate];
+          bestTeammateId = teammate;
+        }
+
+        if (teammateList[teammate] < worstTeammateScore) {
+          worstTeammateScore = teammateList[teammate];
+          worstTeammateId = teammate;
+        }
+      }
+
+      result.bestTeammate = { score: bestTeammateScore, player: PlayerService.getPlayerById(bestTeammateId)! };
+      result.worstTeammate = { score: worstTeammateScore, player: PlayerService.getPlayerById(worstTeammateId)! };
+
+      let bestOpponentId = '';
+      let bestOpponentScore = Infinity;
+      let worstOpponentId = '';
+      let worstOpponentScore = -Infinity;
+
+      for (const opponent in opponentList) {
+        if (opponentList[opponent] < bestOpponentScore) {
+          bestOpponentScore = opponentList[opponent];
+          bestOpponentId = opponent;
+        }
+
+        if (opponentList[opponent] > worstOpponentScore) {
+          worstOpponentScore = opponentList[opponent];
+          worstOpponentId = opponent;
+        }
+      }
+
+      result.bestOpponent = { score: bestOpponentScore, player: PlayerService.getPlayerById(bestOpponentId)! };
+      result.worstOpponent = { score: worstOpponentScore, player: PlayerService.getPlayerById(worstOpponentId)! };
     }
   }
 }
