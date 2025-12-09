@@ -14,7 +14,7 @@ export default defineConfig(config => ({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         players: path.resolve(__dirname, 'players.html'),
-        addMatch: path.resolve(__dirname, 'add-match.html')
+        moligarg: path.resolve(__dirname, 'moligarg.html')
       }
     }
   }
