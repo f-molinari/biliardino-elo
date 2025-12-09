@@ -100,35 +100,35 @@ export class PlayersView {
 
     container.innerHTML = `
       <ul>
-        <li><strong>Best Elo:</strong> ${stats?.bestElo}</li>
-        <li><strong>Best opponent:</strong> ${stats?.bestOpponent}</li>
-        <li><strong>Best teammate:</strong> ${stats?.bestTeammate}</li>
-        <li><strong>Best victory by elo:</strong> ${stats?.bestVictoryByElo}</li>
-        <li><strong>Best victory by score:</strong> ${stats?.bestVictoryByScore}</li>
-        <li><strong>Best win streak:</strong> ${stats?.bestWinStreak}</li>
         <li><strong>Elo:</strong> ${stats?.elo}</li>
-        <li><strong>Losses:</strong> ${stats?.losses}</li>
-        <li><strong>Losses as attack:</strong> ${stats?.lossesAsAttack}</li>
-        <li><strong>Losses as defence:</strong> ${stats?.lossesAsDefence}</li>
+        <li><strong>Best elo:</strong> ${stats?.bestElo}</li>
+        <li><strong>Worst elo:</strong> ${stats?.worstElo}</li>        
+        <li><strong>Best win streak:</strong> ${stats?.bestWinStreak}</li>
+        <li><strong>Worst loss streak:</strong> ${stats?.worstLossStreak}</li>        
         <li><strong>Matches:</strong> ${stats?.matches}</li>        
         <li><strong>Matches as attack:</strong> ${stats?.matchesAsAttack}</li>        
         <li><strong>Matches as defence:</strong> ${stats?.matchesAsDefence}</li>
+        <li><strong>Wins percentage:</strong> ${stats?.wins / stats?.matches * 100}%</li>        
+        <li><strong>Wins percentage as attack:</strong> ${stats?.winsAsAttack / stats?.matchesAsAttack * 100}%</li>        
+        <li><strong>Wins percentage as defence:</strong> ${stats?.winsAsDefence / stats?.matchesAsDefence * 100}%</li> 
+        <li><strong>Wins:</strong> ${stats?.wins}</li>        
+        <li><strong>Wins as attack:</strong> ${stats?.winsAsAttack}</li>        
+        <li><strong>Wins as defence:</strong> ${stats?.winsAsDefence}</li>      
+        <li><strong>Losses:</strong> ${stats?.losses}</li>
+        <li><strong>Losses as attack:</strong> ${stats?.lossesAsAttack}</li>
+        <li><strong>Losses as defence:</strong> ${stats?.lossesAsDefence}</li>
         <li><strong>Total goals for:</strong> ${stats?.totalGoalsFor}</li>    
         <li><strong>Total goals against:</strong> ${stats?.totalGoalsAgainst}</li>        
         <li><strong>Average goals for:</strong> ${stats?.totalGoalsFor / stats?.matches}</li>      
         <li><strong>Average goals against:</strong> ${stats?.totalGoalsAgainst / stats?.matches}</li>        
-        <li><strong>Wins:</strong> ${stats?.wins}</li>        
-        <li><strong>Wins as attack:</strong> ${stats?.winsAsAttack}</li>        
-        <li><strong>Wins as defence:</strong> ${stats?.winsAsDefence}</li>      
-        <li><strong>Wins percentage:</strong> ${stats?.wins / stats?.matches * 100}%</li>        
-        <li><strong>Wins percentage as attack:</strong> ${stats?.winsAsAttack / stats?.matchesAsAttack * 100}%</li>        
-        <li><strong>Wins percentage as defence:</strong> ${stats?.winsAsDefence / stats?.matchesAsDefence * 100}%</li> 
         <li><strong>Worst defeat by elo:</strong> ${stats?.worstDefeatByElo}</li>        
         <li><strong>Worst defeat by score:</strong> ${stats?.worstDefeatByScore}</li>        
-        <li><strong>Worst elo:</strong> ${stats?.worstElo}</li>        
-        <li><strong>Worst loss streak:</strong> ${stats?.worstLossStreak}</li>        
         <li><strong>Worst opponent:</strong> ${stats?.worstOpponent}</li>        
-        <li><strong>Worst teammate:</strong> ${stats?.worstTeammate}</li>        
+        <li><strong>Worst teammate:</strong> ${stats?.worstTeammate}</li> 
+        <li><strong>Best opponent:</strong> ${stats?.bestOpponent}</li>
+        <li><strong>Best teammate:</strong> ${stats?.bestTeammate}</li>
+        <li><strong>Best victory by elo:</strong> ${stats?.bestVictoryByElo}</li>
+        <li><strong>Best victory by score:</strong> ${stats?.bestVictoryByScore}</li>       
       </ul>
     `;
   }
