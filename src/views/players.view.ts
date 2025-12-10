@@ -418,12 +418,12 @@ export class PlayersView {
       <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Andamento ELO nel tempo" style="min-width:${width}px">
         <defs>
           <linearGradient id="eloGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#667eea" stop-opacity="0.3" />
-            <stop offset="100%" stop-color="#764ba2" stop-opacity="0.05" />
+            <stop offset="0%" stop-color="#4a5568" stop-opacity="0.3" />
+            <stop offset="100%" stop-color="#2d3748" stop-opacity="0.05" />
           </linearGradient>
           <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="#667eea" />
-            <stop offset="100%" stop-color="#764ba2" />
+            <stop offset="0%" stop-color="#4a5568" />
+            <stop offset="100%" stop-color="#2d3748" />
           </linearGradient>
         </defs>
         ${PlayersView.renderYTicks(tickMin, tickMax, yStep, height, padding, width)}

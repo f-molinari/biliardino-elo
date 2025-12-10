@@ -202,7 +202,7 @@ export class RankingView {
     const table = document.createElement('table');
     table.id = 'recent-matches-table';
     table.innerHTML = `
-      <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#0077cc;">Ultime 20 partite giocate</caption>
+      <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#2d3748;">Ultime 20 partite giocate</caption>
       <thead>
         <tr>
           <th>Elo Squadra A</th>
