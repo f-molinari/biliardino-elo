@@ -265,7 +265,7 @@ a.nav-link:hover {
 
 .match-history-table tbody tr:hover {
   background: linear-gradient(90deg, #f7fafc 0%, #edf2f7 100%);
-  transform: scale(1.005);
+  transform: translateY(-1px);
 }
 
 .match-history-table tbody tr:last-child td {
