@@ -47,9 +47,9 @@ a.nav-link:hover {
 
 .players-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
-  max-width: 1200px;
+  width: 100%;
 }
 
 .player-card {
@@ -58,6 +58,17 @@ a.nav-link:hover {
   border-radius: var(--radius);
   padding: 1.5rem;
   box-shadow: var(--shadow);
+}
+
+.player-card:nth-child(4) {
+  grid-row: span 2;
+}
+
+.player-card h2 {
+  font-size: 1.1rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
 }
 
 .player-select-wrapper {

@@ -117,8 +117,8 @@ export class PlayersView {
     };
 
     container.innerHTML = `
-      <div class="stats-section">
-        <h3>📊 Generale</h3>
+      <div class="player-card">
+        <h2>📊 Generale</h2>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">ELO Attuale</span>
@@ -135,58 +135,8 @@ export class PlayersView {
         </div>
       </div>
 
-      <div class="stats-section">
-        <h3>🎮 Partite</h3>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-label">Partite Totali</span>
-            <span class="stat-value">${stats.matches}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Come Attaccante</span>
-            <span class="stat-value">${stats.matchesAsAttack}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Come Difensore</span>
-            <span class="stat-value">${stats.matchesAsDefence}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stats-section">
-        <h3>🏆 Vittorie e Sconfitte</h3>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-label">Record</span>
-            <span class="stat-value">${stats.wins}V - ${stats.losses}S <span class="percentage">(${winPercentage}%)</span></span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Record Attacco</span>
-            <span class="stat-value">${stats.winsAsAttack}V - ${stats.lossesAsAttack}S <span class="percentage">(${winPercentageAttack}%)</span></span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Record Difesa</span>
-            <span class="stat-value">${stats.winsAsDefence}V - ${stats.lossesAsDefence}S <span class="percentage">(${winPercentageDefence}%)</span></span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stats-section">
-        <h3>🔥 Streak</h3>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-label">Migliore Striscia Vittorie</span>
-            <span class="stat-value positive">${stats.bestWinStreak}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Peggiore Striscia Sconfitte</span>
-            <span class="stat-value negative">${stats.worstLossStreak}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stats-section">
-        <h3>⚽ Goal</h3>
+      <div class="player-card">
+        <h2>⚽ Goal</h2>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">Goal Totali Fatti</span>
@@ -207,8 +157,8 @@ export class PlayersView {
         </div>
       </div>
 
-      <div class="stats-section">
-        <h3>👥 Compagni e Avversari</h3>
+      <div class="player-card">
+        <h2>👥 Compagni e Avversari</h2>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">Miglior Compagno</span>
@@ -229,8 +179,8 @@ export class PlayersView {
         </div>
       </div>
 
-      <div class="stats-section">
-        <h3>🏅 Migliori e Peggiori Partite</h3>
+      <div class="player-card">
+        <h2>🏅 Migliori e Peggiori Partite</h2>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">Migliore Vittoria (ELO)</span>
@@ -247,6 +197,56 @@ export class PlayersView {
           <div class="stat-item">
             <span class="stat-label">Peggiore Sconfitta (Punteggio)</span>
             <span class="stat-value negative">${formatMatchByScore(stats.worstDefeatByScore, player.id)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-card">
+        <h2>🎮 Partite</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Partite Totali</span>
+            <span class="stat-value">${stats.matches}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Come Attaccante</span>
+            <span class="stat-value">${stats.matchesAsAttack}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Come Difensore</span>
+            <span class="stat-value">${stats.matchesAsDefence}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-card">
+        <h2>🏆 Vittorie e Sconfitte</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Record</span>
+            <span class="stat-value">${stats.wins}V - ${stats.losses}S <span class="percentage">(${winPercentage}%)</span></span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Record Attacco</span>
+            <span class="stat-value">${stats.winsAsAttack}V - ${stats.lossesAsAttack}S <span class="percentage">(${winPercentageAttack}%)</span></span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Record Difesa</span>
+            <span class="stat-value">${stats.winsAsDefence}V - ${stats.lossesAsDefence}S <span class="percentage">(${winPercentageDefence}%)</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-card">
+        <h2>🔥 Streak</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Migliore Striscia Vittorie</span>
+            <span class="stat-value positive">${stats.bestWinStreak}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Peggiore Striscia Sconfitte</span>
+            <span class="stat-value negative">${stats.worstLossStreak}</span>
           </div>
         </div>
       </div>
