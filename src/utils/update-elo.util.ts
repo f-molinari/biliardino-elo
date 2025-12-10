@@ -2,7 +2,7 @@ import { IMatch } from '@/models/match.interface';
 import { EloService } from '@/services/elo.service';
 import { PlayerService } from '@/services/player.service';
 
-export function updateElo(match: IMatch, log = true): void {
+export function updateElo(match: IMatch, log = false): void {
   const { deltaA, deltaB, eloA, eloB, expA, expB } = EloService.calculateEloChange(match) ?? {};
 
   if (deltaA == null || deltaB == null) {

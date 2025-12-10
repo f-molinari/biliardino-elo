@@ -12,18 +12,30 @@
   --shadow-lg: 0 8px 32px rgba(102, 126, 234, 0.15);
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  margin: 0;
-  padding: 0;
+  background-attachment: fixed;
   color: #1a202c;
   line-height: 1.6;
   min-height: 100vh;
+  overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1 {
@@ -31,15 +43,15 @@ h1 {
   padding: 2rem 1.5rem 1rem;
   text-align: center;
   color: white;
-  font-size: 2.5rem;
+  font-size: clamp(1.25rem, 4vw, 1.875rem);
   font-weight: 800;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   letter-spacing: -0.5px;
 }
 
 h2 {
-  font-size: 1.25rem;
-  margin: 0 0 1.25rem 0;
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  margin: 0 0 1rem 0;
   color: #1a202c;
   font-weight: 700;
   display: flex;
@@ -73,18 +85,20 @@ a.nav-link:hover {
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   max-width: 1400px;
+  width: calc(100% - 3rem);
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 0 1.5rem 1.5rem;
 }
 
 .player-card {
   background: white;
   border: none;
   border-radius: var(--radius);
-  padding: 1.75rem;
+  padding: 1.5rem;
   box-shadow: var(--shadow-lg);
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 
 .player-card:hover {
@@ -105,55 +119,14 @@ a.nav-link:hover {
 }
 
 .player-card h2 {
-  font-size: 1.25rem;
-  margin: 0 0 1.25rem 0;
-  color: #1a202c;
-  font-weight: 700;
   border-left: 4px solid var(--color-primary);
   padding-left: 0.75rem;
-}
-
-.player-select-wrapper {
-  margin-bottom: 1.5rem;
-}
-
-.player-select-wrapper label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #333;
-}
-
-.player-select-wrapper select {
-  width: 100%;
-  padding: 0.6rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: white;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.player-select-wrapper select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.stats-section {
-  margin-top: 1.5rem;
-}
-
-.stats-section h3 {
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--color-primary);
-  color: var(--color-primary);
+  margin-bottom: 1.25rem;
 }
 
 .stats-grid {
   display: grid;
-  gap: 1rem;
+  gap: 0.875rem;
 }
 
 .stat-item {
@@ -173,10 +146,6 @@ a.nav-link:hover {
   background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
 }
 
-.stat-item:last-child {
-  border-bottom: none;
-}
-
 .stat-label {
   font-size: 0.9rem;
   color: var(--color-text-muted);
@@ -191,7 +160,7 @@ a.nav-link:hover {
 
 .stat-value.highlight {
   color: var(--color-primary);
-  font-size: 1.4rem;
+  font-size: clamp(1.1rem, 3vw, 1.4rem);
   text-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
 }
 
@@ -219,12 +188,13 @@ a.nav-link:hover {
   font-weight: 500;
 }
 
-/* Match History Styles */
+/* Match History */
 .match-history {
   overflow-x: auto;
   margin-top: 1rem;
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
+  -webkit-overflow-scrolling: touch;
 }
 
 .match-history-table {
@@ -305,16 +275,16 @@ a.nav-link:hover {
   box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
-/* Best/Worst Matches Grid */
+/* Best/Worst Matches */
 .best-worst-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .best-worst-card {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: var(--radius);
-  padding: 1.75rem;
+  padding: 1.5rem;
 }
 
 .best-worst-item {
@@ -322,7 +292,7 @@ a.nav-link:hover {
   grid-template-columns: 2fr 1fr 2fr;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1rem;
   border: 2px solid var(--color-border);
   border-radius: 10px;
   background: white;
@@ -337,7 +307,7 @@ a.nav-link:hover {
 }
 
 .best-worst-item .stat-label {
-  font-size: 0.95rem;
+  font-size: clamp(0.75rem, 2vw, 0.95rem);
   color: var(--color-text-muted);
   text-align: left;
   font-weight: 600;
@@ -345,7 +315,7 @@ a.nav-link:hover {
 
 .best-worst-item .stat-score {
   font-weight: 800;
-  font-size: 1.75rem;
+  font-size: clamp(1.3rem, 4vw, 1.75rem);
   text-align: center;
 }
 
@@ -360,18 +330,18 @@ a.nav-link:hover {
 }
 
 .best-worst-item .stat-details {
-  font-size: 0.95rem;
+  font-size: clamp(0.75rem, 2vw, 0.95rem);
   color: var(--color-text-muted);
   text-align: right;
   line-height: 1.4;
   font-weight: 600;
 }
 
+/* Chart */
 .chart-wrapper {
   margin-top: 0.5rem;
   overflow-x: auto;
   padding-bottom: 0.5rem;
-  /* Custom scrollbar per chart */
   scrollbar-width: thin;
   scrollbar-color: var(--color-primary) rgba(255, 255, 255, 0.1);
   -webkit-overflow-scrolling: touch;
@@ -389,21 +359,16 @@ a.nav-link:hover {
 .chart-wrapper::-webkit-scrollbar-thumb {
   background: var(--color-primary);
   border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.chart-wrapper:hover::-webkit-scrollbar-thumb {
-  opacity: 1;
 }
 
 .chart-meta {
   display: flex;
   gap: 1.5rem;
-  font-size: 0.95rem;
+  font-size: clamp(0.75rem, 2vw, 0.95rem);
   color: #333;
   margin-bottom: 0.75rem;
   font-weight: 500;
+  flex-wrap: wrap;
 }
 
 .chart-wrapper svg {
@@ -463,70 +428,63 @@ a.nav-link:hover {
   font-weight: 500;
 }
 
-/* Responsive Design */
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Large Desktop */
 @media (max-width: 1400px) {
   .players-container {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .player-card:nth-child(7) {
-    grid-column: span 3;
-  }
-
+  .player-card:nth-child(7),
   .player-card.chart-card,
   .player-card.history-card {
     grid-column: span 3;
   }
 }
 
+/* Desktop / Tablet Landscape */
 @media (max-width: 1024px) {
-  h1 {
-    font-size: 2rem;
-    padding: 1.5rem 1rem 0.75rem;
-  }
-
   .players-container {
     grid-template-columns: repeat(2, 1fr);
     gap: 1.25rem;
-    padding: 1.25rem;
+    width: calc(100% - 2.5rem);
+    padding: 0 1.25rem 1.25rem;
   }
 
-  .player-card:nth-child(7) {
-    grid-column: span 2;
-  }
-
+  .player-card:nth-child(7),
   .player-card.chart-card,
   .player-card.history-card {
     grid-column: span 2;
   }
 
   .player-card {
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
 
   .best-worst-item {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
     text-align: center;
-    padding: 1rem;
+    gap: 0.75rem;
   }
 
   .best-worst-item .stat-label,
   .best-worst-item .stat-details {
     text-align: center;
   }
+
+  .chart-wrapper svg {
+    height: 320px;
+  }
 }
 
+/* Tablet Portrait */
 @media (max-width: 768px) {
-  h1 {
-    font-size: 1.75rem;
-    padding: 1.25rem 1rem 0.5rem;
-  }
-
   .players-container {
     grid-template-columns: 1fr;
     gap: 1rem;
-    padding: 1rem;
+    width: calc(100% - 2rem);
+    padding: 0 1rem 1rem;
   }
 
   .player-card:nth-child(7),
@@ -536,38 +494,28 @@ a.nav-link:hover {
   }
 
   .player-card {
-    padding: 1.25rem;
-  }
-
-  h2 {
-    font-size: 1.1rem;
-  }
-
-  .match-history {
-    overflow-x: auto;
+    padding: 1rem;
   }
 
   .match-history-table {
     min-width: 700px;
   }
+
+  .chart-wrapper svg {
+    height: 280px;
+  }
 }
 
-@media (max-width: 480px) {
-  h1 {
-    font-size: 1.5rem;
-    padding: 1rem 0.75rem 0.5rem;
-  }
-
+/* Large Mobile */
+@media (max-width: 640px) {
   .players-container {
-    padding: 0.75rem 0.5rem;
+    width: calc(100% - 1.5rem);
+    padding: 0 0.75rem 0.75rem;
+    gap: 0.875rem;
   }
 
   .player-card {
-    padding: 1rem;
-  }
-
-  .player-card h2 {
-    font-size: 1rem;
+    padding: 0.875rem;
   }
 
   .stats-grid {
@@ -578,48 +526,154 @@ a.nav-link:hover {
     padding: 0.75rem;
   }
 
-  .stat-label {
-    font-size: 0.8rem;
-  }
-
-  .stat-value {
-    font-size: 0.95rem;
-  }
-
-  .stat-value.highlight {
-    font-size: 1.2rem;
-  }
-
-  a.nav-link {
-    padding: 0.5rem 0.9rem;
-    font-size: 0.875rem;
-    margin: 0.75rem;
+  .chart-wrapper svg {
+    height: 260px;
   }
 
   .match-history-table {
-    font-size: 0.7rem;
-    min-width: 600px;
+    min-width: 650px;
+    font-size: 0.75rem;
   }
 
   .match-history-table th,
   .match-history-table td {
-    padding: 0.6rem 0.4rem;
-  }
-
-  .match-history {
-    -webkit-overflow-scrolling: touch;
+    padding: 0.7rem 0.4rem;
   }
 
   .best-worst-item {
-    padding: 0.9rem;
+    padding: 0.75rem;
+  }
+}
+
+/* Mobile (iPhone 12 Pro, etc - 390px width) */
+@media (max-width: 480px) {
+  h1 {
+    padding: 1rem 0.75rem 0.75rem;
+  }
+
+  a.nav-link {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    margin: 0.75rem;
+  }
+
+  .players-container {
+    width: calc(100% - 1rem);
+    padding: 0 0.5rem 0.5rem;
+    gap: 0.75rem;
+  }
+
+  .player-card {
+    padding: 0.75rem;
+  }
+
+  .player-card h2 {
+    font-size: 1rem;
+    padding-left: 0.5rem;
+    border-left-width: 3px;
+  }
+
+  .stats-grid {
+    gap: 0.625rem;
+  }
+
+  .stat-item {
+    padding: 0.625rem 0.75rem;
+    gap: 1rem;
+    min-height: 2.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    min-width: 60%;
+  }
+
+  .stat-value {
+    font-size: 0.9rem;
+  }
+
+  .stat-value.highlight {
+    font-size: 1.15rem;
+  }
+
+  .chart-wrapper svg {
+    height: 240px;
+  }
+
+  .chart-meta {
+    font-size: 0.8rem;
+    gap: 1rem;
+  }
+
+  .match-history-table {
+    min-width: 100%;
+    font-size: 0.7rem;
+  }
+
+  .match-history-table th,
+  .match-history-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.7rem;
+  }
+
+  .best-worst-item {
+    padding: 0.625rem;
   }
 
   .best-worst-item .stat-score {
-    font-size: 1.4rem;
+    font-size: 1.35rem;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 375px) {
+  .players-container {
+    width: calc(100% - 0.75rem);
+    padding: 0 0.375rem 0.375rem;
+    gap: 0.625rem;
   }
 
-  .best-worst-item .stat-label,
-  .best-worst-item .stat-details {
-    font-size: 0.85rem;
+  .player-card {
+    padding: 0.625rem;
+  }
+
+  .player-card h2 {
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .stats-grid {
+    gap: 0.5rem;
+  }
+
+  .stat-item {
+    padding: 0.5rem 0.625rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
+    min-height: auto;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .stat-value {
+    font-size: 0.875rem;
+    text-align: left;
+  }
+
+  .stat-value.highlight {
+    font-size: 1.05rem;
+  }
+
+  .chart-wrapper svg {
+    height: 220px;
+  }
+
+  .best-worst-item .stat-score {
+    font-size: 1.25rem;
   }
 }
