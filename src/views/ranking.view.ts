@@ -4,69 +4,27 @@ import { MatchService } from '../services/match.service';
 import { PlayerService } from '../services/player.service';
 
 /**
- * Columns available for sorting in the ranking view.
- */
-enum RankingSortColumn {
-  Name = 'name',
-  Elo = 'elo',
-  Matches = 'matches'
-}
-
-/**
  * Renders and handles UI interactions for the ranking table.
  */
 export class RankingView {
   /**
-   * Currently selected column to sort by.
-   */
-  private static _sortCol: RankingSortColumn = RankingSortColumn.Elo;
-  /**
-   * Whether sorting is descending.
-   */
-  private static _sortDesc: boolean = true;
-
-  /**
    * Initialize the ranking UI.
    *
-   * Renders the initial table and attaches sorting handlers.
+   * Renders the initial table.
    */
   public static init(): void {
     RankingView.render();
-    RankingView.attachSortHandlers();
-  }
-
-  /**
-   * Attach click handlers to sortable table headers.
-   *
-   * Toggles ordering and triggers a re-render when clicked.
-   */
-  private static attachSortHandlers(): void {
-    const headers = RankingView.getSortableHeaders();
-    for (const th of headers) {
-      th.addEventListener('click', () => {
-        const col = th.dataset.sort as RankingSortColumn;
-        if (col === RankingView._sortCol) {
-          RankingView._sortDesc = !RankingView._sortDesc;
-        } else {
-          RankingView._sortCol = col;
-          RankingView._sortDesc = true;
-        }
-
-        RankingView.render();
-      });
-    }
   }
 
   /**
    * Render the ranking view.
    *
-   * Sorts the players, sets indicators, and populates table rows.
+   * Sorts the players by Elo and populates table rows.
    */
   private static render(): void {
     const allPlayers = PlayerService.getAllPlayers();
     const playersWithMatches = allPlayers.filter(player => player.matches > 0);
-    const players = RankingView.toSort(playersWithMatches);
-    RankingView.renderSortIndicators();
+    const players = playersWithMatches.sort((a, b) => b.elo - a.elo);
     RankingView.renderrRows(players);
     RankingView.renderRecentMatches();
   }
@@ -85,27 +43,141 @@ export class RankingView {
     let rank = 1;
     let previousElo: number | null = null;
     const fragment = document.createDocumentFragment();
+    const allMatches = MatchService.getAllMatches();
+
+    // Precalcola i dati per ogni giocatore se non sono disponibili
+    const playerStats = new Map<string, { attackCount: number; defenceCount: number; wins: number }>();
+    for (const player of players) {
+      let attackCount = 0;
+      let defenceCount = 0;
+      let wins = 0;
+
+      for (const match of allMatches) {
+        let isInMatch = false;
+        let isTeamA = false;
+        let isAttack = false;
+
+        if (match.teamA.attack === player.id) {
+          isInMatch = true;
+          isTeamA = true;
+          isAttack = true;
+          attackCount++;
+        } else if (match.teamA.defence === player.id) {
+          isInMatch = true;
+          isTeamA = true;
+          isAttack = false;
+          defenceCount++;
+        } else if (match.teamB.attack === player.id) {
+          isInMatch = true;
+          isTeamA = false;
+          isAttack = true;
+          attackCount++;
+        } else if (match.teamB.defence === player.id) {
+          isInMatch = true;
+          isTeamA = false;
+          isAttack = false;
+          defenceCount++;
+        }
+
+        if (isInMatch) {
+          const myScore = isTeamA ? match.score[0] : match.score[1];
+          const oppScore = isTeamA ? match.score[1] : match.score[0];
+          if (myScore > oppScore) wins++;
+        }
+      }
+
+      playerStats.set(player.id, { attackCount, defenceCount, wins });
+    }
 
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
       const elo = getDisplayElo(player);
-      // Same elo = same rank
-      if (previousElo !== null && elo !== previousElo) {
-        rank++;
+
+      // Aggiorna il rank solo quando l'Elo cambia
+      if (i > 0 && previousElo !== null && elo !== previousElo) {
+        rank = i + 1;
+      }
+
+      // Conta quanti giocatori hanno lo stesso Elo (guardando avanti e indietro)
+      let sameEloCount = 1;
+      let rankStart = rank;
+
+      // Conta quanti prima hanno lo stesso Elo (per trovare l'inizio del range)
+      let backCount = 0;
+      for (let j = i - 1; j >= 0; j--) {
+        if (getDisplayElo(players[j]) === elo) {
+          backCount++;
+        } else {
+          break;
+        }
+      }
+
+      if (backCount > 0) {
+        rankStart = rank;
+        sameEloCount += backCount;
+      }
+
+      // Conta quanti dopo hanno lo stesso Elo
+      for (let j = i + 1; j < players.length; j++) {
+        if (getDisplayElo(players[j]) === elo) {
+          sameEloCount++;
+        } else {
+          break;
+        }
+      }
+
+      let rankDisplay = '';
+      if (sameEloCount > 1) {
+        rankDisplay = `${rankStart}-${rankStart + sameEloCount - 1}`;
+      } else {
+        rankDisplay = `${rank}`;
       }
 
       const isFirst = rank === 1;
       const isLast = i === players.length - 1;
       const emoji = isFirst ? ' 🏆' : (isLast ? ' 💩' : '');
 
+      // Usa dati calcolati per il ruolo
+      const stats = playerStats.get(player.id)!;
+      const attackPercentage = player.matches > 0 ? stats.attackCount / player.matches : 0;
+      const defencePercentage = player.matches > 0 ? stats.defenceCount / player.matches : 0;
+      let role = '<span style="font-size:0.8em;color:#666;">DIF, ATT</span>';
+      if (attackPercentage >= 0.6) role = '<span style="font-size:0.8em;color:#dc3545;">ATT</span>';
+      else if (defencePercentage >= 0.6) role = '<span style="font-size:0.8em;color:#0077cc;">DIF</span>';
+
+      // Usa matchesDelta precalcolato per ultimi 5 risultati e Elo guadagnato
+      const matchesDelta = player.matchesDelta || [];
+      const last5Delta = matchesDelta.slice(-5);
+
+      let eloGainedLast5 = 0;
+      last5Delta.forEach((delta) => {
+        eloGainedLast5 += delta;
+      });
+
+      const last5Results = last5Delta.slice().reverse().map((delta) => {
+        return delta > 0 ? '🟢' : '🔴';
+      }).join('');
+
+      const eloGainedFormatted = eloGainedLast5 >= 0
+        ? `<span style="font-size:0.85em;color:green;">(+${Math.round(eloGainedLast5)})</span>`
+        : `<span style="font-size:0.85em;color:red;">(${Math.round(eloGainedLast5)})</span>`;
+
+      // Usa dati calcolati per win rate e vittorie/sconfitte
+      const wins = stats.wins;
+      const losses = player.matches - wins;
+      const winRate = player.matches > 0 ? Math.round((wins / player.matches) * 100) : 0;
+      const record = `${wins}V - ${losses}S`;
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <tr>
-        <td>${rank}${emoji}</td>
-        <td><a href="./players.html?id=${player.id}">${player.name}</a></td>
-        <td>${elo}</td>
+        <td>${rankDisplay}${emoji}</td>
+        <td><a href="./players.html?id=${player.id}" style="text-decoration:none;color:inherit;">${player.name}</a></td>
+        <td><strong>${elo}</strong></td>
+        <td>${role}</td>
         <td>${player.matches}</td>
-        </tr>
+        <td>${record}</td>
+        <td>${winRate}%</td>
+        <td>${last5Results || '-'} ${last5Results ? eloGainedFormatted : ''}</td>
       `;
       fragment.appendChild(tr);
 
@@ -114,56 +186,6 @@ export class RankingView {
 
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
-  }
-
-  /**
-   * Adjust sorting indicator arrow (▲ or ▼) in headers.
-   */
-  private static renderSortIndicators(): void {
-    const headers = RankingView.getSortableHeaders();
-
-    for (const th of headers) {
-      const indicator = th.querySelector<HTMLSpanElement>('.sort-indicator')!;
-
-      if (th.dataset.sort === RankingView._sortCol) {
-        indicator.textContent = RankingView._sortDesc ? '▼' : '▲';
-      } else {
-        indicator.textContent = '';
-      }
-    }
-  }
-
-  /**
-   * Sort a list of players based on the active ranking column.
-   *
-   * Sorting handles both string and numeric fields.
-   *
-   * @param players - Array of players to sort.
-   * @returns The sorted player array (new array, original preserved).
-   */
-  private static toSort(players: IPlayer[]): IPlayer[] {
-    return players.toSorted((a, b) => {
-      const valA = a[RankingView._sortCol];
-      const valB = b[RankingView._sortCol];
-
-      if (typeof valA === 'string' && typeof valB === 'string') {
-        return RankingView._sortDesc
-          ? valA.localeCompare(valB)
-          : valB.localeCompare(valA);
-      } else {
-        const numA = valA as number;
-        const numB = valB as number;
-        return RankingView._sortDesc
-          ? numB - numA
-          : numA - numB;
-      }
-    });
-  }
-
-  private static getSortableHeaders(): HTMLTableCellElement[] {
-    const table = RankingView.getTable();
-    const sortHeaders = table.querySelectorAll<HTMLTableCellElement>('th[data-sort]');
-    return Array.from(sortHeaders);
   }
 
   /**
