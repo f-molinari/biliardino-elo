@@ -142,8 +142,8 @@ export class RankingView {
       const attackPercentage = player.matches > 0 ? stats.attackCount / player.matches : 0;
       const defencePercentage = player.matches > 0 ? stats.defenceCount / player.matches : 0;
       let role = '<span style="font-size:0.8em;color:#666;">DIF, ATT</span>';
-      if (attackPercentage >= 0.6) role = '<span style="font-size:0.8em;color:#dc3545;">ATT</span>';
-      else if (defencePercentage >= 0.6) role = '<span style="font-size:0.8em;color:#0077cc;">DIF</span>';
+      if (attackPercentage >= 0.67) role = '<span style="font-size:0.8em;color:#dc3545;">ATT</span>';
+      else if (defencePercentage >= 0.67) role = '<span style="font-size:0.8em;color:#0077cc;">DIF</span>';
 
       // Usa matchesDelta precalcolato per ultimi 5 risultati e Elo guadagnato
       const matchesDelta = player.matchesDelta || [];
