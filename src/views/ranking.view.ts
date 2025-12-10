@@ -127,7 +127,14 @@ export class RankingView {
       // Usa dati precalcolati per rapporto goal fatti/subiti
       const goalsScored = player.goalsFor || 0;
       const goalsConceded = player.goalsAgainst || 0;
-      const goalDiff = goalsConceded > 0 ? (goalsScored / goalsConceded).toFixed(2) : goalsScored > 0 ? '∞' : '-';
+      const goalRatio = goalsConceded > 0 ? goalsScored / goalsConceded : (goalsScored > 0 ? Infinity : 0);
+      let goalDiff = '-';
+      if (goalRatio === Infinity) {
+        goalDiff = '<span style="color:green;">∞</span>';
+      } else if (goalRatio > 0) {
+        const color = goalRatio < 0.8 ? 'red' : goalRatio > 1.2 ? 'green' : 'inherit';
+        goalDiff = `<span style="color:${color};">${goalRatio.toFixed(2)}</span>`;
+      }
 
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
@@ -135,7 +142,7 @@ export class RankingView {
         window.location.href = `./players.html?id=${player.id}`;
       });
       tr.innerHTML = `
-        <td>${rankDisplay}${emoji}</td>
+        <td>${rankDisplay}° ${emoji}</td>
         <td>${player.name}</td>
         <td><strong>${elo}</strong></td>
         <td>${role}</td>
