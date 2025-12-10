@@ -102,10 +102,9 @@ export class PlayersView {
       return Math.round(value);
     };
 
-    const getPlayerName = (id: string) => {
-      if (!id) return 'N/A';
-      const p = PlayerService.getPlayerById(id);
-      return p ? p.name : 'N/A';
+    const formatPlayerResult = (result: { player: { name: string }; score: number } | null) => {
+      if (!result) return 'N/A';
+      return `${result.player.name} (${result.score > 0 ? '+' : ''}${result.score.toFixed(0)})`;
     };
 
     container.innerHTML = `
@@ -216,19 +215,19 @@ export class PlayersView {
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">Miglior Compagno</span>
-            <span class="stat-value positive">${getPlayerName(stats.bestTeammate)}</span>
+            <span class="stat-value positive">${formatPlayerResult(stats.bestTeammate)}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Peggior Compagno</span>
-            <span class="stat-value negative">${getPlayerName(stats.worstTeammate)}</span>
+            <span class="stat-value negative">${formatPlayerResult(stats.worstTeammate)}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Miglior Avversario</span>
-            <span class="stat-value positive">${getPlayerName(stats.bestOpponent)}</span>
+            <span class="stat-value positive">${formatPlayerResult(stats.bestOpponent)}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Peggior Avversario</span>
-            <span class="stat-value negative">${getPlayerName(stats.worstOpponent)}</span>
+            <span class="stat-value negative">${formatPlayerResult(stats.worstOpponent)}</span>
           </div>
         </div>
       </div>
