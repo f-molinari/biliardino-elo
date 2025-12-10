@@ -5,86 +5,55 @@ import { StatsService } from '@/services/stats.service';
 import { PlayerService } from '../services/player.service';
 
 /**
- * Ids of the <select> elements used for choosing players.
- *
- * Each value must match an existing element id in the DOM.
- * Used by {@link PlayersView} to resolve the selects programmatically.
- */
-const PLAYER_SELECT_IDS = ['player1', 'player2'] as const;
-
-/**
- * Handles UI display for player details panels.
+ * Handles UI display for player details.
  */
 export class PlayersView {
   /**
-   * Initialize the view by populating selections and attaching event handlers.
+   * Initialize the view by reading player from query string and rendering stats.
    */
   public static init(): void {
-    PlayersView.populateSelects();
-    PlayersView.bindSelectEvents();
-  }
+    const urlParams = new URLSearchParams(window.location.search);
+    const playerId = urlParams.get('id');
 
-  /**
-   * Populate player selects with all players from {@link PlayerService}.
-   */
-  private static populateSelects(): void {
-    const selects = PlayersView.getPlayerSelects();
-
-    for (const player of PlayerService.getAllPlayers()) {
-      for (const select of selects) {
-        const option = document.createElement('option');
-        option.value = player.id;
-        option.textContent = player.name;
-        select.appendChild(option);
-      }
-    }
-  }
-
-  /**
-   * Attach change listeners to all player selects.
-   *
-   * When a selection changes, the stats view will update.
-   */
-  private static bindSelectEvents(): void {
-    const selects = PlayersView.getPlayerSelects();
-
-    for (const select of selects) {
-      select.addEventListener('change', PlayersView.handleSelectionChange);
-    }
-  }
-
-  /**
-   * Handle selection change from a player select.
-   *
-   * Resolves the related stats container id and triggers rendering.
-   *
-   * @param event - The change event from the select element.
-   */
-  private static handleSelectionChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const containerId = `${target.id}-stats`;
-    const playerId = target.value;
-
-    PlayersView.renderPlayerStats(containerId, PlayerService.getPlayerById(playerId));
-  }
-
-  /**
-   * Render player details into the specified container element.
-   *
-   * If no player is provided, the container is cleared.
-   *
-   * @param containerId - DOM id of the container to update.
-   * @param player - Player to display, or `undefined`.
-   */
-  private static renderPlayerStats(containerId: string, player: IPlayer | undefined): void {
-    const container = document.getElementById(containerId);
-    if (!container) {
-      throw new Error('Wrong player container id');
-    }
-
-    if (!player) {
-      container.innerHTML = '<div class="empty-state">Seleziona un giocatore per visualizzare le statistiche</div>';
+    if (!playerId) {
+      PlayersView.renderError('Nessun giocatore specificato. Aggiungi ?id=PLAYER_ID all\'URL.');
       return;
+    }
+
+    const player = PlayerService.getPlayerById(playerId);
+    if (!player) {
+      PlayersView.renderError('Giocatore non trovato.');
+      return;
+    }
+
+    PlayersView.renderPlayerStats(player);
+  }
+
+  /**
+   * Render error message.
+   */
+  private static renderError(message: string): void {
+    const container = document.getElementById('player-stats');
+    if (container) {
+      container.innerHTML = `<div class="empty-state">${message}</div>`;
+    }
+  }
+
+  /**
+   * Render player details into the container element.
+   *
+   * @param player - Player to display.
+   */
+  private static renderPlayerStats(player: IPlayer): void {
+    const container = document.getElementById('player-stats');
+    if (!container) {
+      throw new Error('Player stats container not found');
+    }
+
+    // Update page title with player name
+    const titleElement = document.getElementById('player-name');
+    if (titleElement) {
+      titleElement.textContent = `Statistiche di ${player.name}`;
     }
 
     const stats = StatsService.getPlayerStats(player.id, MatchService.getAllMatches());
@@ -282,22 +251,5 @@ export class PlayersView {
         </div>
       </div>
     `;
-  }
-
-  /**
-   * Resolve all player selects from the DOM.
-   *
-   * @returns The list of `<select>` elements in the order:
-   *          [player1, player2]
-   * @throws If any of the expected select elements is not found.
-   */
-  private static getPlayerSelects(): HTMLSelectElement[] {
-    return PLAYER_SELECT_IDS.map((id) => {
-      const select = document.getElementById(id) as HTMLSelectElement | null;
-      if (!select) {
-        throw new Error(`Wrong player select id: ${id}`);
-      }
-      return select;
-    });
   }
 }

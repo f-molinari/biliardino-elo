@@ -93,7 +93,7 @@ export class RankingView {
       tr.innerHTML = `
         <tr>
         <td>${rank}</td>
-        <td>${player.name}</td>
+        <td><a href="./players.html?id=${player.id}">${player.name}</a></td>
         <td>${elo}</td>
         <td>${player.matches}</td>
         </tr>
