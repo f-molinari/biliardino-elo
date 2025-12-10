@@ -1,3 +1,4 @@
+import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { MatchService } from '@/services/match.service';
 import { StatsService } from '@/services/stats.service';
@@ -105,6 +106,45 @@ export class PlayersView {
     const formatPlayerResult = (result: { player: { name: string }; score: number } | null) => {
       if (!result) return 'N/A';
       return `${result.player.name} (${result.score > 0 ? '+' : ''}${result.score.toFixed(0)})`;
+    };
+
+    const formatMatchResult = (result: { match: IMatch; delta: number } | null, playerId: string) => {
+      if (!result) return 'N/A';
+      const m = result.match;
+      const isTeamA = m.teamA.attack === playerId || m.teamA.defence === playerId;
+      const score = isTeamA ? `${m.score[0]}-${m.score[1]}` : `${m.score[1]}-${m.score[0]}`;
+
+      const myTeam = isTeamA ? m.teamA : m.teamB;
+      const opponentTeam = isTeamA ? m.teamB : m.teamA;
+
+      const teammate = PlayerService.getPlayerById(myTeam.attack === playerId ? myTeam.defence : myTeam.attack);
+      const opp1 = PlayerService.getPlayerById(opponentTeam.attack);
+      const opp2 = PlayerService.getPlayerById(opponentTeam.defence);
+
+      const teammateName = teammate?.name || '?';
+      const opponentsNames = `${opp1?.name || '?'} & ${opp2?.name || '?'}`;
+
+      return `<strong>${score}</strong><br><small>vs ${opponentsNames}</small><br><small>con ${teammateName} (${result.delta > 0 ? '+' : ''}${result.delta.toFixed(0)} ELO)</small>`;
+    };
+
+    const formatMatchByScore = (match: IMatch | null, playerId: string) => {
+      if (!match) return 'N/A';
+      const isTeamA = match.teamA.attack === playerId || match.teamA.defence === playerId;
+      const scoreFor = isTeamA ? match.score[0] : match.score[1];
+      const scoreAgainst = isTeamA ? match.score[1] : match.score[0];
+      const diff = scoreFor - scoreAgainst;
+
+      const myTeam = isTeamA ? match.teamA : match.teamB;
+      const opponentTeam = isTeamA ? match.teamB : match.teamA;
+
+      const teammate = PlayerService.getPlayerById(myTeam.attack === playerId ? myTeam.defence : myTeam.attack);
+      const opp1 = PlayerService.getPlayerById(opponentTeam.attack);
+      const opp2 = PlayerService.getPlayerById(opponentTeam.defence);
+
+      const teammateName = teammate?.name || '?';
+      const opponentsNames = `${opp1?.name || '?'} & ${opp2?.name || '?'}`;
+
+      return `<strong>${scoreFor}-${scoreAgainst}</strong><br><small>vs ${opponentsNames}</small><br><small>con ${teammateName} (${diff > 0 ? '+' : ''}${diff})</small>`;
     };
 
     container.innerHTML = `
@@ -228,6 +268,28 @@ export class PlayersView {
           <div class="stat-item">
             <span class="stat-label">Peggior Avversario</span>
             <span class="stat-value negative">${formatPlayerResult(stats.worstOpponent)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-section">
+        <h3>🏅 Migliori e Peggiori Partite</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Migliore Vittoria (ELO)</span>
+            <span class="stat-value positive">${formatMatchResult(stats.bestVictoryByElo, player.id)}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Peggiore Sconfitta (ELO)</span>
+            <span class="stat-value negative">${formatMatchResult(stats.worstDefeatByElo, player.id)}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Migliore Vittoria (Punteggio)</span>
+            <span class="stat-value positive">${formatMatchByScore(stats.bestVictoryByScore, player.id)}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Peggiore Sconfitta (Punteggio)</span>
+            <span class="stat-value negative">${formatMatchByScore(stats.worstDefeatByScore, player.id)}</span>
           </div>
         </div>
       </div>
