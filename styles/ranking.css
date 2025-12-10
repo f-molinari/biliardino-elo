@@ -41,14 +41,18 @@ h1 {
   padding: 1.5rem;
 }
 
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
 table {
   width: 100%;
+  min-width: 800px;
   border-collapse: separate;
   border-spacing: 0;
   background: white;
-  box-shadow: var(--shadow-lg);
-  border-radius: var(--radius);
-  overflow: hidden;
   backdrop-filter: blur(10px);
 }
 
@@ -180,7 +184,7 @@ a.nav-link:hover {
 
   table {
     font-size: 0.8rem;
-    border-radius: 8px;
+    min-width: 700px;
   }
 
   th,
@@ -189,11 +193,8 @@ a.nav-link:hover {
     font-size: 0.8rem;
   }
 
-  /* Nascondi alcune colonne su schermi piccoli */
-  table thead tr th:nth-child(4),
-  /* Ruolo */
-  table tbody tr td:nth-child(4) {
-    display: none;
+  .table-wrapper {
+    border-radius: 8px;
   }
 }
 
@@ -208,23 +209,32 @@ a.nav-link:hover {
   }
 
   table {
-    font-size: 0.75rem;
-    border-radius: 6px;
+    font-size: 0.7rem;
+    min-width: 600px;
   }
 
   th,
   td {
-    padding: 0.6rem 0.4rem;
-    font-size: 0.75rem;
+    padding: 0.5rem 0.3rem;
+    font-size: 0.7rem;
   }
 
-  /* Nascondi più colonne su schermi molto piccoli */
-  table thead tr th:nth-child(5),
-  /* Partite */
-  table tbody tr td:nth-child(5),
-  table thead tr th:nth-child(6),
-  /* V/S */
-  table tbody tr td:nth-child(6) {
-    display: none;
+  tbody tr:hover {
+    transform: scale(1.005);
+  }
+
+  .table-wrapper {
+    border-radius: 6px;
+  }
+
+  a.nav-link {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.875rem;
+    margin: 0.75rem;
+  }
+
+  #recent-matches-table caption {
+    padding: 1rem;
+    font-size: 1rem;
   }
 }

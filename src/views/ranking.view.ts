@@ -188,14 +188,19 @@ export class RankingView {
     const container = document.querySelector('.tables-container');
     if (!container) return;
 
-    // Remove old table if exists
-    const oldTable = document.getElementById('recent-matches-table');
-    if (oldTable) oldTable.remove();
+    // Remove old wrapper if exists
+    const oldWrapper = document.getElementById('recent-matches-wrapper');
+    if (oldWrapper) oldWrapper.remove();
+
+    // Create wrapper for table
+    const wrapper = document.createElement('div');
+    wrapper.id = 'recent-matches-wrapper';
+    wrapper.className = 'table-wrapper';
+    wrapper.style.marginTop = '2.5rem';
 
     // Nuova tabella compatta
     const table = document.createElement('table');
     table.id = 'recent-matches-table';
-    table.style.marginTop = '2.5rem';
     table.innerHTML = `
       <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#0077cc;">Ultime 20 partite giocate</caption>
       <thead>
@@ -275,6 +280,7 @@ export class RankingView {
       tbody.appendChild(tr);
     }
 
-    container.appendChild(table);
+    wrapper.appendChild(table);
+    container.appendChild(wrapper);
   }
 }
