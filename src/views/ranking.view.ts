@@ -43,51 +43,6 @@ export class RankingView {
     let rank = 1;
     let previousElo: number | null = null;
     const fragment = document.createDocumentFragment();
-    const allMatches = MatchService.getAllMatches();
-
-    // Precalcola i dati per ogni giocatore se non sono disponibili
-    const playerStats = new Map<string, { attackCount: number; defenceCount: number; wins: number }>();
-    for (const player of players) {
-      let attackCount = 0;
-      let defenceCount = 0;
-      let wins = 0;
-
-      for (const match of allMatches) {
-        let isInMatch = false;
-        let isTeamA = false;
-        let isAttack = false;
-
-        if (match.teamA.attack === player.id) {
-          isInMatch = true;
-          isTeamA = true;
-          isAttack = true;
-          attackCount++;
-        } else if (match.teamA.defence === player.id) {
-          isInMatch = true;
-          isTeamA = true;
-          isAttack = false;
-          defenceCount++;
-        } else if (match.teamB.attack === player.id) {
-          isInMatch = true;
-          isTeamA = false;
-          isAttack = true;
-          attackCount++;
-        } else if (match.teamB.defence === player.id) {
-          isInMatch = true;
-          isTeamA = false;
-          isAttack = false;
-          defenceCount++;
-        }
-
-        if (isInMatch) {
-          const myScore = isTeamA ? match.score[0] : match.score[1];
-          const oppScore = isTeamA ? match.score[1] : match.score[0];
-          if (myScore > oppScore) wins++;
-        }
-      }
-
-      playerStats.set(player.id, { attackCount, defenceCount, wins });
-    }
 
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
@@ -137,10 +92,11 @@ export class RankingView {
       const isLast = i === players.length - 1;
       const emoji = isFirst ? ' 🏆' : (isLast ? ' 💩' : '');
 
-      // Usa dati calcolati per il ruolo
-      const stats = playerStats.get(player.id)!;
-      const attackPercentage = player.matches > 0 ? stats.attackCount / player.matches : 0;
-      const defencePercentage = player.matches > 0 ? stats.defenceCount / player.matches : 0;
+      // Usa dati precalcolati per il ruolo
+      const attackCount = player.matchesAsAttacker || 0;
+      const defenceCount = player.matchesAsDefender || 0;
+      const attackPercentage = player.matches > 0 ? attackCount / player.matches : 0;
+      const defencePercentage = player.matches > 0 ? defenceCount / player.matches : 0;
       let role = '<span style="font-size:0.8em;color:#666;">DIF, ATT</span>';
       if (attackPercentage >= 0.67) role = '<span style="font-size:0.8em;color:#dc3545;">ATT</span>';
       else if (defencePercentage >= 0.67) role = '<span style="font-size:0.8em;color:#0077cc;">DIF</span>';
@@ -162,21 +118,31 @@ export class RankingView {
         ? `<span style="font-size:0.85em;color:green;">(+${Math.round(eloGainedLast5)})</span>`
         : `<span style="font-size:0.85em;color:red;">(${Math.round(eloGainedLast5)})</span>`;
 
-      // Usa dati calcolati per win rate e vittorie/sconfitte
-      const wins = stats.wins;
+      // Usa dati precalcolati per win rate e vittorie/sconfitte
+      const wins = player.wins || 0;
       const losses = player.matches - wins;
       const winRate = player.matches > 0 ? Math.round((wins / player.matches) * 100) : 0;
       const record = `${wins}V - ${losses}S`;
 
+      // Usa dati precalcolati per rapporto goal fatti/subiti
+      const goalsScored = player.goalsFor || 0;
+      const goalsConceded = player.goalsAgainst || 0;
+      const goalDiff = goalsConceded > 0 ? (goalsScored / goalsConceded).toFixed(2) : goalsScored > 0 ? '∞' : '-';
+
       const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', () => {
+        window.location.href = `./players.html?id=${player.id}`;
+      });
       tr.innerHTML = `
         <td>${rankDisplay}${emoji}</td>
-        <td><a href="./players.html?id=${player.id}" style="text-decoration:none;color:inherit;">${player.name}</a></td>
+        <td>${player.name}</td>
         <td><strong>${elo}</strong></td>
         <td>${role}</td>
         <td>${player.matches}</td>
         <td>${record}</td>
         <td>${winRate}%</td>
+        <td>${goalDiff}</td>
         <td>${last5Results || '-'} ${last5Results ? eloGainedFormatted : ''}</td>
       `;
       fragment.appendChild(tr);
