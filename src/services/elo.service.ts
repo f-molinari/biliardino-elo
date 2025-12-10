@@ -3,7 +3,7 @@ import { IPlayer } from '@/models/player.interface';
 import { PlayerService } from './player.service';
 
 export class EloService {
-  public static getDelta(match: IMatch): { deltaA: number; deltaB: number } | null {
+  public static calculateEloChange(match: IMatch): { deltaA: number; deltaB: number; eloA: number; eloB: number; expA: number; expB: number } | null {
     const teamAP1 = PlayerService.getPlayerById(match.teamA.defence);
     const teamAP2 = PlayerService.getPlayerById(match.teamA.attack);
 
@@ -36,7 +36,7 @@ export class EloService {
 
     const deltaB = kB * margin * (scoreB - expB);
 
-    return { deltaA, deltaB };
+    return { deltaA, deltaB, eloA, eloB, expA, expB };
   }
 
   private static getPlayerK(matches: number): number {

@@ -134,7 +134,7 @@ export class StatsService {
     }
 
     function updateEloResult(team: number, match: IMatch): MatchResult {
-      const matchResult = EloService.getDelta(match);
+      const matchResult = EloService.calculateEloChange(match);
       const delta = team === 0 ? matchResult!.deltaA : matchResult!.deltaB;
 
       result.elo += delta;

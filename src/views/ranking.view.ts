@@ -2,7 +2,6 @@ import { IPlayer } from '@/models/player.interface';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { MatchService } from '../services/match.service';
 import { PlayerService } from '../services/player.service';
-import { formatDate } from '../utils/format-date.util';
 
 /**
  * Columns available for sorting in the ranking view.
@@ -198,7 +197,7 @@ export class RankingView {
     const oldTable = document.getElementById('recent-matches-table');
     if (oldTable) oldTable.remove();
 
-    // Create new table
+    // Nuova tabella compatta
     const table = document.createElement('table');
     table.id = 'recent-matches-table';
     table.style.marginTop = '2.5rem';
@@ -206,10 +205,11 @@ export class RankingView {
       <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#0077cc;">Ultime 20 partite giocate</caption>
       <thead>
         <tr>
-          <th>Data</th>
-          <th>Squadra A</th>
-          <th>Squadra B</th>
-          <th>Punteggio</th>
+          <th>Elo Squadra A</th>
+          <th>Team A</th>
+          <th>Risultato</th>
+          <th>Team B</th>
+          <th>Elo Squadra B</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -217,7 +217,7 @@ export class RankingView {
 
     const tbody = table.querySelector('tbody')!;
     for (const match of matches) {
-      const date = formatDate(match.createdAt);
+      // Team names
       const teamAAttack = PlayerService.getPlayerById(match.teamA.attack);
       const teamADefence = PlayerService.getPlayerById(match.teamA.defence);
       const teamBAttack = PlayerService.getPlayerById(match.teamB.attack);
@@ -227,12 +227,34 @@ export class RankingView {
       const teamB = `${teamBDefence?.name || '?'} & ${teamBAttack?.name || '?'}`;
       const score = `${match.score[0]} - ${match.score[1]}`;
 
+      // Elo prima arrotondato
+      const eloA = Math.round(match.teamELO![0]);
+      const eloB = Math.round(match.teamELO![1]);
+
+      // Delta arrotondato e formattato con colori
+      const deltaA = Math.round(match.deltaELO![0]);
+      const deltaB = Math.round(match.deltaELO![1]);
+      const deltaA_color = deltaA >= 0 ? 'green' : 'red';
+      const deltaB_color = deltaB >= 0 ? 'green' : 'red';
+      const deltaA_formatted = `<span style="font-size:0.85em;color:${deltaA_color};">(${deltaA >= 0 ? '+' : ''}${deltaA})</span>`;
+      const deltaB_formatted = `<span style="font-size:0.85em;color:${deltaB_color};">(${deltaB >= 0 ? '+' : ''}${deltaB})</span>`;
+
+      // Percentuali di vittoria attesa (expA, expB)
+      const expA = match.expectedScore![0];
+      const expB = match.expectedScore![1];
+      const expA_percent = typeof expA === 'number' ? Math.round(expA * 100) : '?';
+      const expB_percent = typeof expB === 'number' ? Math.round(expB * 100) : '?';
+
+      // Risultato con percentuali integrate
+      const resultWithPercentages = `<span style="font-size:0.85em;">(${expA_percent}%)</span> <strong>${score}</strong> <span style="font-size:0.85em;">(${expB_percent}%)</span>`;
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${date}</td>
+        <td><strong>${eloA}</strong> ${deltaA_formatted}</td>
         <td>${teamA}</td>
+        <td>${resultWithPercentages}</td>
         <td>${teamB}</td>
-        <td><strong>${score}</strong></td>
+        <td><strong>${eloB}</strong> ${deltaB_formatted}</td>
       `;
       tbody.appendChild(tr);
     }

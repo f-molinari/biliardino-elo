@@ -18,4 +18,11 @@ export interface IPlayer {
    * Total number of matches played.
    */
   matches: number;
+
+  // CALCULATED AFTER
+
+  matchesAsDefender?: number;
+  matchesAsAttacker?: number;
+  wins?: number;
+  matchesDelta?: number[];
 }

@@ -27,4 +27,10 @@ export interface IMatch {
    * the Unix epoch (January 1, 1970 UTC).
    */
   createdAt: number;
+
+  // CALCULATED AFTER
+
+  expectedScore?: [number, number];
+  teamELO?: [number, number];
+  deltaELO?: [number, number];
 }

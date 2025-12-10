@@ -77,16 +77,23 @@ export class PlayerService {
    * @param id - Player id.
    * @param delta - Elo delta (positive or negative).
    */
-  public static updateAfterMatch(id: string, delta: number): void {
+  public static updateAfterMatch(id: string, delta: number, isDefender: boolean): void {
     const player = PlayerService.getPlayerById(id);
     if (!player) {
       return;
     }
 
-    PlayerService._players.set(id, {
+    const matchesDelta = player.matchesDelta ?? [];
+    matchesDelta.push(delta);
+
+    PlayerService._players.set(id, { // TODO avoid to recreate a new object, reuse the same
       ...player,
       elo: player.elo + delta,
-      matches: player.matches + 1
+      matches: player.matches + 1,
+      wins: player.wins! + (delta > 0 ? 1 : 0),
+      matchesAsDefender: player.matchesAsDefender! + (isDefender ? 1 : 0),
+      matchesAsAttacker: player.matchesAsAttacker! + (isDefender ? 0 : 1),
+      matchesDelta
     });
 
     PlayerService.invalidateRankMemo();
