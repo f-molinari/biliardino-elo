@@ -278,23 +278,23 @@ export class PlayersView {
         <div class="stats-grid">
             <div class="stat-item">
               <span class="stat-label">Compagno Frequente</span>
-              <span class="stat-value">${stats.bestTeammateCount ? `${stats.bestTeammateCount.player.name} (${stats.bestTeammateCount.score})` : 'N/A'}</span>
+              <span class="stat-value player-name">${stats.bestTeammateCount ? `${stats.bestTeammateCount.player.name} (${stats.bestTeammateCount.score})` : 'N/A'}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Miglior Compagno</span>
-              <span class="stat-value positive">${formatPlayerResult(stats.bestTeammate)}</span>
+              <span class="stat-value player-name positive">${formatPlayerResult(stats.bestTeammate)}</span>
             </div>
           <div class="stat-item">
             <span class="stat-label">Peggior Compagno</span>
-            <span class="stat-value negative">${formatPlayerResult(stats.worstTeammate)}</span>
+            <span class="stat-value player-name negative">${formatPlayerResult(stats.worstTeammate)}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Avversario Più Forte</span>
-            <span class="stat-value negative">${formatPlayerResult(stats.bestOpponent)}</span>
+            <span class="stat-value player-name negative">${formatPlayerResult(stats.bestOpponent)}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Avversario Più Scarso</span>
-            <span class="stat-value positive">${formatPlayerResult(stats.worstOpponent)}</span>
+            <span class="stat-value player-name positive">${formatPlayerResult(stats.worstOpponent)}</span>
           </div>
         </div>
       </div>

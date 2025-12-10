@@ -158,6 +158,12 @@ a.nav-link:hover {
   font-size: 1.1rem;
 }
 
+.player-name {
+  font-size: 0.9rem;
+  display: inline-block;
+  text-align: right;
+}
+
 .stat-value.highlight {
   color: var(--color-primary);
   font-size: clamp(1.1rem, 3vw, 1.4rem);
