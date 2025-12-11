@@ -103,9 +103,9 @@ export class RankingView {
       let role = '';
       // Mostra sempre un solo ruolo - quello più frequente
       if (attackPercentage > defencePercentage) {
-        role = `<span style="font-size:0.8em;color:#dc3545;">ATT (${Math.round(attackPercentage * 100)}%)</span>`;
+        role = `<span style="font-size:0.9em;color:#dc3545;">⚔️ ATT (${Math.round(attackPercentage * 100)}%)</span>`;
       } else {
-        role = `<span style="font-size:0.8em;color:#0077cc;">DIF (${Math.round(defencePercentage * 100)}%)</span>`;
+        role = `<span style="font-size:0.9em;color:#0077cc;">🛡️ DIF (${Math.round(defencePercentage * 100)}%)</span>`;
       }
 
       // Usa matchesDelta precalcolato per ultimi 5 risultati e Elo guadagnato
@@ -155,19 +155,23 @@ export class RankingView {
         tr.style.backgroundColor = 'rgba(205, 127, 50, 0.15)'; // bronzo leggero
       }
 
+      if (rank === 3) {
+        tr.classList.add('podium-last');
+      }
+
       tr.addEventListener('click', () => {
         window.location.href = `./players.html?id=${player.id}`;
       });
       tr.innerHTML = `
-        <td><strong>${rankDisplay}° ${emoji}</strong></td>
-        <td>${player.name}</td>
-        <td><strong>${elo}</strong></td>
-        <td>${role}</td>
-        <td>${player.matches}</td>
-        <td>${record}</td>
-        <td>${winRate}%</td>
-        <td>${goalDiff}</td>
-        <td>${last5Results || '-'} ${last5Results ? eloGainedFormatted : ''}</td>
+        <td title="Posizione in classifica"><strong>${rankDisplay}° ${emoji}</strong></td>
+        <td title="Nome giocatore">${player.name}</td>
+        <td title="ELO rating attuale"><strong>${elo}</strong></td>
+        <td title="Ruolo preferito e percentuale">${role}</td>
+        <td title="Partite giocate">${player.matches}</td>
+        <td title="Vittorie - Sconfitte">${record}</td>
+        <td title="Percentuale di vittorie">${winRate}%</td>
+        <td title="Rapporto goal fatti/subiti">${goalDiff}</td>
+        <td title="Ultime 5 partite e variazione ELO">${last5Results || '-'} ${last5Results ? eloGainedFormatted : ''}</td>
       `;
       fragment.appendChild(tr);
 

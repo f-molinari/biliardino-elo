@@ -68,9 +68,9 @@ export class PlayersView {
       titleElement.textContent = `Statistiche di ${player.name}${rankText}`;
     }
 
-    const winPercentage = stats.matches > 0 ? ((stats.wins / stats.matches) * 100).toFixed(1) : '0.0';
-    const winPercentageAttack = stats.matchesAsAttack > 0 ? ((stats.winsAsAttack / stats.matchesAsAttack) * 100).toFixed(1) : '0.0';
-    const winPercentageDefence = stats.matchesAsDefence > 0 ? ((stats.winsAsDefence / stats.matchesAsDefence) * 100).toFixed(1) : '0.0';
+    const winPercentage = stats.matches > 0 ? ((stats.wins / stats.matches) * 100).toFixed(0) : '0';
+    const winPercentageAttack = stats.matchesAsAttack > 0 ? ((stats.winsAsAttack / stats.matchesAsAttack) * 100).toFixed(0) : '0';
+    const winPercentageDefence = stats.matchesAsDefence > 0 ? ((stats.winsAsDefence / stats.matchesAsDefence) * 100).toFixed(0) : '0';
 
     const formatElo = (value: number): number | string => {
       if (!isFinite(value)) return 'N/A';
@@ -143,8 +143,8 @@ export class PlayersView {
 
       const isAttack = myTeam.attack === player.id;
       const myRole = isAttack
-        ? '<span style="font-size:0.8em;color:#dc3545;">ATT</span>'
-        : '<span style="font-size:0.8em;color:#0077cc;">DIF</span>';
+        ? '<span style="font-size:0.9em;color:#dc3545;">⚔️ ATT</span>'
+        : '<span style="font-size:0.9em;color:#0077cc;">🛡️ DIF</span>';
       const teammateNames = `${teammate?.name || '?'}`;
       const opponentsNames = `${oppDefence?.name || '?'} & ${oppAttack?.name || '?'}`;
 
@@ -176,7 +176,7 @@ export class PlayersView {
 
       return `
         <tr class="${isWin ? 'match-win' : 'match-loss'}">
-          <td style="font-size:1.15em;font-style:italic;"><strong>${Math.round(playerElo)}</strong> <span style="color:${deltaColor};">(${matchResult.delta >= 0 ? '+' : ''}${Math.round(matchResult.delta)})</span></td>
+          <td><strong>${Math.round(playerElo)}</strong> <span style="color:${deltaColor};">(${matchResult.delta >= 0 ? '+' : ''}${Math.round(matchResult.delta)})</span></td>
           <td><strong>${myTeamElo}</strong> <span style="font-size:0.75em;color:#666;">(K: ${myKFactor.toFixed(2)})</span></td>
           <td>${myRole}</td>
           <td>${teammateNames}</td>
@@ -228,15 +228,15 @@ export class PlayersView {
         <h2>🏆 Vittorie e Sconfitte</h2>
         <div class="stats-grid">
           <div class="stat-item">
-            <span class="stat-label">Record</span>
+            <span class="stat-label">Generale</span>
             <span class="stat-value">${stats.wins}V - ${stats.losses}S <span class="percentage">(${winPercentage}%)</span></span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Record Attacco</span>
+            <span class="stat-label">⚔️ Attacco</span>
             <span class="stat-value">${stats.winsAsAttack}V - ${stats.lossesAsAttack}S <span class="percentage">(${winPercentageAttack}%)</span></span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Record Difesa</span>
+            <span class="stat-label">🛡️ Difesa</span>
             <span class="stat-value">${stats.winsAsDefence}V - ${stats.lossesAsDefence}S <span class="percentage">(${winPercentageDefence}%)</span></span>
           </div>
         </div>
