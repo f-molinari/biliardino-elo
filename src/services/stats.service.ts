@@ -5,13 +5,6 @@ import { updateElo } from '@/utils/update-elo.util';
 import { EloService } from './elo.service';
 import { PlayerService } from './player.service';
 
-// più avanti questi:
-// andamento settimanale
-// andamento mensile
-// andamento annuale
-
-// TODO elo guadagnato da portiere o attaccante @@@@@@@@@@@@@@@@@
-
 export type MatchResult = { match: IMatch; delta: number };
 export type PlayerResult = { player: IPlayer; score: number };
 
@@ -19,8 +12,8 @@ export interface PlayerStats {
   history: MatchResult[];
 
   elo: number;
-  bestElo: number; // after at least 10 matches?
-  worstElo: number; // after at least 10 matches?
+  bestElo: number;
+  worstElo: number;
 
   matches: number;
   matchesAsAttack: number;
@@ -41,10 +34,10 @@ export interface PlayerStats {
   bestOpponent: PlayerResult | null; // by Elo gain
   worstOpponent: PlayerResult | null; // by Elo loss
 
-  bestVictoryByElo: MatchResult | null; // TODO array if multiple?
-  worstDefeatByElo: MatchResult | null; // TODO array if multiple?
-  bestVictoryByScore: IMatch | null; // TODO array if multiple?
-  worstDefeatByScore: IMatch | null; // TODO array if multiple?
+  bestVictoryByElo: MatchResult | null;
+  worstDefeatByElo: MatchResult | null;
+  bestVictoryByScore: IMatch | null;
+  worstDefeatByScore: IMatch | null;
 
   totalGoalsFor: number;
   totalGoalsAgainst: number;
@@ -193,22 +186,22 @@ export class StatsService {
       const scoreDiff = Math.abs(score[0] - score[1]);
 
       if (win) {
-        if (delta > bestVictoryElo) {
-          result.bestVictoryByElo = matchResult; // TODO exclude first 10 matches?
+        if (delta >= bestVictoryElo) {
+          result.bestVictoryByElo = matchResult;
           bestVictoryElo = delta;
         }
 
-        if (scoreDiff > bestVictoryScore) {
+        if (scoreDiff >= bestVictoryScore) {
           result.bestVictoryByScore = matchResult.match;
           bestVictoryScore = scoreDiff;
         }
       } else {
-        if (delta < worstDefeatElo) {
-          result.worstDefeatByElo = matchResult; // TODO exclude first 10 matches?
+        if (delta <= worstDefeatElo) {
+          result.worstDefeatByElo = matchResult;
           worstDefeatElo = delta;
         }
 
-        if (scoreDiff > worstDefeatScore) {
+        if (scoreDiff >= worstDefeatScore) {
           result.worstDefeatByScore = matchResult.match;
           worstDefeatScore = scoreDiff;
         }
