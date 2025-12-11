@@ -83,22 +83,21 @@ export class PlayerService {
       return;
     }
 
-    player.matchesDelta ??= [];
-    player.matchesDelta.push(delta);
-
     player.elo += delta;
     player.bestElo = Math.max(player.bestElo ?? player.elo, player.elo);
     player.matches++;
-    player.wins = (player.wins ?? 0) + (delta > 0 ? 1 : 0);
-    player.goalsFor = (player.goalsFor ?? 0) + goalsFor;
-    player.goalsAgainst = (player.goalsAgainst ?? 0) + goalsAgainst;
-    player.matchesAsDefender = (player.matchesAsDefender ?? 0) + (isDefender ? 1 : 0);
-    player.matchesAsAttacker = (player.matchesAsAttacker ?? 0) + (isDefender ? 0 : 1);
+    player.wins += delta > 0 ? 1 : 0;
+    player.goalsFor += goalsFor;
+    player.goalsAgainst += goalsAgainst;
+    player.matchesAsDefender += isDefender ? 1 : 0;
+    player.matchesAsAttacker += isDefender ? 0 : 1;
 
     if (id > idMate) { // to avoid to calculate twice the same teammate delta
       player.teammatesDelta ??= new Map<string, number>();
       player.teammatesDelta.set(idMate, (player.teammatesDelta.get(idMate) ?? 0) + delta);
     }
+
+    player.matchesDelta.push(delta);
 
     PlayerService.invalidateRankMemo();
   }

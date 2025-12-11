@@ -21,12 +21,12 @@ export interface IPlayer {
 
   // CALCULATED AFTER
 
-  matchesAsDefender?: number;
-  matchesAsAttacker?: number;
-  wins?: number;
-  matchesDelta?: number[];
-  goalsFor?: number;
-  goalsAgainst?: number;
+  matchesAsDefender: number;
+  matchesAsAttacker: number;
+  wins: number;
+  matchesDelta: number[];
+  goalsFor: number;
+  goalsAgainst: number;
   teammatesDelta?: Map<string, number>;
   bestElo?: number;
 }

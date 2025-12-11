@@ -47,7 +47,7 @@ export class StatsService {
   public static getPlayerStats(player: string, matches: IMatch[]): PlayerStats | null {
     const result: PlayerStats = {
       history: [],
-      elo: 1400,
+      elo: 1000,
       bestElo: -Infinity,
       worstElo: Infinity,
       matches: 0,
@@ -85,13 +85,13 @@ export class StatsService {
     for (const match of matches) {
       const team = getTeam(player, match);
       if (team === -1) {
-        updateElo(match, false); // update elo for other players
+        updateElo(match); // update elo for other players
         continue;
       }
 
       const role = getRole(player, team, match);
       const matchResult = updateEloResult(team, match);
-      updateElo(match, false); // update elo for other players
+      updateElo(match); // update elo for other players
       result.history.push(matchResult);
 
       updateMatchCount(role, matchResult);

@@ -20,8 +20,16 @@ export class RepositoryService {
       return {
         id: d.id,
         name: data.name,
-        elo: data.elo,
-        matches: data.matches
+        elo: 1000,
+        matches: data.matches,
+        bestElo: undefined,
+        goalsAgainst: 0,
+        goalsFor: 0,
+        matchesAsAttacker: 0,
+        matchesAsDefender: 0,
+        wins: 0,
+        matchesDelta: [],
+        teammatesDelta: undefined
       };
     });
 

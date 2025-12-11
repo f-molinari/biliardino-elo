@@ -359,8 +359,8 @@ export class PlayersView {
               </thead>
               <tbody>
                 ${(() => {
-                  const playerElos: number[] = [1400];
-                  let currentElo = 1400;
+                  const playerElos: number[] = [1000];
+                  let currentElo = 1000;
                   for (let i = 0; i < stats.history.length; i++) {
                     currentElo += stats.history[i].delta;
                     playerElos.push(currentElo);
@@ -482,11 +482,11 @@ export class PlayersView {
     if (history.length === 0) return [];
 
     const progression: { value: number; label: string }[] = [{
-      value: 1400,
+      value: 1000,
       label: '0'
     }];
 
-    let currentElo = 1400;
+    let currentElo = 1000;
     for (let i = 0; i < history.length; i++) {
       const match = history[i];
       currentElo += match.delta;
