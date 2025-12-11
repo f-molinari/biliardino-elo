@@ -238,36 +238,72 @@ export class RankingView {
     }
     const worstPairText = worstPair.delta !== Infinity
       ? `${worstPair.player1}<br>${worstPair.player2}<br><span class="delta-badge negative">${Math.round(worstPair.delta)}</span>`
-      : '-'; const statsContainer = document.createElement('div');
+      : '-';
+
+    const statsContainer = document.createElement('div');
     statsContainer.className = 'match-stats-dashboard';
     statsContainer.innerHTML = `
       <div class="stat-card card-primary">
         <div class="stat-icon">⚽</div>
         <div class="stat-content">
           <div class="stat-label">Partite & Goal</div>
-          <div style="font-size:1rem;font-weight:600;color:#2d3748;margin:0.2rem 0;">${totalMatches} <span style="font-size:0.85em;color:#666;">partite</span></div>
-          <div style="font-size:1rem;font-weight:600;color:#2d3748;margin:0.2rem 0;">${totalGoals} <span style="font-size:0.85em;color:#666;">goal</span></div>
+          <div class="stat-values-group">
+            <div class="stat-value-row">
+              <span class="stat-number">${totalMatches}</span>
+              <span class="stat-unit">partite</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-value-row">
+              <span class="stat-number">${totalGoals}</span>
+              <span class="stat-unit">goal</span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="stat-card card-warning">
         <div class="stat-icon">⭐</div>
         <div class="stat-content">
           <div class="stat-label">Max ELO Raggiunto</div>
-          <div class="stat-value-small">${maxEloText}</div>
+          <div class="stat-value-group">
+            <div class="stat-player-name">${maxEloPlayer ? maxEloPlayer.name : '-'}</div>
+            ${maxEloPlayer ? `<div class="delta-badge primary" style="margin-top: 0.5rem;">${Math.round(maxElo)}</div>` : ''}
+          </div>
         </div>
       </div>
       <div class="stat-card card-gold">
         <div class="stat-icon">🏆</div>
         <div class="stat-content">
           <div class="stat-label">Miglior Coppia</div>
-          <div class="stat-value-small">${bestPairText}</div>
+          <div class="stat-value-group">
+            ${bestPair.delta !== -Infinity
+              ? `
+              <div class="stat-pair-names">
+                <div>${bestPair.player1}</div>
+                <div class="pair-separator">+</div>
+                <div>${bestPair.player2}</div>
+              </div>
+              <div class="delta-badge positive" style="margin-top: 0.5rem;">+${Math.round(bestPair.delta)}</div>
+            `
+              : '<div class="stat-empty">-</div>'}
+          </div>
         </div>
       </div>
       <div class="stat-card card-danger">
         <div class="stat-icon">📉</div>
         <div class="stat-content">
           <div class="stat-label">Peggior Coppia</div>
-          <div class="stat-value-small">${worstPairText}</div>
+          <div class="stat-value-group">
+            ${worstPair.delta !== Infinity
+              ? `
+              <div class="stat-pair-names">
+                <div>${worstPair.player1}</div>
+                <div class="pair-separator">+</div>
+                <div>${worstPair.player2}</div>
+              </div>
+              <div class="delta-badge negative" style="margin-top: 0.5rem;">${Math.round(worstPair.delta)}</div>
+            `
+              : '<div class="stat-empty">-</div>'}
+          </div>
         </div>
       </div>
     `;
