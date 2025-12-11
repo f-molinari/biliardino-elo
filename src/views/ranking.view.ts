@@ -193,38 +193,6 @@ export class RankingView {
     // Calcola goal totali
     const totalGoals = allMatches.reduce((sum, match) => sum + match.score[0] + match.score[1], 0);
 
-    // Trova miglior partita (ELO medio più alto)
-    let bestMatch = null;
-    let bestAvgElo = 0;
-    for (const match of allMatches) {
-      const eloA = match.teamELO ? match.teamELO[0] : 0;
-      const eloB = match.teamELO ? match.teamELO[1] : 0;
-      const avgElo = (eloA + eloB) / 2;
-      if (avgElo > bestAvgElo) {
-        bestAvgElo = avgElo;
-        bestMatch = match;
-      }
-    }
-
-    // Trova peggior partita (ELO medio più basso)
-    let worstMatch = null;
-    let worstAvgElo = Infinity;
-    for (const match of allMatches) {
-      const eloA = match.teamELO ? match.teamELO[0] : 0;
-      const eloB = match.teamELO ? match.teamELO[1] : 0;
-      const avgElo = (eloA + eloB) / 2;
-      if (avgElo < worstAvgElo) {
-        worstAvgElo = avgElo;
-        worstMatch = match;
-      }
-    }
-
-    // Formatta miglior partita
-    const bestMatchText = bestMatch ? Math.round(bestAvgElo).toString() : 'N/A';
-
-    // Formatta peggior partita
-    const worstMatchText = worstMatch ? Math.round(worstAvgElo).toString() : 'N/A';
-
     const statsContainer = document.createElement('div');
     statsContainer.className = 'match-stats-dashboard';
     statsContainer.innerHTML = `
@@ -243,17 +211,17 @@ export class RankingView {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">⭐</div>
+        <div class="stat-icon">🏆</div>
         <div class="stat-content">
-          <div class="stat-label">Miglior Partita</div>
-          <div class="stat-value">${bestMatchText}</div>
+          <div class="stat-label">Miglior Coppia</div>
+          <div class="stat-value">-</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">📉</div>
         <div class="stat-content">
-          <div class="stat-label">Peggior Partita</div>
-          <div class="stat-value">${worstMatchText}</div>
+          <div class="stat-label">Peggior Coppia</div>
+          <div class="stat-value">-</div>
         </div>
       </div>
     `;
