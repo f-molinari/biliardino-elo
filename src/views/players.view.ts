@@ -60,8 +60,11 @@ export class PlayersView {
     // Update page title with player name and rank (after stats are calculated)
     const titleElement = document.getElementById('player-name');
     if (titleElement) {
-      const rank = PlayerService.getRank(player.id);
-      const rankText = rank !== undefined ? ` (${rank}°)` : '';
+      // Calculate rank considering only players with at least 1 match
+      const allPlayers = PlayerService.getAllPlayers().filter(p => p.matches > 0);
+      const sortedPlayers = allPlayers.sort((a, b) => b.elo - a.elo);
+      const rank = sortedPlayers.findIndex(p => p.id === player.id) + 1;
+      const rankText = rank > 0 ? ` (${rank}°)` : '';
       titleElement.textContent = `Statistiche di ${player.name}${rankText}`;
     }
 
