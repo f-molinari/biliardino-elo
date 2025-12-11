@@ -97,9 +97,14 @@ export class RankingView {
       const defenceCount = player.matchesAsDefender || 0;
       const attackPercentage = player.matches > 0 ? attackCount / player.matches : 0;
       const defencePercentage = player.matches > 0 ? defenceCount / player.matches : 0;
-      let role = '<span style="font-size:0.8em;color:#666;">DIF, ATT</span>';
-      if (attackPercentage >= 0.67) role = '<span style="font-size:0.8em;color:#dc3545;">ATT</span>';
-      else if (defencePercentage >= 0.67) role = '<span style="font-size:0.8em;color:#0077cc;">DIF</span>';
+
+      let role = '';
+      // Mostra sempre un solo ruolo - quello più frequente
+      if (attackPercentage > defencePercentage) {
+        role = `<span style="font-size:0.8em;color:#dc3545;">ATT (${Math.round(attackPercentage * 100)}%)</span>`;
+      } else {
+        role = `<span style="font-size:0.8em;color:#0077cc;">DIF (${Math.round(defencePercentage * 100)}%)</span>`;
+      }
 
       // Usa matchesDelta precalcolato per ultimi 5 risultati e Elo guadagnato
       const matchesDelta = player.matchesDelta || [];
@@ -182,7 +187,7 @@ export class RankingView {
     const allMatches = MatchService.getAllMatches();
     const matches = allMatches
       .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, 20);
+      .slice(0, 50);
     if (!matches.length) return;
 
     const container = document.querySelector('.tables-container');
@@ -202,9 +207,10 @@ export class RankingView {
     const table = document.createElement('table');
     table.id = 'recent-matches-table';
     table.innerHTML = `
-      <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#2d3748;">Ultime 20 partite giocate</caption>
+      <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#2d3748;">Ultime 50 partite giocate</caption>
       <thead>
         <tr>
+          <th>Rating</th>
           <th>Elo Squadra A</th>
           <th>Team A</th>
           <th>Risultato</th>
@@ -237,9 +243,9 @@ export class RankingView {
       let deltaA = Math.round(match.deltaELO![0]);
       let deltaB = Math.round(match.deltaELO![1]);
 
-      // K Factor
-      let kFactorA = match.kFactor![0];
-      let kFactorB = match.kFactor![1];
+      // K Factor (normalizzato: diviso per 8 per portarlo in scala 1-2)
+      let kFactorA = match.kFactor![0] / 8;
+      let kFactorB = match.kFactor![1] / 8;
 
       // Percentuali di vittoria attesa (expA, expB)
       let expA = match.expectedScore![0];
@@ -270,17 +276,37 @@ export class RankingView {
       const colorA = expA_percent !== '?' ? (expA_percent > 50 ? 'green' : expA_percent < 50 ? 'red' : 'inherit') : 'inherit';
       const colorB = expB_percent !== '?' ? (expB_percent > 50 ? 'green' : expB_percent < 50 ? 'red' : 'inherit') : 'inherit';
 
+      // Aggiungi grassetto se la percentuale è estrema (≥60 o ≤40)
+      const boldA = expA_percent !== '?' && (expA_percent >= 60 || expA_percent <= 40);
+      const boldB = expB_percent !== '?' && (expB_percent >= 60 || expB_percent <= 40);
+      const percentA = boldA ? `<strong>(${expA_percent}%)</strong>` : `(${expA_percent}%)`;
+      const percentB = boldB ? `<strong>(${expB_percent}%)</strong>` : `(${expB_percent}%)`;
+
       // Risultato con percentuali integrate
       const score = `${scoreA} - ${scoreB}`;
-      const resultWithPercentages = `<span style="font-size:0.85em;color:${colorA};">(${expA_percent}%)</span> <strong>${score}</strong> <span style="font-size:0.85em;color:${colorB};">(${expB_percent}%)</span>`;
+      const resultWithPercentages = `<span style="font-size:0.85em;color:${colorA};">${percentA}</span> <strong>${score}</strong> <span style="font-size:0.85em;color:${colorB};">${percentB}</span>`;
+
+      // Calcola rating medio della partita per colorare la riga
+      const avgRating = (eloA + eloB) / 2;
+      let rowBackgroundColor = '';
+      if (avgRating >= 1480) {
+        rowBackgroundColor = 'background-color: rgba(0, 0, 255, 0.25);'; // blu leggero
+      } else if (avgRating >= 1440) {
+        rowBackgroundColor = 'background-color: rgba(0, 127, 255, 0.1);'; // azzurro chiaro
+      } else if (avgRating <= 1320) {
+        rowBackgroundColor = 'background-color: rgba(255, 0, 0, 0.2);'; // rosso leggero
+      } else if (avgRating <= 1360) {
+        rowBackgroundColor = 'background-color: rgba(255, 127, 0, 0.1);'; // arancione leggero
+      }
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${eloA}</strong> ${deltaA_formatted} <span style="font-size:0.75em;color:#666;">(K: ${kFactorA})</span></td>
-        <td>${teamA}</td>
-        <td>${resultWithPercentages}</td>
-        <td>${teamB}</td>
-        <td><strong>${eloB}</strong> ${deltaB_formatted} <span style="font-size:0.75em;color:#666;">(K: ${kFactorB})</span></td>
+        <td style="${rowBackgroundColor}font-size:1.15em;font-style:italic;"><strong>${Math.round(avgRating)}</strong></td>
+        <td style="${rowBackgroundColor}"><strong>${eloA}</strong> ${deltaA_formatted} <span style="font-size:0.75em;color:#666;">(K: ${kFactorA.toFixed(2)})</span></td>
+        <td style="${rowBackgroundColor}">${teamA}</td>
+        <td style="${rowBackgroundColor}">${resultWithPercentages}</td>
+        <td style="${rowBackgroundColor}">${teamB}</td>
+        <td style="${rowBackgroundColor}"><strong>${eloB}</strong> ${deltaB_formatted} <span style="font-size:0.75em;color:#666;">(K: ${kFactorB.toFixed(2)})</span></td>
       `;
       tbody.appendChild(tr);
     }

@@ -157,9 +157,9 @@ export class PlayersView {
       const deltaFormatted = `<span style="color:${deltaColor};">(${myDelta >= 0 ? '+' : ''}${myDelta})</span>`;
       const oppDeltaFormatted = `<span style="color:${oppDeltaColor};">(${oppDelta >= 0 ? '+' : ''}${oppDelta})</span>`;
 
-      // K Factor
-      const myKFactor = isTeamA ? match.kFactor![0] : match.kFactor![1];
-      const oppKFactor = isTeamA ? match.kFactor![1] : match.kFactor![0];
+      // K Factor (normalizzato: diviso per 8 per portarlo in scala 1-2)
+      const myKFactor = (isTeamA ? match.kFactor![0] : match.kFactor![1]) / 8;
+      const oppKFactor = (isTeamA ? match.kFactor![1] : match.kFactor![0]) / 8;
 
       // Percentuali di vittoria attesa
       const myExpected = isTeamA ? match.expectedScore![0] : match.expectedScore![1];
@@ -174,12 +174,12 @@ export class PlayersView {
       return `
         <tr class="${isWin ? 'match-win' : 'match-loss'}">
           <td><strong>${Math.round(playerElo)}</strong> <span style="color:${deltaColor};">(${matchResult.delta >= 0 ? '+' : ''}${Math.round(matchResult.delta)})</span></td>
-          <td><strong>${myTeamElo}</strong> <span style="font-size:0.75em;color:#666;">(K: ${myKFactor})</span></td>
+          <td><strong>${myTeamElo}</strong> <span style="font-size:0.75em;color:#666;">(K: ${myKFactor.toFixed(2)})</span></td>
           <td>${myRole}</td>
           <td>${teammateNames}</td>
           <td><span style="color:${myExpColor};font-size:0.85em;">(${myExpectedPercent}%)</span> <strong>${myScore}-${oppScore}</strong> <span style="color:${oppExpColor};font-size:0.85em;">(${oppExpectedPercent}%)</span></td>
           <td>${opponentsNames}</td>
-          <td><strong>${oppTeamElo}</strong> ${oppDeltaFormatted} <span style="font-size:0.75em;color:#666;">(K: ${oppKFactor})</span></td>
+          <td><strong>${oppTeamElo}</strong> ${oppDeltaFormatted} <span style="font-size:0.75em;color:#666;">(K: ${oppKFactor.toFixed(2)})</span></td>
         </tr>
       `;
     };
