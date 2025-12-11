@@ -5,7 +5,7 @@ import { PlayerService } from './player.service';
 export class EloService {
   public static readonly StartK = 16;
   public static readonly FinalK = 8;
-  public static readonly MatchesK = 16;
+  public static readonly MatchesK = 16; // 1 partita a settimana
 
   public static calculateEloChange(match: IMatch): { deltaA: number; deltaB: number; eloA: number; eloB: number; expA: number; expB: number; kA: number; kB: number } | null {
     const teamAP1 = PlayerService.getPlayerById(match.teamA.defence);
@@ -27,7 +27,7 @@ export class EloService {
     const expA = EloService.expectedScore(eloA, eloB);
     const expB = 1 - expA;
 
-    const scoreA = goalsA > goalsB ? 1 : 0;
+    const scoreA = goalsA > goalsB ? 1 : goalsA === goalsB ? 0.5 : 0;
     const scoreB = 1 - scoreA;
 
     const margin = EloService.marginMultiplier(Math.max(goalsA, goalsB), Math.min(goalsA, goalsB));
