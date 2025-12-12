@@ -59,5 +59,6 @@ export class EloService {
   private static marginMultiplier(goalsFor: number, goalsAgainst: number): number {
     const diff = goalsFor - goalsAgainst;
     return Math.sqrt(diff / 2 + 1) * (1 + diff / 11);
+    // return Math.log(3) + (Math.log(13) - Math.log(13 - diff)) * 3;
   }
 }
