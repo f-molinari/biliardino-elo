@@ -1,45 +1,96 @@
 :root {
-  --color-bg: #f5f5f5;
-  --color-card: white;
-  --color-border: #ddd;
-  --color-primary: #0077cc;
-  --color-primary-dark: #005fa3;
-  --radius: 6px;
+  /* PlayStation Colors */
+  --ps-blue: #003087;
+  --ps-blue-dark: #001f5c;
+  --ps-blue-light: #0070d1;
+  --ps-blue-bright: #0070ff;
+  --ps-black: #000000;
+  --ps-gray-dark: #141414;
+  --ps-gray: #1f1f1f;
+  --ps-white: #ffffff;
+  --ps-accent: #00a8ff;
+
+  /* PlayStation themed variables */
+  --color-bg: radial-gradient(circle at top left, #003087 0%, #001f5c 50%, #000000 100%);
+  --color-card: linear-gradient(145deg, #1f1f1f 0%, #141414 100%);
+  --color-border: rgba(0, 168, 255, 0.3);
+  --color-primary: #0070d1;
+  --color-primary-dark: #003087;
+  --radius: 8px;
+  --shadow-glow: 0 0 20px rgba(0, 168, 255, 0.5);
 }
 
 body {
-  font-family: system-ui, sans-serif;
-  background: var(--color-bg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: radial-gradient(circle at top left, #003087 0%, #001f5c 50%, #000000 100%);
+  background-attachment: fixed;
   margin: 0;
   padding: 2rem;
-  color: #222;
-  line-height: 1.4;
+  color: var(--ps-white);
+  line-height: 1.6;
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(0, 168, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0, 112, 209, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body>* {
+  position: relative;
+  z-index: 1;
 }
 
 h1 {
   margin-top: 0;
+  color: var(--ps-white);
+  text-shadow: 0 0 20px rgba(0, 168, 255, 0.8), 0 0 40px rgba(0, 112, 209, 0.5);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 a.nav-link {
-  color: var(--color-primary);
-  padding: .3rem .6rem;
+  color: var(--ps-white);
+  padding: 0.6rem 1.2rem;
   border-radius: var(--radius);
-  border: 1px solid var(--color-primary);
+  background: linear-gradient(135deg, var(--ps-blue) 0%, var(--ps-blue-dark) 100%);
   text-decoration: none;
+  font-weight: 700;
+  border: 2px solid var(--ps-accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-glow);
+  display: inline-block;
+  transition: all 0.3s ease;
 }
 
 a.nav-link:hover {
-  background: var(--color-primary);
-  color: white;
+  background: var(--ps-accent);
+  color: var(--ps-blue-dark);
+  box-shadow: 0 4px 12px rgba(0, 168, 255, 0.6), var(--shadow-glow);
+  transform: translateY(-2px);
+  text-shadow: 0 0 10px rgba(0, 48, 135, 0.8);
 }
 
 form {
   max-width: 460px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
+  background: linear-gradient(145deg, #1f1f1f 0%, #141414 100%);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-glow);
 }
 
 fieldset {
@@ -47,41 +98,65 @@ fieldset {
   border-radius: var(--radius);
   padding: 1rem 1.2rem;
   margin-bottom: 1.2rem;
-  background: #fff;
+  background: rgba(0, 168, 255, 0.05);
 }
 
 legend {
   padding: 0 .5rem;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--ps-accent);
+  text-shadow: 0 0 8px rgba(0, 168, 255, 0.4);
 }
 
 label {
   display: block;
   margin-bottom: .6rem;
+  color: var(--ps-white);
+  font-weight: 600;
 }
 
 select,
 input[type="number"] {
   width: 100%;
   padding: .45rem;
-  border: 1px solid var(--color-border);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius);
-  background: #fff;
+  background: rgba(0, 168, 255, 0.08);
+  color: var(--ps-white);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+select:focus,
+input[type="number"]:focus {
+  outline: none;
+  border-color: var(--ps-accent);
+  box-shadow: 0 0 15px rgba(0, 168, 255, 0.4);
+  background: rgba(0, 168, 255, 0.12);
 }
 
 button[type="submit"] {
   margin-top: .8rem;
-  padding: .55rem 1.2rem;
-  border: none;
+  padding: .7rem 1.5rem;
+  border: 2px solid var(--ps-accent);
   border-radius: var(--radius);
-  background: var(--color-primary);
-  color: white;
+  background: linear-gradient(135deg, var(--ps-blue) 0%, var(--ps-blue-dark) 100%);
+  color: var(--ps-white);
   cursor: pointer;
   font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-glow);
 }
 
 button[type="submit"]:hover {
-  background: var(--color-primary-dark);
+  background: var(--ps-accent);
+  color: var(--ps-blue-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 168, 255, 0.6), var(--shadow-glow);
+  text-shadow: 0 0 10px rgba(0, 48, 135, 0.8);
 }
 
 #message {
@@ -94,39 +169,56 @@ button[type="submit"]:hover {
 table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
+  background: linear-gradient(145deg, #1f1f1f 0%, #141414 100%);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow-glow);
 }
 
-th, td {
-  padding: .6rem;
-  border-bottom: 1px solid var(--color-border);
+th,
+td {
+  padding: .8rem;
+  border-bottom: 1px solid rgba(0, 168, 255, 0.1);
   text-align: left;
+  color: var(--ps-white);
 }
 
 thead {
-  background: #eee;
-  font-weight: 600;
+  background: linear-gradient(135deg, var(--ps-blue) 0%, var(--ps-blue-dark) 100%);
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 168, 255, 0.3);
+}
+
+thead th {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(0, 168, 255, 0.5);
+  border-bottom: 2px solid var(--ps-accent);
 }
 
 tr.editing {
-  background-color: #fff3cd;
+  background: rgba(0, 168, 255, 0.2);
+  border-left: 3px solid var(--ps-accent);
+  box-shadow: 0 0 15px rgba(0, 168, 255, 0.3);
 }
 
 button.edit-match {
-  padding: .35rem .7rem;
-  border: 1px solid var(--color-primary);
-  background: transparent;
+  padding: .4rem .8rem;
+  border: 2px solid var(--ps-accent);
+  background: rgba(0, 168, 255, 0.1);
   border-radius: var(--radius);
-  color: var(--color-primary);
+  color: var(--ps-accent);
   cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 button.edit-match:hover {
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--ps-accent);
+  color: var(--ps-blue-dark);
+  box-shadow: 0 0 15px rgba(0, 168, 255, 0.5);
+  transform: scale(1.05);
 }
 
 .layout {
