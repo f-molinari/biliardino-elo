@@ -77,11 +77,9 @@ export class PlayerService {
    * @param id - Player id.
    * @param delta - Elo delta (positive or negative).
    */
-  public static updateAfterMatch(id: string, idMate: string, delta: number, isDefender: boolean, goalsFor: number, goalsAgainst: number): void {
+  public static updateAfterMatch(id: string, idMate: string, idOppoA: string, idOppoB: string, delta: number, isDefender: boolean, goalsFor: number, goalsAgainst: number): void {
     const player = PlayerService.getPlayerById(id);
-    if (!player) {
-      return;
-    }
+    if (!player) return;
 
     player.elo += delta;
     player.bestElo = Math.max(player.bestElo ?? player.elo, player.elo);
@@ -93,13 +91,23 @@ export class PlayerService {
     player.matchesAsAttacker += isDefender ? 0 : 1;
 
     if (id > idMate) { // to avoid to calculate twice the same teammate delta
-      if (!player.teammatesDelta) {
+      if (!player.teammatesMatchCount) {
         player.teammatesDelta = new Map<string, number>();
         player.teammatesMatchCount = new Map<string, number>();
       }
 
-      player.teammatesDelta.set(idMate, (player.teammatesDelta.get(idMate) ?? 0) + delta);
-      player.teammatesMatchCount!.set(idMate, (player.teammatesMatchCount!.get(idMate) ?? 0) + 1);
+      player.teammatesDelta!.set(idMate, (player.teammatesDelta!.get(idMate) ?? 0) + delta);
+      player.teammatesMatchCount.set(idMate, (player.teammatesMatchCount.get(idMate) ?? 0) + 1);
+    }
+
+    if (id > idOppoA) { // to avoid to calculate twice the same teammate delta
+      player.opponentsMatchCount ??= new Map<string, number>();
+      player.opponentsMatchCount.set(idOppoA, (player.opponentsMatchCount.get(idOppoA) ?? 0) + 1);
+    }
+
+    if (id > idOppoB) { // to avoid to calculate twice the same teammate delta
+      player.opponentsMatchCount ??= new Map<string, number>();
+      player.opponentsMatchCount.set(idOppoB, (player.opponentsMatchCount.get(idOppoB) ?? 0) + 1);
     }
 
     player.matchesDelta.push(delta);

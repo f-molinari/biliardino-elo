@@ -154,7 +154,7 @@ export class MatchmakingService {
   }
 
   private static getMaxDiversity(allPlayers: IPlayer[]): number {
-    const opponentMax: number[] = new Array(4); // make a func and use it everywhere (in getMaxMatchesPlayed togliere sort e mettere questo approccio)
+    const opponentMax: number[] = new Array(4).fill(0); // make a func and use it everywhere (in getMaxMatchesPlayed togliere sort e mettere questo approccio)
     let teammateMax = 0, teammateMax2 = 0;
 
     for (const player of allPlayers) {
@@ -197,8 +197,23 @@ export class MatchmakingService {
   }
 
   private static getOpponentDiversity(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer): number {
-    debugger;
-    return 0;
+    const A1Player = defA.id > defB.id ? defA : defB;
+    const A1OtherPlayer = defA.id > defB.id ? defB : defA;
+    const A1 = A1Player.opponentsMatchCount?.get(A1OtherPlayer.id) ?? 0;
+
+    const A2Player = defA.id > attB.id ? defA : attB;
+    const A2OtherPlayer = defA.id > attB.id ? attB : defA;
+    const A2 = A2Player.opponentsMatchCount?.get(A2OtherPlayer.id) ?? 0;
+
+    const B1Player = attA.id > defB.id ? attA : defB;
+    const B1OtherPlayer = attA.id > defB.id ? defB : attA;
+    const B1 = B1Player.opponentsMatchCount?.get(B1OtherPlayer.id) ?? 0;
+
+    const B2Player = attA.id > attB.id ? attA : attB;
+    const B2OtherPlayer = attA.id > attB.id ? attB : attA;
+    const B2 = B2Player.opponentsMatchCount?.get(B2OtherPlayer.id) ?? 0;
+
+    return A1 + A2 + B1 + B2; // TODO fix normalizzazione qui e anche sui match (bisogna sottrarre il minimo)
   }
 
   private static calculateMatchScore(diversityScore: number, eloDifference: number, priorityScore: number): number {
