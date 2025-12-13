@@ -1,6 +1,7 @@
 import { IPlayer } from '@/models/player.interface';
 import { MatchService } from '@/services/match.service';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
+import { updateElo } from '@/utils/update-elo.util';
 import { IMatchProposal, MatchmakingService } from '../services/matchmaking.service';
 import { PlayerService } from '../services/player.service';
 import { RepositoryService } from '../services/repository.service';
@@ -533,6 +534,7 @@ export class MatchmakingView {
     try {
       const match = MatchService.addMatch(teamA, teamB, [scoreTeamA, scoreTeamB]);
       await RepositoryService.saveMatch(match);
+      updateElo(match);
 
       // Reset state
       MatchmakingView.currentMatch = null;
