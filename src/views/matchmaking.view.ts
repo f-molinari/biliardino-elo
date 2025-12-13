@@ -202,31 +202,31 @@ export class MatchmakingView {
    */
   private static generateMatches(): void {
     // Get all selected players (both queue and priority)
-    const selectedPlayerNames: string[] = [];
-    const priorityPlayerNames: string[] = [];
+    const selectedPlayerIds: string[] = [];
+    const priorityPlayerIds: string[] = [];
 
     MatchmakingView.playerStates.forEach((state, playerName) => {
+      const player = PlayerService.getPlayerByName(playerName);
+      if (!player) return;
+
       if (state === 1) {
-        selectedPlayerNames.push(playerName);
+        selectedPlayerIds.push(player.id);
       } else if (state === 2) {
-        priorityPlayerNames.push(playerName);
-        selectedPlayerNames.push(playerName);
+        priorityPlayerIds.push(player.id);
+        selectedPlayerIds.push(player.id);
       }
     });
 
-    if (selectedPlayerNames.length < 4) {
+    if (selectedPlayerIds.length < 4) {
       alert('Seleziona almeno 4 giocatori per generare una partita.');
       return;
     }
 
-    // Priority players come first in the array
-    const orderedPlayers = [...priorityPlayerNames, ...selectedPlayerNames.filter(n => !priorityPlayerNames.includes(n))];
+    const match = MatchmakingService.findBestMatch(selectedPlayerIds, priorityPlayerIds);
 
-    const matches = MatchmakingService.findBestMatches(orderedPlayers);
-
-    if (matches!.length > 0) {
-      MatchmakingView.currentMatch = matches![0]; // Show only the best match
-      MatchmakingView.renderMatches([matches![0]]);
+    if (match) {
+      MatchmakingView.currentMatch = match;
+      MatchmakingView.renderMatches([match]);
       MatchmakingView.updateUI();
     } else {
       alert('Impossibile generare partite con i giocatori selezionati.');

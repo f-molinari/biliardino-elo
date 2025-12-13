@@ -28,13 +28,11 @@ export interface IMatchmakingConfig {
 export interface IMatchProposal {
   score: number;
   /** Absolute ELO difference between teams */
-  eloScore: number;
-  /** Absolute ELO difference value */
-  eloDifference: number;
+  eloScore?: number;
   /** Priority score (0-1). Higher when players have fewer matches */
-  priorityScore: number;
+  priorityScore?: number;
   /** Diversity score (0-1). Higher when these player combinations are new */
-  diversityScore: number;
+  diversityScore?: number;
 
   teamA: { defence: IPlayer; attack: IPlayer };
   teamB: { defence: IPlayer; attack: IPlayer };
@@ -50,10 +48,10 @@ export class MatchmakingService {
 
   private static config: IMatchmakingConfig;
 
-  public static findBestMatches(availablePlayerNames: string[], config: IMatchmakingConfig = this.defaultConfig): IMatchProposal[] | null {
-    if (availablePlayerNames.length < 4) return null;
+  public static findBestMatches(availablePlayerId: string[], config: IMatchmakingConfig = this.defaultConfig): IMatchProposal[] | null {
+    if (availablePlayerId.length < 4) return null;
 
-    const players = availablePlayerNames.map(name => PlayerService.getPlayerByName(name)) as IPlayer[];
+    const players = availablePlayerId.map(id => PlayerService.getPlayerById(id)) as IPlayer[];
 
     if (players.filter(p => p === undefined).length > 0) {
       throw new Error('Some player IDs are invalid');
@@ -66,11 +64,29 @@ export class MatchmakingService {
     const maxMatches = this.getMaxMatchesPlayed(allPlayers);
     const maxDiversity = this.getMaxDiversity(allPlayers);
     const proposals = this.generateAllMatches(maxEloDiff, maxMatches, maxDiversity, players);
+    proposals.sort((a, b) => b.score - a.score);
 
-    const scoredProposals = proposals.map(proposal => ({ ...proposal, score: this.calculateMatchScore(proposal.diversityScore, proposal.eloScore, proposal.priorityScore) }));
-    scoredProposals.sort((a, b) => b.score - a.score);
+    return proposals;
+  }
 
-    return scoredProposals;
+  public static findBestMatch(availablePlayerId: string[], priorityPlayersId: string[], config: IMatchmakingConfig = this.defaultConfig): IMatchProposal | null {
+    if (availablePlayerId.length < 4) return null;
+
+    const players = availablePlayerId.map(id => PlayerService.getPlayerById(id)) as IPlayer[];
+    const priorityPlayers = priorityPlayersId.map(id => PlayerService.getPlayerById(id)) as IPlayer[];
+
+    if (players.filter(p => p === undefined).length > 0) {
+      throw new Error('Some player IDs are invalid');
+    }
+
+    this.config = config;
+
+    const allPlayers = PlayerService.getAllPlayers();
+    const maxEloDiff = this.getMaxEloDifference(allPlayers);
+    const maxMatches = this.getMaxMatchesPlayed(allPlayers);
+    const maxDiversity = this.getMaxDiversity(allPlayers);
+
+    return this.generateBestMatch(maxEloDiff, maxMatches, maxDiversity, players, priorityPlayers);
   }
 
   private static generateAllMatches(maxEloDiff: number, maxMatches: number, maxDiversity: number, players: IPlayer[]): IMatchProposal[] {
@@ -98,6 +114,50 @@ export class MatchmakingService {
     return proposals;
   }
 
+  private static generateBestMatch(maxEloDiff: number, maxMatches: number, maxDiversity: number, players: IPlayer[], priorityPlayers: IPlayer[]): IMatchProposal | null {
+    const proposals: IMatchProposal[] = [];
+    const n = players.length;
+    let bestProposal: IMatchProposal | null = null;
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        for (let k = i + 1; k < n; k++) {
+          if (k === j) continue;
+          for (let l = k + 1; l < n; l++) {
+            if (l === i || l === j) continue;
+
+            const p1 = players[i];
+            const p2 = players[j];
+            const p3 = players[k];
+            const p4 = players[l];
+
+            if (!this.validatePriorityPlayers(p1, p2, p3, p4, priorityPlayers)) continue;
+
+            const proposal = this.createProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity);
+
+            if (proposal.score > bestScore) {
+              bestScore = proposal.score;
+              bestProposal = proposal;
+            }
+          }
+        }
+      }
+    }
+
+    return bestProposal;
+  }
+
+  private static validatePriorityPlayers(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer, priorityPlayers: IPlayer[]): boolean {
+    const playersSet = new Set([p1, p2, p3, p4]);
+
+    for (const priorityPlayer of priorityPlayers) {
+      if (!playersSet.has(priorityPlayer)) return false;
+    }
+
+    return true;
+  }
+
   private static createProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, maxEloDiff: number, maxMatches: number, maxDiversity: number): IMatchProposal {
     // ELO DIFFERENCE SCORE
     const teamAElo = (defA.elo + attA.elo) / 2; // il / 2 può essere tolgo se usiamo la somma
@@ -111,6 +171,8 @@ export class MatchmakingService {
     const teamMatchessNormalized = 1 - (teamsMatches / maxMatches);
     const priorityScore = teamMatchessNormalized * this.config.priorityWeight;
 
+    // TODO we can apply an eary exit here
+
     // DIVERSITY SCORE
     const diversityTeammateCount = this.getTeammateDiversity(defA, attA, defB, attB);
     const diversityOpponentCount = this.getOpponentDiversity(defA, attA, defB, attB);
@@ -120,10 +182,6 @@ export class MatchmakingService {
     return {
       teamA: { defence: defA, attack: attA },
       teamB: { defence: defB, attack: attB },
-      eloDifference: eloDiff,
-      eloScore,
-      priorityScore,
-      diversityScore,
       score: this.calculateMatchScore(diversityScore, eloScore, priorityScore)
     };
   }
