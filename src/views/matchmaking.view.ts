@@ -1,3 +1,4 @@
+import { IPlayer } from '@/models/player.interface';
 import { MatchService } from '@/services/match.service';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { IMatchProposal, MatchmakingService } from '../services/matchmaking.service';
@@ -223,9 +224,9 @@ export class MatchmakingView {
 
     const matches = MatchmakingService.findBestMatches(orderedPlayers);
 
-    if (matches.length > 0) {
-      MatchmakingView.currentMatch = matches[0]; // Show only the best match
-      MatchmakingView.renderMatches([matches[0]]);
+    if (matches!.length > 0) {
+      MatchmakingView.currentMatch = matches![0]; // Show only the best match
+      MatchmakingView.renderMatches([matches![0]]);
       MatchmakingView.updateUI();
     } else {
       alert('Impossibile generare partite con i giocatori selezionati.');
