@@ -49,6 +49,29 @@ h1 {
   opacity: 0.95;
 }
 
+a.play-btn {
+  color: white;
+  padding: 0.7rem 1.8rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #34c759 0%, #2fa953 100%);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(52, 199, 89, 0.3);
+  box-shadow: 0 4px 16px rgba(52, 199, 89, 0.2);
+}
+
+a.play-btn:hover {
+  background: linear-gradient(135deg, #2fa953 0%, #2a9348 100%);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 28px rgba(52, 199, 89, 0.35);
+  border: 1px solid rgba(52, 199, 89, 0.5);
+}
+
 .tables-container {
   max-width: 1400px;
   width: 100%;
