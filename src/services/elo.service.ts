@@ -4,7 +4,7 @@ import { PlayerService } from './player.service';
 
 export class EloService {
   public static readonly StartK = 60;
-  public static readonly FinalK = 20;
+  public static readonly FinalK = 30;
   public static readonly MatchesK = 16; // 1 partita a settimana
 
   public static calculateEloChange(match: IMatch): { deltaA: number; deltaB: number; eloA: number; eloB: number; expA: number; expB: number; kA: number; kB: number } | null {
