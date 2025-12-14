@@ -26,6 +26,7 @@ export class MatchmakingView {
   public static init(): void {
     MatchmakingView.renderPlayersList();
     MatchmakingView.setupEventListeners();
+    MatchmakingView.renderDisclaimer();
     MatchmakingView.updateUI();
   }
 
@@ -109,6 +110,23 @@ export class MatchmakingView {
     });
 
     playersList.appendChild(fragment);
+  }
+
+  /**
+   * Render the disclaimer that is always visible.
+   */
+  private static renderDisclaimer(): void {
+    const matchesContainer = document.getElementById('matches-container')!;
+    const disclaimer = document.createElement('div');
+    disclaimer.className = 'match-disclaimer-fixed';
+    disclaimer.innerHTML = `
+      <div class="disclaimer-icon">⚠️</div>
+      <div class="disclaimer-content">
+        <strong>Promemoria importante</strong>
+        <p>Le partite vanno giocate esclusivamente durante la pausa, senza mai allungarla. Il gioco non deve influire sul rendimento lavorativo.</p>
+      </div>
+    `;
+    matchesContainer.insertBefore(disclaimer, matchesContainer.firstChild);
   }
 
   /**
@@ -302,10 +320,20 @@ export class MatchmakingView {
    */
   private static renderMatches(matches: IMatchProposal[]): void {
     const matchesContainer = document.getElementById('matches-container')!;
+    // Preserve the disclaimer before clearing
+    const disclaimer = matchesContainer.querySelector('.match-disclaimer-fixed');
     matchesContainer.innerHTML = '';
+    if (disclaimer) {
+      matchesContainer.appendChild(disclaimer);
+    }
 
     if (matches.length === 0) {
+      // Preserve the disclaimer, clear only the matches
+      const disclaimer = matchesContainer.querySelector('.match-disclaimer-fixed');
       matchesContainer.innerHTML = '<p class="no-matches">Nessuna partita generata.</p>';
+      if (disclaimer) {
+        matchesContainer.insertBefore(disclaimer, matchesContainer.firstChild);
+      }
       return;
     }
 

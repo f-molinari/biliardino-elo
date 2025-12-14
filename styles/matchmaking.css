@@ -282,6 +282,46 @@ h2 {
   align-items: center;
 }
 
+/* Disclaimer always visible */
+.match-disclaimer-fixed {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff9f0 0%, #fff5e6 100%);
+  border-left: 4px solid #ff9500;
+  color: #5c4a2f;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 16px rgba(255, 149, 0, 0.12);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.match-disclaimer-fixed .disclaimer-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.match-disclaimer-fixed .disclaimer-content {
+  flex: 1;
+}
+
+.match-disclaimer-fixed .disclaimer-content strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #ff9500;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.match-disclaimer-fixed p {
+  margin: 0;
+  line-height: 1.5;
+  font-style: italic;
+  color: #6e5a3f;
+}
+
 .team-card {
   background: rgba(255, 255, 255, 0.6);
   border-radius: 12px;
