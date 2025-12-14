@@ -1,5 +1,6 @@
 import { IPlayer } from '@/models/player.interface';
 import { MatchService } from '@/services/match.service';
+import { availabilityList } from '@/utils/availability.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { updateElo } from '@/utils/update-elo.util';
 import { IMatchProposal, MatchmakingService } from '../services/matchmaking.service';
@@ -36,10 +37,21 @@ export class MatchmakingView {
     const allPlayers = PlayerService.getAllPlayers();
     const sortedPlayers = allPlayers.sort((a, b) => a.name.localeCompare(b.name));
 
+    // Determine today's availability key
+    const dayKeyMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+    const todayKey = dayKeyMap[new Date().getDay()];
+    const todaysAvailable = (availabilityList as any)[todayKey] as string[] | undefined;
+
     const fragment = document.createDocumentFragment();
 
     sortedPlayers.forEach((player) => {
-      MatchmakingView.playerStates.set(player.name, 0);
+      // Default state
+      let initialState: PlayerState = 0;
+      const isAvailableToday = Array.isArray(todaysAvailable) && todaysAvailable.includes(player.name);
+      if (isAvailableToday) {
+        initialState = 1; // queue
+      }
+      MatchmakingView.playerStates.set(player.name, initialState);
 
       const label = document.createElement('label');
       label.className = 'player-checkbox';
@@ -49,6 +61,9 @@ export class MatchmakingView {
       checkbox.type = 'checkbox';
       checkbox.value = player.name;
       checkbox.dataset.playerName = player.name;
+      if (initialState === 1) {
+        checkbox.checked = true;
+      }
 
       const playerInfo = document.createElement('span');
       playerInfo.className = 'player-info';
