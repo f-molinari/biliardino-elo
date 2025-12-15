@@ -270,21 +270,17 @@ export class MatchmakingView {
   }
 
   /**
-   * Ensure defenders are the players with higher defence percentage on each team.
+   * Auto-assegna i ruoli usando la somma delle percentuali dei ruoli assegnati.
+   * Se la somma (DIF del difensore + ATT dell'attaccante) è < 100, inverti i ruoli.
    */
   private static assignPreferredRoles(match: IMatchProposal): IMatchProposal {
-    const calcDefencePct = (p: IPlayer): number => {
+    const calcRolePct = (p: IPlayer, role: 'defence' | 'attack'): number => {
       const matches = (p as any).matches || 0;
-      const def = (p as any).matchesAsDefender || 0;
-      // Percentuale difesa: def/matches; se nessuna partita, 0.
-      return matches > 0 ? def / matches : 0;
+      const count = role === 'defence'
+        ? ((p as any).matchesAsDefender || 0)
+        : ((p as any).matchesAsAttacker || 0);
+      return matches > 0 ? (count / matches) * 100 : 0;
     };
-
-    // Calcola percentuali difesa per tutti i giocatori
-    const teamA_p1_defPct = calcDefencePct(match.teamA.defence);
-    const teamA_p2_defPct = calcDefencePct(match.teamA.attack);
-    const teamB_p1_defPct = calcDefencePct(match.teamB.defence);
-    const teamB_p2_defPct = calcDefencePct(match.teamB.attack);
 
     const adjusted: IMatchProposal = {
       ...match,
@@ -292,8 +288,10 @@ export class MatchmakingView {
       teamB: { ...match.teamB }
     };
 
-    // Team A: metti in difesa il giocatore con percentuale difesa più alta
-    if (teamA_p2_defPct > teamA_p1_defPct) {
+    // Team A: confronta somma attuale vs somma con ruoli invertiti, scegli la maggiore
+    const teamA_sum_current = calcRolePct(adjusted.teamA.defence, 'defence') + calcRolePct(adjusted.teamA.attack, 'attack');
+    const teamA_sum_swapped = calcRolePct(adjusted.teamA.attack, 'defence') + calcRolePct(adjusted.teamA.defence, 'attack');
+    if (teamA_sum_swapped > teamA_sum_current || (teamA_sum_swapped === teamA_sum_current && Math.random() < 0.5)) {
       const tmp = adjusted.teamA.defence;
       adjusted.teamA.defence = adjusted.teamA.attack;
       adjusted.teamA.attack = tmp;
@@ -302,8 +300,10 @@ export class MatchmakingView {
       MatchmakingView.rolesSwapped.teamA = false;
     }
 
-    // Team B: stessa logica
-    if (teamB_p2_defPct > teamB_p1_defPct) {
+    // Team B: confronta somma attuale vs somma con ruoli invertiti, scegli la maggiore
+    const teamB_sum_current = calcRolePct(adjusted.teamB.defence, 'defence') + calcRolePct(adjusted.teamB.attack, 'attack');
+    const teamB_sum_swapped = calcRolePct(adjusted.teamB.attack, 'defence') + calcRolePct(adjusted.teamB.defence, 'attack');
+    if (teamB_sum_swapped > teamB_sum_current || (teamB_sum_swapped === teamB_sum_current && Math.random() < 0.5)) {
       const tmp = adjusted.teamB.defence;
       adjusted.teamB.defence = adjusted.teamB.attack;
       adjusted.teamB.attack = tmp;
@@ -458,6 +458,8 @@ export class MatchmakingView {
     const defPercP1 = calcPerc((player1 as any).matchesAsDefender, (player1 as any).matches);
     const attPercP2 = calcPerc((player2 as any).matchesAsAttacker, (player2 as any).matches);
 
+    const fallbackAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNlMGUwZTA7c3RvcC1vcGFjaXR5OjEiIC8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjVmNWY1O3N0b3Atb3BhY2l0eToxIiAvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgZmlsbD0idXJsKCNncmFkKSIvPjxjaXJjbGUgY3g9IjI0IiBjeT0iMTUiIHI9IjciIGZpbGw9IiM3OTdhYjEiLz48cGF0aCBkPSJNIDEwIDMwIEMgMTAgMjQgMTYgMjAgMjQgMjAgQyAzMiAyMCAzOCAyNCAzOCAzMCBDIDM4IDM4IDMyIDQyIDI0IDQyIEMgMTYgNDIgMTAgMzggMTAgMzAiIGZpbGw9IiM3OTdhYjEiLz48L3N2Zz4=';
+
     teamCard.innerHTML = `
       <div class="team-title">
         <span class="team-name">Team ${teamName}</span>
@@ -465,12 +467,38 @@ export class MatchmakingView {
       </div>
       <div class="team-players">
         <div class="player-item">
-          <span class="player-name">🛡️ ${player1.name} <span class="role-badge badge-def" title="Percentuale partite in difesa">DIF ${defPercP1}%</span></span>
-          <span class="player-elo">${getDisplayElo(player1)}</span>
+          <div class="match-player-grid">
+            <div class="match-player-avatar">
+              <img 
+                src="/biliardino-elo/avatars/${player1.id}.png" 
+                alt="${player1.name}"
+                class="match-avatar-img"
+                onerror="this.src='${fallbackAvatar}'"
+              />
+            </div>
+            <div class="match-player-name"><span class="player-name">🛡️ ${player1.name}</span></div>
+            <div class="match-player-meta">
+              <span class="role-badge badge-def" title="Percentuale partite in difesa">DIF ${defPercP1}%</span>
+              <span class="player-elo">${getDisplayElo(player1)}</span>
+            </div>
+          </div>
         </div>
         <div class="player-item">
-          <span class="player-name">⚔️ ${player2.name} <span class="role-badge badge-att" title="Percentuale partite in attacco">ATT ${attPercP2}%</span></span>
-          <span class="player-elo">${getDisplayElo(player2)}</span>
+          <div class="match-player-grid">
+            <div class="match-player-avatar">
+              <img 
+                src="/biliardino-elo/avatars/${player2.id}.png" 
+                alt="${player2.name}"
+                class="match-avatar-img"
+                onerror="this.src='${fallbackAvatar}'"
+              />
+            </div>
+            <div class="match-player-name"><span class="player-name">⚔️ ${player2.name}</span></div>
+            <div class="match-player-meta">
+              <span class="role-badge badge-att" title="Percentuale partite in attacco">ATT ${attPercP2}%</span>
+              <span class="player-elo">${getDisplayElo(player2)}</span>
+            </div>
+          </div>
         </div>
       </div>
       <button type="button" class="switch-roles-btn" data-team="${teamName}">🔄 Inverti Ruoli</button>
