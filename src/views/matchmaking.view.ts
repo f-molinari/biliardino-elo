@@ -117,6 +117,7 @@ export class MatchmakingView {
    */
   private static renderDisclaimer(): void {
     const matchesContainer = document.getElementById('matches-container')!;
+    // Disclaimer classico
     const disclaimer = document.createElement('div');
     disclaimer.className = 'match-disclaimer-fixed';
     disclaimer.innerHTML = `
@@ -127,6 +128,24 @@ export class MatchmakingView {
       </div>
     `;
     matchesContainer.insertBefore(disclaimer, matchesContainer.firstChild);
+
+    // Pannello regolamento
+    const rulesPanel = document.createElement('div');
+    rulesPanel.className = 'match-rules-panel';
+    rulesPanel.innerHTML = `
+      <div class="rules-icon">📘</div>
+      <div class="rules-content">
+        <strong>Regolamento</strong>
+        <ul>
+          <li>Si vince a <b>8</b> (non ci sono supplementari)</li>
+          <li>Si cambia campo dopo <b>7 goal totali</b></li>
+          <li>Il goal è valido solo se ci sono stati almeno due tocchi <b>volontari</b> da stecche diverse</li>
+          <li>Non valgono schizzo e rullata</li>
+          <li>Se la palla non può essere colpita e non è tra difensore e portiere, si riparte da calcio d'inizio</li>
+        </ul>
+      </div>
+    `;
+    disclaimer.insertAdjacentElement('afterend', rulesPanel);
   }
 
   /**
@@ -308,35 +327,23 @@ export class MatchmakingView {
    */
   private static renderMatches(matches: IMatchProposal[]): void {
     const matchesContainer = document.getElementById('matches-container')!;
-    // Preserve the disclaimer before clearing
+    // Mantieni disclaimer e regolamento sempre visibili
     const disclaimer = matchesContainer.querySelector('.match-disclaimer-fixed');
+    const rulesPanel = matchesContainer.querySelector('.match-rules-panel');
     matchesContainer.innerHTML = '';
-    if (disclaimer) {
-      matchesContainer.appendChild(disclaimer);
-    }
+    if (disclaimer) matchesContainer.appendChild(disclaimer);
+    if (rulesPanel) matchesContainer.appendChild(rulesPanel);
 
     if (matches.length === 0) {
-      // Preserve the disclaimer, clear only the matches
-      const disclaimer = matchesContainer.querySelector('.match-disclaimer-fixed');
-      matchesContainer.innerHTML = '<p class="no-matches">Nessuna partita generata.</p>';
-      if (disclaimer) {
-        matchesContainer.insertBefore(disclaimer, matchesContainer.firstChild);
-      }
+      matchesContainer.innerHTML += '<p class="no-matches">Nessuna partita generata.</p>';
       return;
     }
 
     const fragment = document.createDocumentFragment();
-
-    // Aggiungi titolo
-    const title = document.createElement('h2');
-    title.textContent = 'Partita da Giocare';
-    fragment.appendChild(title);
-
     matches.forEach((match) => {
       const matchCard = MatchmakingView.createMatchCard(match);
       fragment.appendChild(matchCard);
     });
-
     matchesContainer.appendChild(fragment);
   }
 

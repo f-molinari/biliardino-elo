@@ -1,3 +1,46 @@
+.match-rules-panel {
+  margin-bottom: 0rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eaf6ff 0%, #d6eaff 100%);
+  border-left: 4px solid #2196f3;
+  color: #1a3557;
+  font-size: 0.92rem;
+  box-shadow: 0 2px 16px rgba(33, 150, 243, 0.10);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.match-rules-panel .rules-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.match-rules-panel .rules-content {
+  flex: 1;
+}
+
+.match-rules-panel .rules-content strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #2196f3;
+  font-size: 0.97rem;
+  font-weight: 700;
+}
+
+.match-rules-panel ul {
+  margin: 0.2rem 0 0 1.1rem;
+  padding: 0;
+  list-style: disc inside;
+}
+
+.match-rules-panel li {
+  margin-bottom: 0.15rem;
+  font-size: 0.9em;
+}
+
 .match-player-grid {
   display: grid;
   grid-template-columns: 52px 1fr;
@@ -283,19 +326,6 @@ h2 {
 
 .match-form {
   width: 100%;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-
-.match-form:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
 }
 
 .teams-container {
@@ -307,7 +337,7 @@ h2 {
 
 /* Disclaimer always visible */
 .match-disclaimer-fixed {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0rem;
   padding: 1rem 1.25rem;
   border-radius: 12px;
   background: linear-gradient(135deg, #fff9f0 0%, #fff5e6 100%);
@@ -584,7 +614,6 @@ h2 {
 .switch-roles-btn {
   width: 100%;
   padding: 0.5rem;
-  margin-top: 0.75rem;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.7);
   color: #1d1d1f;

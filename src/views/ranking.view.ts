@@ -1,5 +1,4 @@
 import { IPlayer } from '@/models/player.interface';
-import { EloService } from '@/services/elo.service';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { MatchService } from '../services/match.service';
 import { PlayerService } from '../services/player.service';
@@ -414,10 +413,6 @@ export class RankingView {
       let deltaA = Math.round(match.deltaELO![0]);
       let deltaB = Math.round(match.deltaELO![1]);
 
-      // K Factor (normalizzato: diviso per 20 per portarlo in scala 1-3)
-      let kFactorA = match.kFactor![0] / EloService.FinalK;
-      let kFactorB = match.kFactor![1] / EloService.FinalK;
-
       // Percentuali di vittoria attesa (expA, expB)
       let expA = match.expectedScore![0];
       let expB = match.expectedScore![1];
@@ -430,7 +425,6 @@ export class RankingView {
         [teamA, teamB] = [teamB, teamA];
         [eloA, eloB] = [eloB, eloA];
         [deltaA, deltaB] = [deltaB, deltaA];
-        [kFactorA, kFactorB] = [kFactorB, kFactorA];
         [expA, expB] = [expB, expA];
         [scoreA, scoreB] = [scoreB, scoreA];
       }
@@ -473,11 +467,11 @@ export class RankingView {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="${rowBackgroundColor}font-size:1.15em;font-style:italic;"><strong>${Math.round(avgRating)}</strong></td>
-        <td style="${rowBackgroundColor}"><strong>${eloA}</strong> ${deltaA_formatted} <span style="font-size:0.75em;color:#666;">(K: ${kFactorA.toFixed(2)})</span></td>
+        <td style="${rowBackgroundColor}"><strong>${eloA}</strong> ${deltaA_formatted}</td>
         <td style="${rowBackgroundColor}">${teamA}</td>
         <td style="${rowBackgroundColor}">${resultWithPercentages}</td>
         <td style="${rowBackgroundColor}">${teamB}</td>
-        <td style="${rowBackgroundColor}"><strong>${eloB}</strong> ${deltaB_formatted} <span style="font-size:0.75em;color:#666;">(K: ${kFactorB.toFixed(2)})</span></td>
+        <td style="${rowBackgroundColor}"><strong>${eloB}</strong> ${deltaB_formatted}</td>
       `;
       tbody.appendChild(tr);
     }

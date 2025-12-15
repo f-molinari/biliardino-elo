@@ -138,7 +138,7 @@ a.nav-link:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 0.5rem;
   background: rgba(249, 249, 249, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -252,15 +252,9 @@ a.nav-link:hover {
   font-size: 0.9rem;
 }
 
-.match-history-table tbody tr {
-  transition: all 0.2s ease;
-}
 
-.match-history-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.98);
-  transform: scale(1.01);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
+
+
 
 .match-history-table tbody tr:last-child td {
   border-bottom: none;

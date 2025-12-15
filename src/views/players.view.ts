@@ -1,6 +1,5 @@
 import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
-import { EloService } from '@/services/elo.service';
 import { MatchService } from '@/services/match.service';
 import { MatchResult, PlayerStats, StatsService } from '@/services/stats.service';
 import { PlayerService } from '../services/player.service';
@@ -161,10 +160,6 @@ export class PlayersView {
       const deltaFormatted = `<span style="color:${deltaColor};">(${myDelta >= 0 ? '+' : ''}${myDelta})</span>`;
       const oppDeltaFormatted = `<span style="color:${oppDeltaColor};">(${oppDelta >= 0 ? '+' : ''}${oppDelta})</span>`;
 
-      // K Factor (normalizzato: diviso per 20 per portarlo in scala 1-3)
-      const myKFactor = (isTeamA ? match.kFactor![0] : match.kFactor![1]) / EloService.FinalK;
-      const oppKFactor = (isTeamA ? match.kFactor![1] : match.kFactor![0]) / EloService.FinalK;
-
       // Percentuali di vittoria attesa
       const myExpected = isTeamA ? match.expectedScore![0] : match.expectedScore![1];
       const oppExpected = isTeamA ? match.expectedScore![1] : match.expectedScore![0];
@@ -178,12 +173,12 @@ export class PlayersView {
       return `
         <tr class="${isWin ? 'match-win' : 'match-loss'}">
           <td><strong>${Math.round(playerElo)}</strong> <span style="color:${deltaColor};">(${matchResult.delta >= 0 ? '+' : ''}${Math.round(matchResult.delta)})</span></td>
-          <td><strong>${myTeamElo}</strong> <span style="font-size:0.75em;color:#666;">(K: ${myKFactor.toFixed(2)})</span></td>
+          <td><strong>${myTeamElo}</strong></td>
           <td>${myRole}</td>
           <td>${teammateNames}</td>
           <td><span style="color:${myExpColor};font-size:0.85em;">(${myExpectedPercent}%)</span> <strong>${myScore}-${oppScore}</strong> <span style="color:${oppExpColor};font-size:0.85em;">(${oppExpectedPercent}%)</span></td>
           <td>${opponentsNames}</td>
-          <td><strong>${oppTeamElo}</strong> ${oppDeltaFormatted} <span style="font-size:0.75em;color:#666;">(K: ${oppKFactor.toFixed(2)})</span></td>
+          <td><strong>${oppTeamElo}</strong> ${oppDeltaFormatted}</td>
         </tr>
       `;
     };
