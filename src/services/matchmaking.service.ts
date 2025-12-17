@@ -40,11 +40,11 @@ export interface IMatchProposal {
 
 export class MatchmakingService {
   private static readonly defaultConfig: IMatchmakingConfig = {
-    matchBalanceWeight: 0.35,
+    matchBalanceWeight: 0.4,
     teamBalanceWeight: 0.25,
-    priorityWeight: 0.25,
+    priorityWeight: 0.2,
     diversityWeight: 0.15,
-    randomness: 0.05
+    randomness: 0.08
   };
 
   private static config: IMatchmakingConfig;
