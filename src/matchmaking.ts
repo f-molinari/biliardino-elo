@@ -1,4 +1,5 @@
 import { browserSessionPersistence, onAuthStateChanged, setPersistence } from 'firebase/auth';
+import './pwa';
 import { MatchService } from './services/match.service';
 import { PlayerService } from './services/player.service';
 import { RepositoryService } from './services/repository.service';

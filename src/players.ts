@@ -1,3 +1,4 @@
+import './pwa';
 import { MatchService } from './services/match.service';
 import { PlayerService } from './services/player.service';
 import { RepositoryService } from './services/repository.service';
