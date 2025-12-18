@@ -20,8 +20,8 @@ export class RepositoryService {
       return {
         id: d.id,
         name: data.name,
-        elo: 1000,
-        matches: data.matches,
+        elo: data.elo,
+        matches: 0,
         bestElo: undefined,
         goalsAgainst: 0,
         goalsFor: 0,
