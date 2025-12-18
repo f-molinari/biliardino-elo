@@ -49,27 +49,6 @@ export class MatchmakingService {
 
   private static config: IMatchmakingConfig;
 
-  public static findBestMatches(availablePlayerId: string[], config: IMatchmakingConfig = this.defaultConfig): IMatchProposal[] | null {
-    if (availablePlayerId.length < 4) return null;
-
-    const players = availablePlayerId.map(id => PlayerService.getPlayerById(id)) as IPlayer[];
-
-    if (players.filter(p => p === undefined).length > 0) {
-      throw new Error('Some player IDs are invalid');
-    }
-
-    this.config = config;
-
-    const allPlayers = PlayerService.getAllPlayers();
-    const maxEloDiff = this.getMaxEloDifference(allPlayers);
-    const maxMatches = this.getMaxMatchesPlayed(allPlayers);
-    const maxDiversity = this.getMaxDiversity(allPlayers);
-    const proposals = this.generateAllMatches(maxEloDiff, maxMatches, maxDiversity, players);
-    proposals.sort((a, b) => b.score - a.score);
-
-    return proposals;
-  }
-
   public static findBestMatch(availablePlayerId: string[], priorityPlayersId: string[], config: IMatchmakingConfig = this.defaultConfig): IMatchProposal | null {
     if (availablePlayerId.length < 4) return null;
 
@@ -90,33 +69,7 @@ export class MatchmakingService {
     return this.generateBestMatch(maxEloDiff, maxMatches, maxDiversity, players, priorityPlayers);
   }
 
-  private static generateAllMatches(maxEloDiff: number, maxMatches: number, maxDiversity: number, players: IPlayer[]): IMatchProposal[] {
-    const proposals: IMatchProposal[] = [];
-    const n = players.length;
-
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        for (let k = i + 1; k < n; k++) {
-          if (k === j) continue;
-          for (let l = k + 1; l < n; l++) {
-            if (l === i || l === j) continue;
-
-            const p1 = players[i];
-            const p2 = players[j];
-            const p3 = players[k];
-            const p4 = players[l];
-
-            proposals.push(this.createProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity));
-          }
-        }
-      }
-    }
-
-    return proposals;
-  }
-
   private static generateBestMatch(maxEloDiff: number, maxMatches: number, maxDiversity: number, players: IPlayer[], priorityPlayers: IPlayer[]): IMatchProposal | null {
-    const proposals: IMatchProposal[] = [];
     const n = players.length;
     let bestProposal: IMatchProposal | null = null;
     let bestScore = -Infinity;
@@ -135,7 +88,7 @@ export class MatchmakingService {
 
             if (!this.validatePriorityPlayers(p1, p2, p3, p4, priorityPlayers)) continue;
 
-            const proposal = this.createProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity);
+            const proposal = this.createProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity); // this should get only the score
 
             if (proposal.score > bestScore) {
               bestScore = proposal.score;
