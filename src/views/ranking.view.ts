@@ -562,13 +562,13 @@ export class RankingView {
       // Calcola rating medio della partita per colorare la riga
       const avgRating = (eloA + eloB) / 2;
       let rowBackgroundColor = '';
-      if (avgRating >= 1200) {
+      if (avgRating >= 1150) {
         rowBackgroundColor = 'background-color: rgba(0, 0, 255, 0.25);'; // blu leggero
-      } else if (avgRating >= 1100) {
+      } else if (avgRating >= 1075) {
         rowBackgroundColor = 'background-color: rgba(0, 127, 255, 0.1);'; // azzurro chiaro
-      } else if (avgRating <= 800) {
+      } else if (avgRating <= 850) {
         rowBackgroundColor = 'background-color: rgba(255, 0, 0, 0.2);'; // rosso leggero
-      } else if (avgRating <= 900) {
+      } else if (avgRating <= 925) {
         rowBackgroundColor = 'background-color: rgba(255, 127, 0, 0.1);'; // arancione leggero
       }
 

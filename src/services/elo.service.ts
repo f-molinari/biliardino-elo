@@ -3,8 +3,8 @@ import { IPlayer } from '@/models/player.interface';
 import { PlayerService } from './player.service';
 
 export class EloService {
-  public static readonly StartK = 60;
-  public static readonly FinalK = 30;
+  public static readonly StartK = 150;
+  public static readonly FinalK = 100;
   public static readonly MatchesK = 16; // 1 partita a settimana
 
   public static calculateEloChange(match: IMatch): { deltaA: number; deltaB: number; eloA: number; eloB: number; expA: number; expB: number; kA: number; kB: number } | null {
@@ -30,15 +30,14 @@ export class EloService {
     const scoreA = goalsA > goalsB ? 1 : goalsA === goalsB ? 0.5 : 0;
     const scoreB = 1 - scoreA;
 
-    const margin = EloService.marginMultiplier(Math.max(goalsA, goalsB), Math.min(goalsA, goalsB));
+    const goalMultiplier = EloService.marginMultiplier(goalsA, goalsB);
+    const surpriseFactor = -Math.log2((goalsA > goalsB ? expA : expB) * (0.7 - 0.3) + 0.3);
 
     const kA = EloService.getTeamK(teamAP1, teamAP2);
-
     const kB = EloService.getTeamK(teamBP1, teamBP2);
 
-    const deltaA = kA * margin * (scoreA - expA);
-
-    const deltaB = kB * margin * (scoreB - expB);
+    const deltaA = kA * goalMultiplier * (scoreA - expA) * surpriseFactor;
+    const deltaB = kB * goalMultiplier * (scoreB - expB) * surpriseFactor;
 
     return { deltaA, deltaB, eloA, eloB, expA, expB, kA, kB };
   }
@@ -56,10 +55,8 @@ export class EloService {
     return 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
   }
 
-  private static marginMultiplier(goalsFor: number, goalsAgainst: number): number {
-    const diff = goalsFor - goalsAgainst;
-    return Math.sqrt(diff / 2 + 1) * (1 + diff / 8) / 1.3778379803155376;
-    // return Math.sqrt(diff / 2 + 1) * (1 + diff / 11) / (Math.sqrt(1.5) * (1 + 1 / 11)); // se si vince a 11
-    // return Math.log(3) + (Math.log(13) - Math.log(13 - diff)) * 3; // se si vince a 11
+  private static marginMultiplier(goalsA: number, goalsB: number): number {
+    const diff = Math.abs(goalsA - goalsB);
+    return Math.sqrt(diff / 2 + 1) * (1 + diff / 8) / 4.47213595499958; // normalized
   }
 }
