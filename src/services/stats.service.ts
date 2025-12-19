@@ -1,9 +1,8 @@
-import { IMatch } from '@/models/match.interface';
+import { IMatch, ITeam } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
-import { ITeam } from '@/models/team.interface';
-import { updateElo } from '@/utils/update-elo.util';
-import { EloService } from './elo.service';
-import { PlayerService } from './player.service';
+import { computeMatch } from '@/utils/update-elo.util';
+import { updateMatch } from './elo.service';
+import { getPlayerById } from './player.service';
 
 export type MatchResult = { match: IMatch; delta: number };
 export type PlayerResult = { player: IPlayer; score: number };
@@ -85,13 +84,13 @@ export class StatsService {
     for (const match of matches) {
       const team = getTeam(player, match);
       if (team === -1) {
-        updateElo(match); // update elo for other players
+        computeMatch(match); // update elo for other players
         continue;
       }
 
       const role = getRole(player, team, match);
       const matchResult = updateEloResult(team, match);
-      updateElo(match); // update elo for other players
+      computeMatch(match); // update elo for other players
       result.history.push(matchResult);
 
       updateMatchCount(role, matchResult);
@@ -127,15 +126,13 @@ export class StatsService {
     }
 
     function updateEloResult(team: number, match: IMatch): MatchResult {
-      const matchResult = EloService.calculateEloChange(match);
+      updateMatch(match);
       const delta = team === 0 ? matchResult!.deltaA : matchResult!.deltaB;
 
       result.elo += delta;
 
-      // if (result.matches >= EloService.MatchesK - 1) {
       if (result.elo > result.bestElo) result.bestElo = result.elo;
       if (result.elo < result.worstElo) result.worstElo = result.elo;
-      // }
 
       return { match, delta };
     }
@@ -238,9 +235,9 @@ export class StatsService {
         }
       }
 
-      result.bestTeammateCount = { score: bestTeammateCount, player: PlayerService.getPlayerById(bestTeammateCountId)! };
-      result.bestTeammate = { score: bestTeammateScore, player: PlayerService.getPlayerById(bestTeammateScoreId)! };
-      result.worstTeammate = { score: worstTeammateScore, player: PlayerService.getPlayerById(worstTeammateScoreId)! };
+      result.bestTeammateCount = { score: bestTeammateCount, player: getPlayerById(bestTeammateCountId)! };
+      result.bestTeammate = { score: bestTeammateScore, player: getPlayerById(bestTeammateScoreId)! };
+      result.worstTeammate = { score: worstTeammateScore, player: getPlayerById(worstTeammateScoreId)! };
 
       let bestOpponentId = '';
       let bestOpponentScore = Infinity;
@@ -259,8 +256,8 @@ export class StatsService {
         }
       }
 
-      result.bestOpponent = { score: bestOpponentScore, player: PlayerService.getPlayerById(bestOpponentId)! };
-      result.worstOpponent = { score: worstOpponentScore, player: PlayerService.getPlayerById(worstOpponentId)! };
+      result.bestOpponent = { score: bestOpponentScore, player: getPlayerById(bestOpponentId)! };
+      result.worstOpponent = { score: worstOpponentScore, player: getPlayerById(worstOpponentId)! };
     }
   }
 }

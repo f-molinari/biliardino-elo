@@ -1,14 +1,14 @@
-const CACHE_NAME = 'biliardino-elo-v1';
+const CACHE_NAME = 'CArdino-v1';
 const CORE_ASSETS = [
   './',
   './index.html',
   './players.html',
   './matchmaking.html',
-  './add.html',
+  // './add.html',
   './styles/ranking.css',
   './styles/players.css',
   './styles/matchmaking.css',
-  './styles/add-match.css',
+  // './styles/add-match.css',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

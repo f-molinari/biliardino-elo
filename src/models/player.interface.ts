@@ -1,34 +1,21 @@
-export interface IPlayer {
-  /**
-   * Unique identifier.
-   */
-  id: string;
-  /**
-   * Full name (name and surname).
-   */
+export interface IPlayerDTO {
+  id: number;
   name: string;
-  /**
-   * Current Elo rating.
-   *
-   * Higher values indicate stronger performance. This value is
-   * typically updated after each match.
-   */
   elo: number;
-  /**
-   * Total number of matches played.
-   */
+  defence: number;
+}
+
+export interface IPlayer extends IPlayerDTO {
   matches: number;
-
-  // CALCULATED AFTER
-
   matchesAsDefender: number;
   matchesAsAttacker: number;
   wins: number;
   matchesDelta: number[];
   goalsFor: number;
   goalsAgainst: number;
-  teammatesDelta?: Map<string, number>;
-  bestElo?: number;
-  teammatesMatchCount?: Map<string, number>;
-  opponentsMatchCount?: Map<string, number>;
+  bestElo: number;
+  rank: number;
+  teammatesDelta?: Map<number, number>;
+  teammatesMatchCount?: Map<number, number>;
+  opponentsMatchCount?: Map<number, number>;
 }

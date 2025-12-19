@@ -1,22 +1,10 @@
 import { browserSessionPersistence, onAuthStateChanged, setPersistence } from 'firebase/auth';
 import './pwa';
-import { MatchService } from './services/match.service';
-import { PlayerService } from './services/player.service';
-import { RepositoryService } from './services/repository.service';
 import { AUTH, login } from './utils/firebase.util';
-import { updateElo } from './utils/update-elo.util';
 import { MatchmakingView } from './views/matchmaking.view';
 
 async function init(user: any): Promise<void> {
   if (!user) throw new Error('Not authenticated');
-  // Load data
-  MatchService.loadMatches(await RepositoryService.loadMatches());
-  PlayerService.loadPlayers(await RepositoryService.loadPlayers());
-
-  // Update ELO for all matches
-  MatchService.getAllMatches().forEach(m => updateElo(m));
-
-  // Initialize the matchmaking view
   MatchmakingView.init();
 }
 

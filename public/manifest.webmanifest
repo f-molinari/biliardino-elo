@@ -1,7 +1,7 @@
 {
-  "name": "Biliardino ELO",
-  "short_name": "Biliardino ELO",
-  "description": "Classifica e matchmaking per il biliardino.",
+  "name": "CArdino",
+  "short_name": "CArdino",
+  "description": "CA Biliardino Championship",
   "lang": "it",
   "start_url": "./index.html",
   "scope": "./",
