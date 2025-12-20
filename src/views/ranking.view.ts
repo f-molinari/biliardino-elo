@@ -193,19 +193,21 @@ export class RankingView {
       const isSecond = rank === 2;
       const isThird = rank === 3;
 
-      // Usa dati precalcolati per il ruolo
-      const attackCount = player.matchesAsAttacker || 0;
-      const defenceCount = player.matchesAsDefender || 0;
-      const attackPercentage = player.matches > 0 ? attackCount / player.matches : 0;
-      const defencePercentage = player.matches > 0 ? defenceCount / player.matches : 0;
-
+      // Mostra sempre il ruolo prevalente (ATT o DIF) e la percentuale (max 50%)
       let role = '';
-      // Mostra sempre un solo ruolo - quello più frequente
-      if (attackPercentage > defencePercentage) {
-        role = `<span style="font-size:0.9em;color:#dc3545;">⚔️ ATT (${Math.round(attackPercentage * 100)}%)</span>`;
-      } else {
-        role = `<span style="font-size:0.9em;color:#0077cc;">🛡️ DIF (${Math.round(defencePercentage * 100)}%)</span>`;
+      let defenceValue = player.defence * 100;
+      let label = '🛡️';
+      let color = '#0077cc';
+      if (defenceValue === 50) {
+        label = '⚖️';
+        color = '#6c757d';
       }
+      if (defenceValue < 50) {
+        defenceValue = 100 - defenceValue;
+        label = '⚔️';
+        color = '#dc3545';
+      }
+      role = `<span style="font-size:0.9em;color:${color};">${label} ${defenceValue}%</span>`;
 
       // Usa matchesDelta precalcolato per ultimi 5 risultati e Elo guadagnato
       const matchesDelta = player.matchesDelta || [];
@@ -228,7 +230,7 @@ export class RankingView {
       const wins = player.wins || 0;
       const losses = player.matches - wins;
       const winRate = player.matches > 0 ? Math.round((wins / player.matches) * 100) : 0;
-      const record = `${wins}V - ${losses}S`;
+      const record = `${wins} / ${losses}`;
 
       // Usa dati precalcolati per rapporto goal fatti/subiti
       const goalsScored = player.goalsFor || 0;

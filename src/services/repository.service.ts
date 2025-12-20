@@ -21,6 +21,7 @@ export class RepositoryService {
         id: d.id,
         name: data.name,
         elo: data.elo,
+        defence: data.defence / 100,
         matches: 0,
         bestElo: undefined,
         goalsAgainst: 0,
