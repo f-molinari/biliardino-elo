@@ -456,8 +456,7 @@ export class RankingView {
   private static renderRecentMatches(): void {
     const allMatches = MatchService.getAllMatches();
     const matches = allMatches
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, 50);
+      .sort((a, b) => b.createdAt - a.createdAt);
     if (!matches.length) return;
 
     const container = document.querySelector('.tables-container');
@@ -477,7 +476,7 @@ export class RankingView {
     const table = document.createElement('table');
     table.id = 'recent-matches-table';
     table.innerHTML = `
-      <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#2d3748;">Ultime 50 partite giocate</caption>
+      <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#2d3748;">Ultime partite giocate</caption>
       <thead>
         <tr>
           <th style="width:16px;"></th>
@@ -564,13 +563,13 @@ export class RankingView {
       // Calcola rating medio della partita per colorare la riga
       const avgRating = (eloA + eloB) / 2;
       let rowBackgroundColor = '';
-      if (avgRating >= 1150) {
+      if (avgRating >= 1100) {
         rowBackgroundColor = 'background-color: rgba(0, 0, 255, 0.25);'; // blu leggero
-      } else if (avgRating >= 1075) {
+      } else if (avgRating >= 1050) {
         rowBackgroundColor = 'background-color: rgba(0, 127, 255, 0.1);'; // azzurro chiaro
-      } else if (avgRating <= 850) {
+      } else if (avgRating <= 900) {
         rowBackgroundColor = 'background-color: rgba(255, 0, 0, 0.2);'; // rosso leggero
-      } else if (avgRating <= 925) {
+      } else if (avgRating <= 950) {
         rowBackgroundColor = 'background-color: rgba(255, 127, 0, 0.1);'; // arancione leggero
       }
 

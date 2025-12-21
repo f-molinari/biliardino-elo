@@ -3,8 +3,8 @@ import { IPlayer } from '@/models/player.interface';
 import { PlayerService } from './player.service';
 
 export class EloService {
-  public static readonly StartK = 150;
-  public static readonly FinalK = 100;
+  public static readonly StartK = 100;
+  public static readonly FinalK = 75;
   public static readonly MatchesK = 16; // 1 partita a settimana
 
   public static calculateEloChange(match: IMatch): { deltaA: number; deltaB: number; eloA: number; eloB: number; expA: number; expB: number; kA: number; kB: number } | null {
@@ -31,7 +31,7 @@ export class EloService {
     const scoreB = 1 - scoreA;
 
     const goalMultiplier = EloService.marginMultiplier(goalsA, goalsB);
-    const surpriseFactor = -Math.log2((goalsA > goalsB ? expA : expB) * (0.7 - 0.3) + 0.3);
+    const surpriseFactor = -Math.log2((goalsA > goalsB ? expA : expB) * (0.65 - 0.35) + 0.35);
 
     const kA = EloService.getTeamK(teamAP1, teamAP2);
     const kB = EloService.getTeamK(teamBP1, teamBP2);
