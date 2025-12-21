@@ -3,7 +3,7 @@ import { IPlayer } from '@/models/player.interface';
 import { PlayerService } from './player.service';
 
 export class EloService {
-  public static readonly StartK = 100;
+  public static readonly StartK = 75 * 1.5;
   public static readonly FinalK = 75;
   public static readonly MatchesK = 16; // 1 partita a settimana
 
