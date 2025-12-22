@@ -13,7 +13,7 @@ export async function fetchPlayers(): Promise<IPlayer[]> {
       id: Number.parseInt(d.id),
       name: data.name,
       elo: data.elo,
-      defence: data.defence,
+      defence: data.defence / 100,
       matches: 0,
       bestElo: -1,
       goalsAgainst: 0,
@@ -33,11 +33,11 @@ export async function fetchMatches(): Promise<IMatch[]> {
   const snap = await getDocs(collection(db, MATCHES_COLLECTION));
   const matches: IMatch[] = [];
 
-  snap.docs.map((d) => {
+  snap.docs.forEach((d) => {
     const data = d.data() as IMatch;
     const id = Number.parseInt(d.id);
 
-    if (isNaN(id)) return;
+    if (Number.isNaN(id)) return;
 
     matches.push({
       id,
