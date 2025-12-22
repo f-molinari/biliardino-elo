@@ -76,7 +76,7 @@ function generateBestMatch(maxEloDiff: number, maxMatches: number, maxDiversity:
 
           if (!validatePriorityPlayers(p1, p2, p3, p4, priorityPlayers)) continue;
 
-          const proposal = createProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity); // this should get only the score
+          const proposal = createProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity); // TODO this should get only the score
 
           if (proposal.score > bestScore) {
             bestScore = proposal.score;

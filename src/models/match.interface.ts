@@ -7,11 +7,6 @@ export interface IMatchDTO {
 }
 
 export interface IMatch extends IMatchDTO {
-  id: number;
-  teamA: ITeam;
-  teamB: ITeam;
-  score: [number, number];
-  createdAt: number;
   expectedScore: [number, number];
   teamAELO: [number, number];
   teamBELO: [number, number];

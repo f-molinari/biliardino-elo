@@ -10,12 +10,12 @@ export async function fetchPlayers(): Promise<IPlayer[]> {
     const data = d.data() as IPlayer;
 
     return {
-      id: data.id,
+      id: Number.parseInt(d.id),
       name: data.name,
       elo: data.elo,
       defence: data.defence,
       matches: 0,
-      bestElo: 0,
+      bestElo: -1,
       goalsAgainst: 0,
       goalsFor: 0,
       matchesAsAttacker: 0,
@@ -36,7 +36,7 @@ export async function fetchMatches(): Promise<IMatch[]> {
     const data = d.data() as IMatch;
 
     return {
-      id: data.id,
+      id: Number.parseInt(d.id),
       teamA: data.teamA,
       teamB: data.teamB,
       score: data.score,
