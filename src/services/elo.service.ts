@@ -67,12 +67,6 @@ export function expectedScore(eloA: number, eloB: number): number {
 }
 
 function marginMultiplier(goalsA: number, goalsB: number): number {
-  const maxGoal = Math.max(goalsA, goalsB); // TODO remove in the new season
-  if (maxGoal >= 11) {
-    goalsA = goalsA * 8 / maxGoal;
-    goalsB = goalsB * 8 / maxGoal;
-  }
-
   const diff = Math.abs(goalsA - goalsB);
   return Math.sqrt(diff / 2 + 1) * (1 + diff / 8) / 4.47213595499958; // normalized
 }

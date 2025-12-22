@@ -31,12 +31,16 @@ export async function fetchPlayers(): Promise<IPlayer[]> {
 
 export async function fetchMatches(): Promise<IMatch[]> {
   const snap = await getDocs(collection(db, MATCHES_COLLECTION));
+  const matches: IMatch[] = [];
 
-  const matches = snap.docs.map((d) => {
+  snap.docs.map((d) => {
     const data = d.data() as IMatch;
+    const id = Number.parseInt(d.id);
 
-    return {
-      id: Number.parseInt(d.id),
+    if (isNaN(id)) return;
+
+    matches.push({
+      id,
       teamA: data.teamA,
       teamB: data.teamB,
       score: data.score,
@@ -46,7 +50,7 @@ export async function fetchMatches(): Promise<IMatch[]> {
       teamELO: [-1, -1],
       teamAELO: [-1, -1],
       teamBELO: [-1, -1]
-    } satisfies IMatch;
+    });
   });
 
   return matches;
