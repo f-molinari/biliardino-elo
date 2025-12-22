@@ -10,8 +10,8 @@ const CORE_ASSETS = [
   './styles/matchmaking.css',
   // './styles/add-match.css',
   './manifest.webmanifest',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
+  './icons/icon-192.jpg',
+  './icons/icon-512.jpg',
   './icons/icon-192-maskable.png',
   './icons/icon-512-maskable.png'
 ];
