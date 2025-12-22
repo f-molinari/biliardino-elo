@@ -193,19 +193,21 @@ export class RankingView {
       const isSecond = rank === 2;
       const isThird = rank === 3;
 
-      // Usa dati precalcolati per il ruolo
-      const attackCount = player.matchesAsAttacker || 0;
-      const defenceCount = player.matchesAsDefender || 0;
-      const attackPercentage = player.matches > 0 ? attackCount / player.matches : 0;
-      const defencePercentage = player.matches > 0 ? defenceCount / player.matches : 0;
-
+      // Mostra sempre il ruolo prevalente (ATT o DIF) e la percentuale (max 50%)
       let role = '';
-      // Mostra sempre un solo ruolo - quello più frequente
-      if (attackPercentage > defencePercentage) {
-        role = `<span style="font-size:0.9em;color:#dc3545;">⚔️ ATT (${Math.round(attackPercentage * 100)}%)</span>`;
-      } else {
-        role = `<span style="font-size:0.9em;color:#0077cc;">🛡️ DIF (${Math.round(defencePercentage * 100)}%)</span>`;
+      let defenceValue = player.defence * 100;
+      let label = '🛡️';
+      let color = '#0077cc';
+      if (defenceValue === 50) {
+        label = '⚖️';
+        color = '#6c757d';
       }
+      if (defenceValue < 50) {
+        defenceValue = 100 - defenceValue;
+        label = '⚔️';
+        color = '#dc3545';
+      }
+      role = `<span style="font-size:0.9em;color:${color};">${label} ${defenceValue}%</span>`;
 
       // Usa matchesDelta precalcolato per ultimi 5 risultati e Elo guadagnato
       const matchesDelta = player.matchesDelta || [];
@@ -228,7 +230,7 @@ export class RankingView {
       const wins = player.wins || 0;
       const losses = player.matches - wins;
       const winRate = player.matches > 0 ? Math.round((wins / player.matches) * 100) : 0;
-      const record = `${wins}V - ${losses}S`;
+      const record = `${wins} / ${losses}`;
 
       // Usa dati precalcolati per rapporto goal fatti/subiti
       const goalsScored = player.goalsFor || 0;
@@ -454,8 +456,7 @@ export class RankingView {
   private static renderRecentMatches(): void {
     const allMatches = MatchService.getAllMatches();
     const matches = allMatches
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, 50);
+      .sort((a, b) => b.createdAt - a.createdAt);
     if (!matches.length) return;
 
     const container = document.querySelector('.tables-container');
@@ -475,7 +476,7 @@ export class RankingView {
     const table = document.createElement('table');
     table.id = 'recent-matches-table';
     table.innerHTML = `
-      <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#2d3748;">Ultime 50 partite giocate</caption>
+      <caption style="caption-side:top;font-weight:700;font-size:1.2rem;margin-bottom:0.5rem;text-align:left;color:#2d3748;">Ultime partite giocate</caption>
       <thead>
         <tr>
           <th style="width:16px;"></th>
@@ -562,13 +563,13 @@ export class RankingView {
       // Calcola rating medio della partita per colorare la riga
       const avgRating = (eloA + eloB) / 2;
       let rowBackgroundColor = '';
-      if (avgRating >= 1200) {
+      if (avgRating >= 1100) {
         rowBackgroundColor = 'background-color: rgba(0, 0, 255, 0.25);'; // blu leggero
-      } else if (avgRating >= 1100) {
+      } else if (avgRating >= 1050) {
         rowBackgroundColor = 'background-color: rgba(0, 127, 255, 0.1);'; // azzurro chiaro
-      } else if (avgRating <= 800) {
-        rowBackgroundColor = 'background-color: rgba(255, 0, 0, 0.2);'; // rosso leggero
       } else if (avgRating <= 900) {
+        rowBackgroundColor = 'background-color: rgba(255, 0, 0, 0.2);'; // rosso leggero
+      } else if (avgRating <= 950) {
         rowBackgroundColor = 'background-color: rgba(255, 127, 0, 0.1);'; // arancione leggero
       }
 

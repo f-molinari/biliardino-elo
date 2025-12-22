@@ -13,7 +13,7 @@ export default defineConfig(config => ({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         players: path.resolve(__dirname, 'players.html'),
-        // add: path.resolve(__dirname, 'add.html'),
+        add: path.resolve(__dirname, 'add.html'),
         matchmaking: path.resolve(__dirname, 'matchmaking.html')
       }
     }

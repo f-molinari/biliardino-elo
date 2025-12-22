@@ -11,6 +11,7 @@
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./styles/add-match.css" />
+  <link rel="stylesheet" href="./styles/login.css" />
 </head>
 
 <body>
@@ -100,6 +101,27 @@
       </table>
     </div>
   </div>
+
+  <dialog id="loginDialog" class="login-dialog">
+    <form method="dialog" id="loginForm" class="login-form">
+      <h3>Login</h3>
+
+      <label>
+        Username
+        <input type="email" id="loginEmail" required />
+      </label>
+
+      <label>
+        Password
+        <input type="password" id="loginPassword" required />
+      </label>
+
+      <menu>
+        <button value="cancel">Cancel</button>
+        <button id="loginBtn" value="default">Login</button>
+      </menu>
+    </form>
+  </dialog>
 
   <script type="module" src="./src/add-match.ts"></script>
 </body>

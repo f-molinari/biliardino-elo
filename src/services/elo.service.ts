@@ -2,9 +2,9 @@ import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { getPlayerById } from './player.service';
 
-export const StartK = 60;
-export const FinalK = 30;
-export const MatchesK = 16; // 1 partita media a settimana
+export const StartK = 75 * 1.5;
+export const FinalK = 75;
+export const MatchesK = 10; // 1 partita a settimana
 
 export function updateMatch(match: IMatch): void {
   const teamAP1 = getPlayerById(match.teamA.defence);
@@ -17,10 +17,7 @@ export function updateMatch(match: IMatch): void {
     throw new Error('One or more players not found for match Elo calculation.');
   }
 
-  const goalsA = match.score[0];
-  const goalsB = match.score[1];
-
-  const margin = marginMultiplier(Math.max(goalsA, goalsB), Math.min(goalsA, goalsB));
+  const [goalsA, goalsB] = match.score;
 
   const eloA = (teamAP1.elo + teamAP2.elo) / 2;
   const eloB = (teamBP1.elo + teamBP2.elo) / 2;
@@ -28,14 +25,17 @@ export function updateMatch(match: IMatch): void {
   const expA = expectedScore(eloA, eloB);
   const expB = 1 - expA;
 
+  const goalMultiplier = marginMultiplier(goalsA, goalsB);
+  const surpriseFactor = -Math.log2((goalsA > goalsB ? expA : expB) * (0.65 - 0.35) + 0.35);
+
   const scoreA = goalsA > goalsB ? 1 : goalsA === goalsB ? 0.5 : 0;
   const scoreB = 1 - scoreA;
 
   const kA = getTeamK(teamAP1, teamAP2);
   const kB = getTeamK(teamBP1, teamBP2);
 
-  const deltaA = kA * margin * (scoreA - expA);
-  const deltaB = kB * margin * (scoreB - expB);
+  const deltaA = kA * goalMultiplier * (scoreA - expA) * surpriseFactor;
+  const deltaB = kB * goalMultiplier * (scoreB - expB) * surpriseFactor;
 
   match.expectedScore[0] = expA;
   match.expectedScore[1] = expB;
@@ -66,7 +66,13 @@ export function expectedScore(eloA: number, eloB: number): number {
   return 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
 }
 
-function marginMultiplier(goalsFor: number, goalsAgainst: number): number {
-  const diff = goalsFor - goalsAgainst;
-  return Math.sqrt(diff / 2 + 1) * (1 + diff / 8) / 1.3778379803155376; // precomputed (1 + 1 / 8)
+function marginMultiplier(goalsA: number, goalsB: number): number {
+  const maxGoal = Math.max(goalsA, goalsB); // TODO remove in the new season
+  if (maxGoal >= 11) {
+    goalsA = goalsA * 8 / maxGoal;
+    goalsB = goalsB * 8 / maxGoal;
+  }
+
+  const diff = Math.abs(goalsA - goalsB);
+  return Math.sqrt(diff / 2 + 1) * (1 + diff / 8) / 4.47213595499958; // normalized
 }
