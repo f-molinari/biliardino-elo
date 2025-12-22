@@ -17,7 +17,8 @@ export function getAllMatches(): IMatch[] {
 }
 
 export function addMatch(teamA: ITeam, teamB: ITeam, score: [number, number]): IMatchDTO {
-  const id = Math.max(...matches.map(m => m.id)) + 1;
+  const lastId = Math.max(...matches.map(m => m.id));
+  const id = Number.isFinite(lastId) ? lastId + 1 : 1;
   const matchDTO = { id, teamA, teamB, score, createdAt: Date.now() } satisfies IMatchDTO;
   const match = parseMatchDTO(matchDTO);
 
