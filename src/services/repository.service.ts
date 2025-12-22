@@ -58,5 +58,20 @@ export async function fetchMatches(): Promise<IMatch[]> {
 
 export async function saveMatch(match: IMatchDTO): Promise<void> {
   const ref = doc(collection(db, MATCHES_COLLECTION), match.id.toString());
-  await setDoc(ref, match, { merge: true });
+  await setDoc(ref, match, { merge: true }); // TODO davvero vogliamo true?
+}
+
+export function parseMatchDTO(match: IMatchDTO): IMatch {
+  return {
+    id: match.id,
+    teamA: match.teamA,
+    teamB: match.teamB,
+    score: match.score,
+    createdAt: match.createdAt,
+    deltaELO: [-1, -1],
+    expectedScore: [-1, -1],
+    teamELO: [-1, -1],
+    teamAELO: [-1, -1],
+    teamBELO: [-1, -1]
+  };
 }

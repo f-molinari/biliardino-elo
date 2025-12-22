@@ -1,6 +1,6 @@
 import { computeMatch } from '@/utils/update-elo.util';
 import { IMatch, IMatchDTO, ITeam } from '../models/match.interface';
-import { fetchMatches } from './repository.service';
+import { fetchMatches, parseMatchDTO } from './repository.service';
 
 let matches: IMatch[] = [];
 
@@ -19,8 +19,11 @@ export function getAllMatches(): IMatch[] {
 export function addMatch(teamA: ITeam, teamB: ITeam, score: [number, number]): IMatchDTO {
   const id = Math.max(...matches.map(m => m.id)) + 1;
   const matchDTO = { id, teamA, teamB, score, createdAt: Date.now() } satisfies IMatchDTO;
+  const match = parseMatchDTO(matchDTO);
 
-  matches!.unshift(matchDTO as IMatch);
+  matches!.unshift(match);
+
+  computeMatch(match);
 
   return matchDTO;
 }

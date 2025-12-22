@@ -154,12 +154,14 @@ function getMaxEloDifference(allPlayers: IPlayer[]): number {
     }
   }
 
-  return (maxElo + maxElo2 - minElo - minElo2) / 2;
+  const value = (maxElo + maxElo2 - minElo - minElo2) / 2;
+  return Math.max(value, 1);
 }
 
 function getMaxMatchesPlayed(allPlayers: IPlayer[]): number {
   const sortedPlayers = [...allPlayers].sort((a, b) => b.matches - a.matches);
-  return sortedPlayers[0].matches + sortedPlayers[1].matches + sortedPlayers[2].matches + sortedPlayers[3].matches;
+  const matches = sortedPlayers[0].matches + sortedPlayers[1].matches + sortedPlayers[2].matches + sortedPlayers[3].matches;
+  return Math.max(matches, 1);
 }
 
 function getMaxDiversity(allPlayers: IPlayer[]): number {
@@ -190,7 +192,8 @@ function getMaxDiversity(allPlayers: IPlayer[]): number {
     });
   }
 
-  return teammateMax + teammateMax2 + opponentMax.reduce((a, b) => a + b, 0);
+  const diversity = teammateMax + teammateMax2 + opponentMax.reduce((a, b) => a + b, 0);
+  return Math.max(diversity, 1);
 }
 
 function getTeammateDiversity(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer): number {
