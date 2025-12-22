@@ -481,11 +481,11 @@ export class RankingView {
         <tr>
           <th style="width:16px;"></th>
           <th>Rating</th>
-          <th>Elo Squadra A</th>
+          <th></th>
           <th>Team A</th>
           <th>Risultato</th>
           <th>Team B</th>
-          <th>Elo Squadra B</th>
+          <th></th>
         </tr>
       </thead>
       <tbody></tbody>
