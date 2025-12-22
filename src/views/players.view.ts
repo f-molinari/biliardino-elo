@@ -137,6 +137,31 @@ export class PlayersView {
       const oppDefence = PlayerService.getPlayerById(opponentTeam.defence);
       const oppAttack = PlayerService.getPlayerById(opponentTeam.attack);
 
+      // Helper per nome + elo preso dal match
+      function playerWithElo(p: IPlayer | undefined, elo: number | undefined): string {
+        if (!p || elo === undefined) return '?';
+        return `${p.name} <strong>(${Math.round(elo)})</strong>`;
+      }
+
+      // ELO dei giocatori per questa partita
+      // teamAELO: [difensore, attaccante], teamBELO: [difensore, attaccante]
+      const teamAELO = match.teamAELO || [undefined, undefined];
+      const teamBELO = match.teamBELO || [undefined, undefined];
+
+      // Teammate ELO
+      let teammateElo: number | undefined = undefined;
+      if (isTeamA) {
+        teammateElo = myTeam.defence === player.id ? teamAELO[1] : teamAELO[0];
+      } else {
+        teammateElo = myTeam.defence === player.id ? teamBELO[1] : teamBELO[0];
+      }
+      const teammateNames = playerWithElo(teammate, teammateElo);
+
+      // Opponenti ELO
+      const oppDefenceElo = isTeamA ? teamBELO[0] : teamAELO[0];
+      const oppAttackElo = isTeamA ? teamBELO[1] : teamAELO[1];
+      const opponentsNames = `${playerWithElo(oppDefence, oppDefenceElo)} & ${playerWithElo(oppAttack, oppAttackElo)}`;
+
       const myScore = isTeamA ? match.score[0] : match.score[1];
       const oppScore = isTeamA ? match.score[1] : match.score[0];
       const isWin = myScore > oppScore;
@@ -145,8 +170,6 @@ export class PlayersView {
       const myRole = isAttack
         ? '<span style="font-size:0.9em;color:#dc3545;">⚔️ ATT</span>'
         : '<span style="font-size:0.9em;color:#0077cc;">🛡️ DIF</span>';
-      const teammateNames = `${teammate?.name || '?'}`;
-      const opponentsNames = `${oppDefence?.name || '?'} & ${oppAttack?.name || '?'}`;
 
       // Elo delle squadre prima della partita
       const myTeamElo = isTeamA ? Math.round(match.teamELO![0]) : Math.round(match.teamELO![1]);
@@ -344,8 +367,8 @@ export class PlayersView {
             <table class="match-history-table">
               <thead>
                 <tr>
-                  <th>Elo Personale</th>
-                  <th>Elo Squadra</th>
+                  <th>Elo</th>
+                  <th>Elo Team</th>
                   <th>Ruolo</th>
                   <th>Compagno</th>
                   <th>Risultato</th>

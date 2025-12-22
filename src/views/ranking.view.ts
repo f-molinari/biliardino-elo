@@ -508,23 +508,36 @@ export class RankingView {
       const teamBAttack = getPlayerById(match.teamB.attack);
       const teamBDefence = getPlayerById(match.teamB.defence);
 
-      let teamA = `${teamADefence?.name || '?'} & ${teamAAttack?.name || '?'}`;
-      let teamB = `${teamBDefence?.name || '?'} & ${teamBAttack?.name || '?'}`;
+      // Helper to format player name with Elo preso dal match
+      function playerWithElo(player: IPlayer | undefined, elo: number | undefined): string {
+        if (!player || elo === undefined) return '?';
+        return `${player.name} <strong>(${Math.round(elo)})</strong>`;
+      }
+
+      // ELO dei giocatori per questa partita
+      // teamAELO: [difensore, attaccante], teamBELO: [difensore, attaccante]
+      const teamAELO = match.teamAELO;
+      const teamBELO = match.teamBELO;
+
+      let teamA = `${playerWithElo(teamADefence, teamAELO[0])} & ${playerWithElo(teamAAttack, teamAELO[1])}`;
+      let teamB = `${playerWithElo(teamBDefence, teamBELO[0])} & ${playerWithElo(teamBAttack, teamBELO[1])}`;
+
+      // ...le stringhe teamA e teamB sono già definite sopra
 
       // Determina la squadra vincitrice
       const teamAWon = match.score[0] > match.score[1];
 
       // Elo prima arrotondato
-      let eloA = Math.round(match.teamELO![0]);
-      let eloB = Math.round(match.teamELO![1]);
+      let eloA = Math.round(match.teamELO[0]);
+      let eloB = Math.round(match.teamELO[1]);
 
       // Delta arrotondato e formattato con colori
-      let deltaA = Math.round(match.deltaELO![0]);
-      let deltaB = Math.round(match.deltaELO![1]);
+      let deltaA = Math.round(match.deltaELO[0]);
+      let deltaB = Math.round(match.deltaELO[1]);
 
       // Percentuali di vittoria attesa (expA, expB)
-      let expA = match.expectedScore![0];
-      let expB = match.expectedScore![1];
+      let expA = match.expectedScore[0];
+      let expB = match.expectedScore[1];
 
       let scoreA = match.score[0];
       let scoreB = match.score[1];
