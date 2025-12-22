@@ -21,7 +21,7 @@ export function addMatch(teamA: ITeam, teamB: ITeam, score: [number, number]): I
   const matchDTO = { id, teamA, teamB, score, createdAt: Date.now() } satisfies IMatchDTO;
   const match = parseMatchDTO(matchDTO);
 
-  matches!.unshift(match);
+  matches.unshift(match);
 
   computeMatch(match);
 

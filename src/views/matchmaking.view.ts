@@ -250,9 +250,6 @@ export class MatchmakingView {
     generateButton.disabled = !shouldEnable;
   }
 
-  /**
-   * Generate balanced matches from selected players using MatchmakingService.
-   */
   private static generateMatches(): void {
     // Get all selected players (both queue and priority)
     const selectedPlayerIds: number[] = [];

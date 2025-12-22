@@ -58,7 +58,7 @@ export async function fetchMatches(): Promise<IMatch[]> {
 
 export async function saveMatch(match: IMatchDTO): Promise<void> {
   const ref = doc(collection(db, MATCHES_COLLECTION), match.id.toString());
-  await setDoc(ref, match, { merge: true }); // TODO davvero vogliamo true?
+  await setDoc(ref, match, { merge: true });
 }
 
 export function parseMatchDTO(match: IMatchDTO): IMatch {
