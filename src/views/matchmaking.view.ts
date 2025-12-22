@@ -141,6 +141,7 @@ export class MatchmakingView {
           <li>Il goal è valido solo se ci sono stati almeno due tocchi <b>volontari</b> da stecche diverse</li>
           <li>Non valgono schizzo e rullata</li>
           <li>Se la palla non può essere colpita e non è tra difensore e portiere, si riparte da calcio d'inizio</li>
+          <li>I ruoli devono essere rispettati e non posso essere cambiati.</li>
         </ul>
       </div>
     `;
