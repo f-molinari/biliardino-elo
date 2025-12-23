@@ -2,8 +2,8 @@ import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { getPlayerById } from './player.service';
 
-export const StartK = 75 * 1.5;
-export const FinalK = 75;
+export const StartK = 40 * 1.35;
+export const FinalK = 40;
 export const MatchesK = 10; // 1 partita a settimana
 
 export function updateMatch(match: IMatch): void {
@@ -26,7 +26,9 @@ export function updateMatch(match: IMatch): void {
   const expB = 1 - expA;
 
   const goalMultiplier = marginMultiplier(goalsA, goalsB);
-  const surpriseFactor = -Math.log2((goalsA > goalsB ? expA : expB) * (0.65 - 0.35) + 0.35);
+  const winnerExp = goalsA > goalsB ? expA : expB;
+  const winnerSign = winnerExp > 0.5 ? -1 : 1;
+  const surpriseFactor = 1 + (3 * Math.pow(Math.abs(0.5 - winnerExp), 1.5)) * winnerSign;
 
   const scoreA = goalsA > goalsB ? 1 : goalsA === goalsB ? 0.5 : 0;
   const scoreB = 1 - scoreA;
@@ -68,5 +70,5 @@ export function expectedScore(eloA: number, eloB: number): number {
 
 function marginMultiplier(goalsA: number, goalsB: number): number {
   const diff = Math.abs(goalsA - goalsB);
-  return Math.sqrt(diff / 2 + 1) * (1 + diff / 8) / 4.47213595499958; // normalized
+  return 1 + (diff / 8 * 0.5); // pesato al 50%
 }
