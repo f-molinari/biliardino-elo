@@ -1,4 +1,4 @@
-const CACHE_NAME = 'CArdino-v1';
+const CACHE_NAME = 'CAlcio-Balilla-v1';
 const CORE_ASSETS = [
   './',
   './index.html',
