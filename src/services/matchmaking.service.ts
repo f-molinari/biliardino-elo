@@ -26,7 +26,6 @@ export interface IMatchmakingConfig {
 }
 
 export interface IMatchProposal {
-  score: number;
   teamA: { defence: IPlayer; attack: IPlayer };
   teamB: { defence: IPlayer; attack: IPlayer };
 }
@@ -59,7 +58,7 @@ export function findBestMatch(availablePlayerId: number[], priorityPlayersId: nu
 
 function generateBestMatch(maxEloDiff: number, maxMatches: number, maxDiversity: number, players: IPlayer[], priorityPlayers: IPlayer[]): IMatchProposal | null {
   const n = players.length;
-  let bestProposal: IMatchProposal | null = null;
+  const bestProposal: IMatchProposal = { teamA: { defence: players[0], attack: players[0] }, teamB: { defence: players[0], attack: players[0] } };
   let bestScore = -Infinity;
 
   for (let i = 0; i < n; i++) { // TODO early exit here
@@ -76,18 +75,13 @@ function generateBestMatch(maxEloDiff: number, maxMatches: number, maxDiversity:
 
           if (!validatePriorityPlayers(p1, p2, p3, p4, priorityPlayers)) continue;
 
-          const proposal = createProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity); // TODO this should get only the score
-
-          if (proposal.score > bestScore) {
-            bestScore = proposal.score;
-            bestProposal = proposal;
-          }
+          bestScore = checkProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity, bestScore, bestProposal);
         }
       }
     }
   }
 
-  return bestProposal;
+  return bestScore === -Infinity ? null : bestProposal;
 }
 
 function validatePriorityPlayers(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer, priorityPlayers: IPlayer[]): boolean {
@@ -100,7 +94,7 @@ function validatePriorityPlayers(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPla
   return true;
 }
 
-function createProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, maxEloDiff: number, maxMatches: number, maxDiversity: number): IMatchProposal {
+function checkProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, maxEloDiff: number, maxMatches: number, maxDiversity: number, bestScore: number, proposal: IMatchProposal): number {
   // MATCH ELO DIFFERENCE SCORE
   const teamAElo = (defA.elo + attA.elo) / 2; // il / 2 può essere tolgo se usiamo la somma
   const teamBElo = (defB.elo + attB.elo) / 2;
@@ -128,11 +122,17 @@ function createProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlay
   const diversityNormalized = 1 - ((diversityTeammateCount + diversityOpponentCount) / maxDiversity);
   const diversityScore = diversityNormalized * config.diversityWeight;
 
-  return {
-    teamA: { defence: defA, attack: attA },
-    teamB: { defence: defB, attack: attB },
-    score: calculateMatchScore(diversityScore, matchBalanceScore, priorityScore, teamBalanceScore)
-  };
+  const score = calculateMatchScore(diversityScore, matchBalanceScore, priorityScore, teamBalanceScore);
+
+  if (score > bestScore) {
+    proposal.teamA.defence = defA;
+    proposal.teamA.attack = attA;
+    proposal.teamB.defence = defB;
+    proposal.teamB.attack = attB;
+    bestScore = score;
+  }
+
+  return bestScore;
 }
 
 function getMaxEloDifference(allPlayers: IPlayer[]): number {

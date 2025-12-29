@@ -55,7 +55,7 @@ export function updateMatch(match: IMatch): void {
   match.teamBELO[1] = teamBP2.elo;
 }
 
-function getPlayerElo(player: IPlayer, isDef: boolean): number {
+export function getPlayerElo(player: IPlayer, isDef: boolean): number {
   return player.elo - (isDef ? 1 - player.defence : player.defence) * 100;
 }
 
