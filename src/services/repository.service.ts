@@ -1,7 +1,7 @@
 import { IMatch, IMatchDTO } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { db, MATCHES_COLLECTION, PLAYERS_COLLECTION } from '@/utils/firebase.util';
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc } from 'firebase/firestore/lite';
 
 export async function fetchPlayers(): Promise<IPlayer[]> {
   const snap = await getDocs(collection(db, PLAYERS_COLLECTION));
