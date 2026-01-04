@@ -349,8 +349,8 @@ export class RankingView {
         <td title="Nome giocatore"><div class="player-info">${avatarHTML}<span>${playerNameDisplay}</span></div></td>
         <td title="ELO rating attuale"><strong>${elo}</strong> ${todayBadge}</td>
         <td title="Ruolo preferito e percentuale">${role}</td>
-        <td title="Partite giocate">${player.matches}</td>
         <td title="Vittorie - Sconfitte">${record}</td>
+        <td title="Partite giocate">${player.matches}</td>
         <td title="Percentuale di vittorie">${winRate}%</td>
         <td title="Rapporto goal fatti/subiti">${goalDiff}</td>
         <td title="Ultime 5 partite e variazione ELO">${last5Results || '-'} ${last5Results ? eloGainedFormatted : ''}</td>
@@ -451,8 +451,8 @@ export class RankingView {
           </div>
         </div>
       </div>
-      <div class="stat-card card-gold">
-        <div class="stat-icon"></div>
+      <div class="stat-card card-success">
+        <div class="stat-icon">🏆</div>
         <div class="stat-content">
           <div class="stat-label">Miglior Coppia</div>
           <div class="stat-value-group">

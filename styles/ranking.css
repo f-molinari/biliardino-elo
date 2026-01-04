@@ -486,10 +486,6 @@ th[data-sort]:hover {
   background: linear-gradient(90deg, rgba(255, 193, 7, 0.8), rgba(255, 193, 7, 0.4));
 }
 
-.match-stats-dashboard .stat-card.card-gold::before {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.8), rgba(255, 215, 0, 0.4));
-}
-
 .match-stats-dashboard .stat-card.card-danger::before {
   background: linear-gradient(90deg, rgba(220, 53, 69, 0.8), rgba(220, 53, 69, 0.4));
 }
