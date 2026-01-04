@@ -1,9 +1,8 @@
-import { IMatch, IMatchDTO } from '@/models/match.interface';
-import { ITeam } from '@/models/team.interface';
+import { IMatch, IMatchDTO, ITeam } from '@/models/match.interface';
 import { saveMatch } from '@/services/repository.service';
 import { formatDate } from '@/utils/format-date.util';
-import { addMatch, editMatch, getAllMatches, MatchService } from '../services/match.service';
-import { getAllPlayers, getPlayerById, PlayerService } from '../services/player.service';
+import { addMatch, editMatch, getAllMatches } from '../services/match.service';
+import { getAllPlayers, getPlayerById } from '../services/player.service';
 
 /**
  * IDs of the `<select>` elements used for choosing players for teams.
@@ -56,7 +55,7 @@ export class AddMatchView {
 
       for (const player of sortedPlayers) {
         const option = document.createElement('option');
-        option.value = player.id;
+        option.value = player.id.toString();
         option.textContent = player.name;
         select.appendChild(option);
       }
@@ -85,10 +84,10 @@ export class AddMatchView {
     try {
       const teamSelects = AddMatchView.getAllTeamSelects();
 
-      const teamADef = teamSelects[0].value;
-      const teamAAtt = teamSelects[1].value;
-      const teamBDef = teamSelects[2].value;
-      const teamBAtt = teamSelects[3].value;
+      const teamADef = Number.parseInt(teamSelects[0].value);
+      const teamAAtt = Number.parseInt(teamSelects[1].value);
+      const teamBDef = Number.parseInt(teamSelects[2].value);
+      const teamBAtt = Number.parseInt(teamSelects[3].value);
 
       if (!teamADef || !teamAAtt || !teamBDef || !teamBAtt) {
         throw new Error('Please select all four players.');
@@ -179,7 +178,7 @@ export class AddMatchView {
    */
   private static createMatchRow(match: IMatch): HTMLTableRowElement {
     const row = document.createElement('tr');
-    row.dataset.matchId = match.id;
+    row.dataset.matchId = match.id.toString();
 
     const teamAP1 = getPlayerById(match.teamA.defence)!.name;
     const teamAP2 = getPlayerById(match.teamA.attack)!.name;
@@ -223,10 +222,10 @@ export class AddMatchView {
     AddMatchView._editingMatchId = matchId;
 
     const selects = AddMatchView.getAllTeamSelects();
-    selects[0].value = match.teamA.defence;
-    selects[1].value = match.teamA.attack;
-    selects[2].value = match.teamB.defence;
-    selects[3].value = match.teamB.attack;
+    selects[0].value = match.teamA.defence.toString();
+    selects[1].value = match.teamA.attack.toString();
+    selects[2].value = match.teamB.defence.toString();
+    selects[3].value = match.teamB.attack.toString();
 
     const [scoreA, scoreB] = match.score;
     const scoreInputs = AddMatchView.getScoreInputs();

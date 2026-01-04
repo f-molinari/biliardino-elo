@@ -9,7 +9,7 @@ computeMatches();
 
 export async function loadAllMatches(): Promise<void> {
   matches = await fetchMatches();
-  matches.sort((a, b) => a.createdAt - b.createdAt);
+  matches.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export function getAllMatches(): IMatch[] {
@@ -30,7 +30,7 @@ export function addMatch(teamA: ITeam, teamB: ITeam, score: [number, number]): I
 }
 
 export function editMatch(id: number, teamA: ITeam, teamB: ITeam, score: [number, number]): IMatchDTO {
-  const match = matches.find(m => m.id === id)!;
+  const match = matches.find(m => m.id === id);
 
   if (!match) {
     throw new Error('Match to edit not found.');
