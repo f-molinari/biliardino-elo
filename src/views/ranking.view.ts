@@ -35,6 +35,7 @@ export class RankingView {
     const allPlayers = getAllPlayers();
     const playersWithMatches = allPlayers.filter(player => player.matches > 0);
     const players = [...playersWithMatches];
+    const todayDeltas = RankingView.getTodayEloDeltas();
 
     // Sorting logic
     const { sortKey, sortAsc } = RankingView;
@@ -76,9 +77,67 @@ export class RankingView {
       return sortAsc ? -cmp : cmp;
     });
 
-    RankingView.renderrRows(players);
+    RankingView.renderrRows(players, todayDeltas);
     RankingView.renderMatchStats();
     RankingView.renderRecentMatches();
+  }
+
+  /**
+   * Gets the Elo deltas for players from matches played today.
+   *
+   * @returns A map of player IDs to their Elo delta and number of matches played today.
+   */
+  private static getTodayEloDeltas(): Map<number, { delta: number; matches: number }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const deltas = new Map<number, { delta: number; matches: number }>();
+    const addDelta = (playerId: number, delta: number): void => {
+      if (!Number.isFinite(delta)) return;
+      const entry = deltas.get(playerId) ?? { delta: 0, matches: 0 };
+      entry.delta += delta;
+      entry.matches += 1;
+      deltas.set(playerId, entry);
+    };
+
+    for (const match of getAllMatches()) {
+      const matchDate = new Date(match.createdAt);
+      matchDate.setHours(0, 0, 0, 0);
+      if (matchDate.getTime() !== today.getTime()) continue;
+
+      addDelta(match.teamA.defence, match.deltaELO[0]);
+      addDelta(match.teamA.attack, match.deltaELO[0]);
+      addDelta(match.teamB.defence, match.deltaELO[1]);
+      addDelta(match.teamB.attack, match.deltaELO[1]);
+    }
+
+    return deltas;
+  }
+
+  /**
+   * Renders the badge showing today's Elo delta.
+   *
+   * @param delta - The Elo delta for today.
+   * @param matches - The number of matches played today.
+   * @returns The HTML string for the badge.
+   */
+  private static renderTodayDeltaBadge(delta: number, matches: number): string {
+    const rounded = Math.round(delta);
+    const baseStyle = 'margin-left:6px;font-size:0.85em;';
+
+    if (matches === 0) {
+      return '';
+    }
+
+    if (rounded > 0) {
+      return `<span class="today-delta positive" title="Oggi: +${rounded} Elo in ${matches} partite" style="${baseStyle}color:green;">▲ +${rounded}</span>`;
+    }
+
+    if (rounded < 0) {
+      return `<span class="today-delta negative" title="Oggi: ${rounded} Elo in ${matches} partite" style="${baseStyle}color:#dc3545;">▼ ${rounded}</span>`;
+    }
+
+    return `<span class="today-delta neutral" title="Oggi: nessuna variazione in ${matches} partite" style="${baseStyle}color:#a0aec0;">=</span>`;
   }
 
   /**
@@ -130,8 +189,9 @@ export class RankingView {
    * Players with the same Elo share the same rank number.
    *
    * @param players - Sorted list of players.
+   * @param todayDeltas - Map of player IDs to today's Elo delta info.
    */
-  private static renderrRows(players: IPlayer[]): void {
+  private static renderrRows(players: IPlayer[], todayDeltas: Map<number, { delta: number; matches: number }>): void {
     const table = RankingView.getTable();
     const tbody = table.querySelector('tbody')!;
     const fragment = document.createDocumentFragment();
@@ -279,10 +339,15 @@ export class RankingView {
         </div>
       `;
 
+      const todayDeltaInfo = todayDeltas.get(player.id);
+      const todayDelta = todayDeltaInfo?.delta ?? 0;
+      const todayMatches = todayDeltaInfo?.matches ?? 0;
+      const todayBadge = RankingView.renderTodayDeltaBadge(todayDelta, todayMatches);
+
       tr.innerHTML = `
         <td title="Posizione in classifica"><strong>${rankDisplay}°</strong></td>
         <td title="Nome giocatore"><div class="player-info">${avatarHTML}<span>${playerNameDisplay}</span></div></td>
-        <td title="ELO rating attuale"><strong>${elo}</strong></td>
+        <td title="ELO rating attuale"><strong>${elo}</strong> ${todayBadge}</td>
         <td title="Ruolo preferito e percentuale">${role}</td>
         <td title="Partite giocate">${player.matches}</td>
         <td title="Vittorie - Sconfitte">${record}</td>
