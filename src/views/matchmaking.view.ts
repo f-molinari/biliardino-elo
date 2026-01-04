@@ -75,7 +75,26 @@ export class MatchmakingView {
   private static renderPlayersList(): void {
     const playersList = document.getElementById('players-list')!;
     const allPlayers = getAllPlayers();
-    const sortedPlayers = allPlayers.sort((a, b) => a.name.localeCompare(b.name));
+    const sortedPlayers = allPlayers.toSorted((a, b) => a.name.localeCompare(b.name));
+
+    // Arrange players in column-major order only when the list is shown with multiple columns.
+    const gridTemplate = getComputedStyle(playersList).getPropertyValue('grid-template-columns');
+    const columnCount = gridTemplate.split(/\s+/).filter(Boolean).length;
+    const playersToRender: IPlayer[] = [];
+
+    if (columnCount > 1) {
+      const columnHeight = Math.ceil(sortedPlayers.length / columnCount);
+      for (let row = 0; row < columnHeight; row++) {
+        for (let col = 0; col < columnCount; col++) {
+          const idx = col * columnHeight + row;
+          if (idx < sortedPlayers.length) {
+            playersToRender.push(sortedPlayers[idx]);
+          }
+        }
+      }
+    } else {
+      playersToRender.push(...sortedPlayers);
+    }
 
     // Determine today's availability key
     const dayKeyMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
@@ -84,7 +103,7 @@ export class MatchmakingView {
 
     const fragment = document.createDocumentFragment();
 
-    sortedPlayers.forEach((player) => {
+    playersToRender.forEach((player) => {
       // Default state
       let initialState: PlayerState = 0;
       const isAvailableToday = Array.isArray(todaysAvailable) && todaysAvailable.includes(player.name);
