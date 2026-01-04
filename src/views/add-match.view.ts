@@ -21,7 +21,6 @@ const SCORE_INPUT_IDS = ['scoreA', 'scoreB'] as const;
 
 /**
  * Handles UI display and interaction for adding and editing matches.
- * todo: refactor. non caricare tutti i match.
  */
 export class AddMatchView {
   /**

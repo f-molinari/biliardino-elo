@@ -204,7 +204,7 @@ export class MatchmakingView {
         </ul>
       </div>
     `;
-    disclaimer.insertAdjacentElement('afterend', rulesPanel);
+    disclaimer.after(rulesPanel);
   }
 
   /**
@@ -440,7 +440,6 @@ export class MatchmakingView {
 
     const avgEloTeamA = (match.teamA.defence.elo + match.teamA.attack.elo) / 2;
     const avgEloTeamB = (match.teamB.defence.elo + match.teamB.attack.elo) / 2;
-    const avgEloMatch = (avgEloTeamA + avgEloTeamB) / 2;
 
     // Teams container con VS e form al centro
     const teamsContainer = document.createElement('div');
@@ -475,7 +474,7 @@ export class MatchmakingView {
     inputs.forEach((input) => {
       input.addEventListener('blur', (e) => {
         const target = e.target as HTMLInputElement;
-        const value = parseInt(target.value);
+        const value = Number.parseInt(target.value);
         if (value > 8) {
           target.value = '8';
         }
@@ -528,10 +527,8 @@ export class MatchmakingView {
     teamCard.className = 'team-card';
     teamCard.dataset.team = teamName;
 
-    const calcPerc = (count: number | undefined, total: number | undefined): number => {
-      const t = total || 0;
-      const c = count || 0;
-      return t > 0 ? Math.round((c / t) * 100) : 0;
+    const calcPerc = (count: number = 0, total: number = 0): number => {
+      return total > 0 ? Math.round((count / total) * 100) : 0;
     };
 
     const defPercP1 = role1 === 'defence' ? calcPerc((player1 as any).matchesAsDefender, (player1 as any).matches) : calcPerc((player1 as any).matchesAsAttacker, (player1 as any).matches);
@@ -710,10 +707,10 @@ export class MatchmakingView {
     }
 
     const formData = new FormData(form);
-    const scoreTeamA = parseInt(formData.get('scoreTeamA') as string, 10);
-    const scoreTeamB = parseInt(formData.get('scoreTeamB') as string, 10);
+    const scoreTeamA = Number.parseInt(formData.get('scoreTeamA') as string, 10);
+    const scoreTeamB = Number.parseInt(formData.get('scoreTeamB') as string, 10);
 
-    if (isNaN(scoreTeamA) || isNaN(scoreTeamB)) {
+    if (Number.isNaN(scoreTeamA) || Number.isNaN(scoreTeamB)) {
       alert('Inserisci punteggi validi per entrambi i team.');
       return;
     }

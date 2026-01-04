@@ -12,7 +12,7 @@ export class RankingView {
   private static sortKey: SortKey = 'elo';
   private static sortAsc: boolean = false;
   // Indici colonne: 0=#, 1=Nome, 2=Elo, 3=Ruolo, 4=Match, 5=V/S, 6=%Win, 7=Goal F/S, 8=Forma
-  private static sortKeys: (SortKey | null)[] = [
+  private static readonly sortKeys: (SortKey | null)[] = [
     null, 'name', 'elo', null, 'matches', null, 'winrate', 'goaldiff', 'form'
   ];
 
@@ -179,7 +179,7 @@ export class RankingView {
     headers.forEach((th, idx) => {
       // Non mostrare freccia su colonne non ordinabili
       if (!RankingView.sortKeys[idx]) return;
-      th.innerHTML = th.textContent!.replace(/[↑↓]/g, '').trim() + (arrows[idx] || '');
+      th.innerHTML = th.textContent.replaceAll(/[↑↓]/g, '').trim() + (arrows[idx] || '');
     });
   }
 
@@ -379,13 +379,12 @@ export class RankingView {
     let maxEloPlayer: IPlayer | null = null;
     let maxElo = 0;
     for (const player of allPlayers) {
-      const bestElo = player.bestElo!;
+      const bestElo = player.bestElo;
       if (bestElo > maxElo) {
         maxElo = bestElo;
         maxEloPlayer = player;
       }
     }
-    const maxEloText = maxEloPlayer ? `${maxEloPlayer.name}<br><span class="delta-badge primary">${Math.round(maxElo)}</span>` : '-';
 
     // Trova la migliore coppia (delta più alto)
     let bestPair = { player1: '', player2: '', delta: -Infinity };
@@ -400,9 +399,6 @@ export class RankingView {
         }
       }
     }
-    const bestPairText = bestPair.delta !== -Infinity
-      ? `${bestPair.player1}<br>${bestPair.player2}<br><span class="delta-badge positive">+${Math.round(bestPair.delta)}</span>`
-      : '-';
 
     // Trova la peggior coppia (delta più basso)
     let worstPair = { player1: '', player2: '', delta: Infinity };
@@ -417,9 +413,6 @@ export class RankingView {
         }
       }
     }
-    const worstPairText = worstPair.delta !== Infinity
-      ? `${worstPair.player1}<br>${worstPair.player2}<br><span class="delta-badge negative">${Math.round(worstPair.delta)}</span>`
-      : '-';
 
     const statsContainer = document.createElement('div');
     statsContainer.className = 'match-stats-dashboard';
@@ -456,16 +449,16 @@ export class RankingView {
         <div class="stat-content">
           <div class="stat-label">Miglior Coppia</div>
           <div class="stat-value-group">
-            ${bestPair.delta !== -Infinity
-              ? `
+            ${bestPair.delta === -Infinity
+              ? '<div class="stat-empty">-</div>'
+              : `
               <div class="stat-pair-names">
                 <div>${bestPair.player1}</div>
                 <div class="pair-separator">+</div>
                 <div>${bestPair.player2}</div>
               </div>
               <div class="delta-badge positive" style="margin-top: 0.5rem;">+${Math.round(bestPair.delta)}</div>
-            `
-              : '<div class="stat-empty">-</div>'}
+            `}
           </div>
         </div>
       </div>
@@ -474,16 +467,16 @@ export class RankingView {
         <div class="stat-content">
           <div class="stat-label">Peggior Coppia</div>
           <div class="stat-value-group">
-            ${worstPair.delta !== Infinity
-              ? `
+            ${worstPair.delta === Infinity
+              ? '<div class="stat-empty">-</div>'
+              : `
               <div class="stat-pair-names">
                 <div>${worstPair.player1}</div>
                 <div class="pair-separator">+</div>
                 <div>${worstPair.player2}</div>
               </div>
               <div class="delta-badge negative" style="margin-top: 0.5rem;">${Math.round(worstPair.delta)}</div>
-            `
-              : '<div class="stat-empty">-</div>'}
+            `}
           </div>
         </div>
       </div>
@@ -520,8 +513,7 @@ export class RankingView {
    */
   private static renderRecentMatches(): void {
     const allMatches = getAllMatches();
-    const matches = allMatches
-      .sort((a, b) => b.createdAt - a.createdAt);
+    const matches = allMatches.toSorted((a, b) => b.createdAt - a.createdAt);
     if (!matches.length) return;
 
     const container = document.querySelector('.tables-container');
@@ -625,8 +617,8 @@ export class RankingView {
       const expB_percent = typeof expB === 'number' ? Math.round(expB * 100) : '?';
 
       // Colora le percentuali in base al valore
-      const colorA = expA_percent !== '?' ? (expA_percent > 50 ? 'green' : expA_percent < 50 ? 'red' : 'inherit') : 'inherit';
-      const colorB = expB_percent !== '?' ? (expB_percent > 50 ? 'green' : expB_percent < 50 ? 'red' : 'inherit') : 'inherit';
+      const colorA = expA_percent === '?' ? 'inherit' : (expA_percent > 50 ? 'green' : expA_percent < 50 ? 'red' : 'inherit');
+      const colorB = expB_percent === '?' ? 'inherit' : (expB_percent > 50 ? 'green' : expB_percent < 50 ? 'red' : 'inherit');
 
       // Aggiungi grassetto se la percentuale è estrema (≥60 o ≤40)
       const boldA = expA_percent !== '?' && (expA_percent >= 60 || expA_percent <= 40);

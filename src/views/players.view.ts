@@ -11,7 +11,7 @@ export class PlayersView {
    * Initialize the view by reading player from query string and rendering stats.
    */
   public static init(): void {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(globalThis.location.search);
     const playerId = Number.parseInt(urlParams.get('id')!);
 
     if (!playerId) {
@@ -61,7 +61,7 @@ export class PlayersView {
     if (titleElement) {
       // Calculate rank considering only players with at least 1 match
       const allPlayers = getAllPlayers().filter(p => p.matches > 0);
-      const sortedPlayers = allPlayers.sort((a, b) => b.elo - a.elo);
+      const sortedPlayers = allPlayers.toSorted((a, b) => b.elo - a.elo);
       const rank = sortedPlayers.findIndex(p => p.id === player.id) + 1;
       const rankText = rank > 0 ? ` (${rank}°)` : '';
       titleElement.textContent = `Statistiche di ${player.name}${rankText}`;
@@ -72,7 +72,7 @@ export class PlayersView {
     const winPercentageDefence = stats.matchesAsDefence > 0 ? ((stats.winsAsDefence / stats.matchesAsDefence) * 100).toFixed(0) : '0';
 
     const formatElo = (value: number): number | string => {
-      if (!isFinite(value)) return 'N/A';
+      if (!Number.isFinite(value)) return 'N/A';
       return Math.round(value);
     };
 
@@ -188,8 +188,8 @@ export class PlayersView {
       const oppExpectedPercent = typeof oppExpected === 'number' ? Math.round(oppExpected * 100) : '?';
 
       // Colora le percentuali
-      const myExpColor = myExpectedPercent !== '?' ? (myExpectedPercent > 50 ? 'green' : myExpectedPercent < 50 ? 'red' : 'inherit') : 'inherit';
-      const oppExpColor = oppExpectedPercent !== '?' ? (oppExpectedPercent > 50 ? 'green' : oppExpectedPercent < 50 ? 'red' : 'inherit') : 'inherit';
+      const myExpColor = myExpectedPercent === '?' ? 'inherit' : (myExpectedPercent > 50 ? 'green' : myExpectedPercent < 50 ? 'red' : 'inherit');
+      const oppExpColor = oppExpectedPercent === '?' ? 'inherit' : (oppExpectedPercent > 50 ? 'green' : oppExpectedPercent < 50 ? 'red' : 'inherit');
 
       return `
         <tr class="${isWin ? 'match-win' : 'match-loss'}">
@@ -390,8 +390,8 @@ export class PlayersView {
                 ${(() => {
                   const playerElos: number[] = [1000];
                   let currentElo = 1000;
-                  for (let i = 0; i < stats.history.length; i++) {
-                    currentElo += stats.history[i].delta;
+                  for (const element of stats.history) {
+                    currentElo += element.delta;
                     playerElos.push(currentElo);
                   }
                   return stats.history.slice().reverse().map((matchResult, idx) => {
