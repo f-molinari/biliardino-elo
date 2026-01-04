@@ -44,6 +44,11 @@ export const MATCHES_COLLECTION = 'matchesShark';
 export const PLAYERS_COLLECTION = 'playersShark';
 
 /**
+ * Firestore collection name used to persist the currently generated matchmaking proposal.
+ */
+export const RUNNING_MATCH_COLLECTION = 'runningMatch';
+
+/**
  * Signs in a predefined user using email and password authentication.
  *
  * @param email - The user's email address.

@@ -18,3 +18,8 @@ export interface ITeam {
   defence: number;
   attack: number;
 }
+
+export interface IRunningMatchDTO {
+  teamA: ITeam;
+  teamB: ITeam;
+}

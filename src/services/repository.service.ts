@@ -1,7 +1,9 @@
-import { IMatch, IMatchDTO } from '@/models/match.interface';
+import { IMatch, IMatchDTO, IRunningMatchDTO } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
-import { db, MATCHES_COLLECTION, PLAYERS_COLLECTION } from '@/utils/firebase.util';
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore/lite';
+import { db, MATCHES_COLLECTION, PLAYERS_COLLECTION, RUNNING_MATCH_COLLECTION } from '@/utils/firebase.util';
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore/lite';
+
+const CURRENT_RUNNING_MATCH = 'current';
 
 export async function fetchPlayers(): Promise<IPlayer[]> {
   const snap = await getDocs(collection(db, PLAYERS_COLLECTION));
@@ -74,4 +76,23 @@ export function parseMatchDTO(match: IMatchDTO): IMatch {
     teamAELO: [-1, -1],
     teamBELO: [-1, -1]
   };
+}
+
+export async function saveRunningMatch(match: IRunningMatchDTO): Promise<void> {
+  const ref = doc(collection(db, RUNNING_MATCH_COLLECTION), CURRENT_RUNNING_MATCH);
+  await setDoc(ref, match, { merge: true });
+}
+
+export async function fetchRunningMatch(): Promise<IRunningMatchDTO | null> {
+  const ref = doc(collection(db, RUNNING_MATCH_COLLECTION), CURRENT_RUNNING_MATCH);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) return null;
+
+  return snap.data() as IRunningMatchDTO;
+}
+
+export async function clearRunningMatch(): Promise<void> {
+  const ref = doc(collection(db, RUNNING_MATCH_COLLECTION), CURRENT_RUNNING_MATCH);
+  await deleteDoc(ref);
 }

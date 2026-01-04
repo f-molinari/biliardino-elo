@@ -1,10 +1,11 @@
+import { IRunningMatchDTO } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { addMatch } from '@/services/match.service';
-import { saveMatch } from '@/services/repository.service';
+import { clearRunningMatch, fetchRunningMatch, saveMatch, saveRunningMatch } from '@/services/repository.service';
 import { availabilityList } from '@/utils/availability.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { findBestMatch, IMatchProposal } from '../services/matchmaking.service';
-import { getAllPlayers, getPlayerByName } from '../services/player.service';
+import { getAllPlayers, getPlayerById, getPlayerByName } from '../services/player.service';
 
 /**
  * Player state: 0 = unchecked, 1 = checked (queue), 2 = priority
@@ -15,18 +16,57 @@ type PlayerState = 0 | 1 | 2;
  * Renders and handles UI interactions for the matchmaking page.
  */
 export class MatchmakingView {
-  private static playerStates: Map<string, PlayerState> = new Map();
+  private static readonly playerStates: Map<string, PlayerState> = new Map();
   private static currentMatch: IMatchProposal | null = null;
   private static rolesSwapped: { teamA: boolean; teamB: boolean } = { teamA: false, teamB: false };
 
   /**
    * Initialize the matchmaking UI.
    */
-  public static init(): void {
+  public static async init(): Promise<void> {
     MatchmakingView.renderPlayersList();
     MatchmakingView.setupEventListeners();
     MatchmakingView.renderDisclaimer();
+    await MatchmakingView.restoreSavedMatch();
     MatchmakingView.updateUI();
+  }
+
+  /**
+   * Rehydrate a previously generated match from Firestore if it exists.
+   */
+  private static async restoreSavedMatch(): Promise<void> {
+    try {
+      const storedMatch = await fetchRunningMatch();
+      if (!storedMatch) return;
+
+      const proposal = MatchmakingView.mapStoredMatchToProposal(storedMatch);
+      if (!proposal) {
+        await clearRunningMatch();
+        return;
+      }
+
+      MatchmakingView.currentMatch = proposal;
+      MatchmakingView.renderMatches([proposal]);
+    } catch (error) {
+      console.error('Failed to restore generated match', error);
+    }
+  }
+
+  /**
+   * Map a stored match DTO back to a match proposal with full player objects.
+   */
+  private static mapStoredMatchToProposal(storedMatch: IRunningMatchDTO): IMatchProposal | null {
+    const defA = getPlayerById(storedMatch.teamA.defence);
+    const attA = getPlayerById(storedMatch.teamA.attack);
+    const defB = getPlayerById(storedMatch.teamB.defence);
+    const attB = getPlayerById(storedMatch.teamB.attack);
+
+    if (!defA || !attA || !defB || !attB) return null;
+
+    return {
+      teamA: { defence: defA, attack: attA },
+      teamB: { defence: defB, attack: attB }
+    };
   }
 
   /**
@@ -250,7 +290,7 @@ export class MatchmakingView {
     generateButton.disabled = !shouldEnable;
   }
 
-  private static generateMatches(): void {
+  private static async generateMatches(): Promise<void> {
     // Get all selected players (both queue and priority)
     const selectedPlayerIds: number[] = [];
     const priorityPlayerIds: number[] = [];
@@ -274,14 +314,42 @@ export class MatchmakingView {
 
     const match = findBestMatch(selectedPlayerIds, priorityPlayerIds);
 
-    if (match) {
-      // Auto-assegna i ruoli mettendo in difesa chi gioca più spesso in difesa
-      const autoAssigned = MatchmakingView.assignPreferredRoles(match);
-      MatchmakingView.currentMatch = autoAssigned;
-      MatchmakingView.renderMatches([autoAssigned]);
-      MatchmakingView.updateUI();
-    } else {
+    if (!match) {
       alert('Impossibile generare partite con i giocatori selezionati.');
+      return;
+    }
+
+    // Auto-assegna i ruoli mettendo in difesa chi gioca più spesso in difesa
+    const autoAssigned = MatchmakingView.assignPreferredRoles(match);
+    MatchmakingView.currentMatch = autoAssigned;
+    MatchmakingView.renderMatches([autoAssigned]);
+    MatchmakingView.updateUI();
+
+    await MatchmakingView.persistCurrentMatch();
+  }
+
+  /**
+   * Persist the currently generated match so it can be resumed after refresh.
+   */
+  private static async persistCurrentMatch(): Promise<void> {
+    if (!MatchmakingView.currentMatch) return;
+
+    const match = MatchmakingView.currentMatch;
+    const storedMatch: IRunningMatchDTO = {
+      teamA: {
+        defence: match.teamA.defence.id,
+        attack: match.teamA.attack.id
+      },
+      teamB: {
+        defence: match.teamB.defence.id,
+        attack: match.teamB.attack.id
+      }
+    };
+
+    try {
+      await saveRunningMatch(storedMatch);
+    } catch (error) {
+      console.error('Failed to persist generated match', error);
     }
   }
 
@@ -662,6 +730,11 @@ export class MatchmakingView {
     try {
       const matchDTO = addMatch(teamA, teamB, [scoreTeamA, scoreTeamB]);
       await saveMatch(matchDTO);
+      try {
+        await clearRunningMatch();
+      } catch (clearError) {
+        console.error('Errore durante la pulizia della partita generata:', clearError);
+      }
 
       // Reset state
       MatchmakingView.currentMatch = null;
