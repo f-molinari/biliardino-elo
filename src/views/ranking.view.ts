@@ -696,9 +696,9 @@ export class RankingView {
 
       // Calcola percentuali dei ruoli
       const defPercA = Math.round(defA.defence * 100);
-      const attPercA = 100 - defPercA;
+      const attPercA = 100 - Math.round(attA.defence * 100);
       const defPercB = Math.round(defB.defence * 100);
-      const attPercB = 100 - defPercB;
+      const attPercB = 100 - Math.round(attB.defence * 100);
 
       // Calcola probabilità di vittoria
       const winProbA = 1 / (1 + Math.pow(10, (avgEloB - avgEloA) / 400));
