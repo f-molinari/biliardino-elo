@@ -2,6 +2,7 @@ import { IPlayer } from '@/models/player.interface';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getAllMatches } from '../services/match.service';
 import { getAllPlayers, getPlayerById } from '../services/player.service';
+import { fetchRunningMatch } from '../services/repository.service';
 
 /**
  * Renders and handles UI interactions for the ranking table.
@@ -21,9 +22,10 @@ export class RankingView {
    *
    * Renders the initial table.
    */
-  public static init(): void {
+  public static async init(): Promise<void> {
     RankingView.render();
     RankingView.makeHeadersSortable();
+    await RankingView.renderLiveMatch();
   }
 
   /**
@@ -662,5 +664,102 @@ export class RankingView {
 
     wrapper.appendChild(table);
     container.appendChild(wrapper);
+  }
+
+  /**
+   * Render the live match panel if there is a running match.
+   */
+  private static async renderLiveMatch(): Promise<void> {
+    const container = document.getElementById('live-match-container');
+    if (!container) return;
+
+    try {
+      const runningMatch = await fetchRunningMatch();
+      if (!runningMatch) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const defA = getPlayerById(runningMatch.teamA.defence);
+      const attA = getPlayerById(runningMatch.teamA.attack);
+      const defB = getPlayerById(runningMatch.teamB.defence);
+      const attB = getPlayerById(runningMatch.teamB.attack);
+
+      if (!defA || !attA || !defB || !attB) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const avgEloA = Math.round((defA.elo + attA.elo) / 2);
+      const avgEloB = Math.round((defB.elo + attB.elo) / 2);
+
+      // Calcola probabilità di vittoria
+      const winProbA = 1 / (1 + Math.pow(10, (avgEloB - avgEloA) / 400));
+      const winProbB = 1 - winProbA;
+      const winProbAPercent = (winProbA * 100).toFixed(1);
+      const winProbBPercent = (winProbB * 100).toFixed(1);
+      
+      const getWinProbClass = (percent: string) => {
+        const value = parseFloat(percent);
+        if (value < 50) return 'winprob-low';
+        if (value > 50) return 'winprob-high';
+        return 'winprob-neutral';
+      };
+
+      const fallbackAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNlMGUwZTA7c3RvcC1vcGFjaXR5OjEiIC8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjVmNWY1O3N0b3Atb3BhY2l0eToxIiAvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgZmlsbD0idXJsKCNncmFkKSIvPjxjaXJjbGUgY3g9IjI0IiBjeT0iMTUiIHI9IjciIGZpbGw9IiM3OTdhYjEiLz48cGF0aCBkPSJNIDEwIDMwIEMgMTAgMjQgMTYgMjAgMjQgMjAgQyAzMiAyMCAzOCAyNCAzOCAzMCBDIDM4IDM4IDMyIDQyIDI0IDQyIEMgMTYgNDIgMTAgMzggMTAgMzAiIGZpbGw9IiM3OTdhYjEiLz48L3N2Zz4=';
+
+      container.innerHTML = `
+        <div class="live-match-panel">
+          <div class="live-match-header">
+            <span class="live-badge">🔴 LIVE</span>
+            <span class="live-title">Partita in Corso</span>
+          </div>
+          <div class="live-match-content">
+            <div class="live-team">
+              <div class="live-team-winprob ${getWinProbClass(winProbAPercent)}">${winProbAPercent}%</div>
+              <div class="live-players">
+                <div class="live-player">
+                  <img src="/biliardino-elo/avatars/${defA.id}.webp" alt="${defA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                  <div class="live-player-info">
+                    <span class="live-player-name">🛡️ ${defA.name}</span>
+                    <span class="live-player-elo">${getDisplayElo(defA)}</span>
+                  </div>
+                </div>
+                <div class="live-player">
+                  <img src="/biliardino-elo/avatars/${attA.id}.webp" alt="${attA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                  <div class="live-player-info">
+                    <span class="live-player-name">⚔️ ${attA.name}</span>
+                    <span class="live-player-elo">${getDisplayElo(attA)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="live-vs">VS</div>
+            <div class="live-team">
+              <div class="live-team-winprob ${getWinProbClass(winProbBPercent)}">${winProbBPercent}%</div>
+              <div class="live-players">
+                <div class="live-player">
+                  <img src="/biliardino-elo/avatars/${defB.id}.webp" alt="${defB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                  <div class="live-player-info">
+                    <span class="live-player-name">🛡️ ${defB.name}</span>
+                    <span class="live-player-elo">${getDisplayElo(defB)}</span>
+                  </div>
+                </div>
+                <div class="live-player">
+                  <img src="/biliardino-elo/avatars/${attB.id}.webp" alt="${attB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                  <div class="live-player-info">
+                    <span class="live-player-name">⚔️ ${attB.name}</span>
+                    <span class="live-player-elo">${getDisplayElo(attB)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Failed to render live match', error);
+      container.innerHTML = '';
+    }
   }
 }
