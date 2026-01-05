@@ -1,4 +1,5 @@
 import { IPlayer } from '@/models/player.interface';
+import { getPlayerElo } from '@/services/elo.service';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getAllMatches } from '../services/match.service';
 import { getAllPlayers, getPlayerById } from '../services/player.service';
@@ -690,16 +691,22 @@ export class RankingView {
         return;
       }
 
-      const avgEloA = Math.round((defA.elo + attA.elo) / 2);
-      const avgEloB = Math.round((defB.elo + attB.elo) / 2);
+      const avgEloA = Math.round((getPlayerElo(defA, true) + getPlayerElo(attA, false)) / 2);
+      const avgEloB = Math.round((getPlayerElo(defB, true) + getPlayerElo(attB, false)) / 2);
+
+      // Calcola percentuali dei ruoli
+      const defPercA = Math.round(defA.defence * 100);
+      const attPercA = 100 - defPercA;
+      const defPercB = Math.round(defB.defence * 100);
+      const attPercB = 100 - defPercB;
 
       // Calcola probabilità di vittoria
       const winProbA = 1 / (1 + Math.pow(10, (avgEloB - avgEloA) / 400));
       const winProbB = 1 - winProbA;
       const winProbAPercent = (winProbA * 100).toFixed(1);
       const winProbBPercent = (winProbB * 100).toFixed(1);
-      
-      const getWinProbClass = (percent: string) => {
+
+      const getWinProbClass = (percent: string): string => {
         const value = parseFloat(percent);
         if (value < 50) return 'winprob-low';
         if (value > 50) return 'winprob-high';
@@ -722,14 +729,20 @@ export class RankingView {
                   <img src="/biliardino-elo/avatars/${defA.id}.webp" alt="${defA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
                   <div class="live-player-info">
                     <span class="live-player-name">🛡️ ${defA.name}</span>
-                    <span class="live-player-elo">${getDisplayElo(defA)}</span>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                      <span class="role-badge badge-def">DIF ${defPercA}%</span>
+                      <span class="live-player-elo">${Math.round(getPlayerElo(defA, true))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(defA)})</span></span>
+                    </div>
                   </div>
                 </div>
                 <div class="live-player">
                   <img src="/biliardino-elo/avatars/${attA.id}.webp" alt="${attA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
                   <div class="live-player-info">
                     <span class="live-player-name">⚔️ ${attA.name}</span>
-                    <span class="live-player-elo">${getDisplayElo(attA)}</span>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                      <span class="role-badge badge-att">ATT ${attPercA}%</span>
+                      <span class="live-player-elo">${Math.round(getPlayerElo(attA, false))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(attA)})</span></span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -742,14 +755,20 @@ export class RankingView {
                   <img src="/biliardino-elo/avatars/${defB.id}.webp" alt="${defB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
                   <div class="live-player-info">
                     <span class="live-player-name">🛡️ ${defB.name}</span>
-                    <span class="live-player-elo">${getDisplayElo(defB)}</span>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                      <span class="role-badge badge-def">DIF ${defPercB}%</span>
+                      <span class="live-player-elo">${Math.round(getPlayerElo(defB, true))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(defB)})</span></span>
+                    </div>
                   </div>
                 </div>
                 <div class="live-player">
                   <img src="/biliardino-elo/avatars/${attB.id}.webp" alt="${attB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
                   <div class="live-player-info">
                     <span class="live-player-name">⚔️ ${attB.name}</span>
-                    <span class="live-player-elo">${getDisplayElo(attB)}</span>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                      <span class="role-badge badge-att">ATT ${attPercB}%</span>
+                      <span class="live-player-elo">${Math.round(getPlayerElo(attB, false))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(attB)})</span></span>
+                    </div>
                   </div>
                 </div>
               </div>
