@@ -144,6 +144,55 @@ export class RankingView {
   }
 
   /**
+   * Builds a map of player IDs to their ranks based on a given Elo retrieval function.
+   *
+   * @param players - The list of players to rank.
+   * @param getElo - A function that retrieves the Elo rating for a player.
+   * @returns A map of player IDs to their rank numbers.
+   */
+  private static buildRankMap(players: IPlayer[], getElo: (player: IPlayer) => number): Map<number, number> {
+    const sorted = players.toSorted((a, b) => getElo(b) - getElo(a));
+    const ranks = new Map<number, number>();
+    let currentRank = 1;
+    let prevElo: number | null = null;
+
+    for (let i = 0; i < sorted.length; i++) {
+      const player = sorted[i];
+      const elo = getElo(player);
+      if (prevElo !== null && elo === prevElo) {
+        // stesso rank
+      } else {
+        currentRank = i + 1;
+      }
+      ranks.set(player.id, currentRank);
+      prevElo = elo;
+    }
+
+    return ranks;
+  }
+
+  /**
+   * Renders the badge showing today's rank change.
+   *
+   * @param deltaRank - The change in rank for today.
+   * @param matches - The number of matches played today.
+   * @returns The HTML string for the badge.
+   */
+  private static renderTodayRankBadge(deltaRank: number, matches: number): string {
+    const baseStyle = 'margin-left:6px;font-size:0.85em;';
+    if (matches === 0) return '';
+
+    const rounded = Math.round(deltaRank);
+    if (rounded > 0) {
+      return `<span class="today-rank positive" title="Oggi: +${rounded} posizioni" style="${baseStyle}color:green;">▲ +${rounded}</span>`;
+    }
+    if (rounded < 0) {
+      return `<span class="today-rank negative" title="Oggi: ${rounded} posizioni" style="${baseStyle}color:#dc3545;">▼ ${rounded}</span>`;
+    }
+    return `<span class="today-rank neutral" title="Oggi: nessuna variazione di posizione" style="${baseStyle}color:#a0aec0;">=</span>`;
+  }
+
+  /**
    * Rende le intestazioni della tabella ordinabili.
    */
   private static makeHeadersSortable(): void {
@@ -199,22 +248,11 @@ export class RankingView {
     const tbody = table.querySelector('tbody')!;
     const fragment = document.createDocumentFragment();
 
-    // Calcola il rank in base all'Elo decrescente, indipendentemente dall'ordinamento attivo
-    const playersByElo = [...players].sort((a, b) => getDisplayElo(b) - getDisplayElo(a));
-    const playerIdToRank = new Map<number, number>();
-    let currentRank = 1;
-    let prevElo: number | null = null;
-    for (let i = 0; i < playersByElo.length; i++) {
-      const p = playersByElo[i];
-      const elo = getDisplayElo(p);
-      if (prevElo !== null && elo === prevElo) {
-        // stesso rank
-      } else {
-        currentRank = i + 1;
-      }
-      playerIdToRank.set(p.id, currentRank);
-      prevElo = elo;
-    }
+    const playerIdToRank = RankingView.buildRankMap(players, p => getDisplayElo(p));
+    const playerIdToStartRank = RankingView.buildRankMap(
+      players,
+      p => Math.round(getDisplayElo(p) - (todayDeltas.get(p.id)?.delta ?? 0))
+    );
 
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
@@ -324,7 +362,7 @@ export class RankingView {
       }
 
       tr.addEventListener('click', () => {
-        window.location.href = `./players.html?id=${player.id}`;
+        globalThis.location.href = `./players.html?id=${player.id}`;
       });
       const playerNameDisplay = (isFirst || isSecond || isThird)
         ? `<span style="font-weight: 700;">${player.name}</span>`
@@ -346,9 +384,12 @@ export class RankingView {
       const todayDelta = todayDeltaInfo?.delta ?? 0;
       const todayMatches = todayDeltaInfo?.matches ?? 0;
       const todayBadge = RankingView.renderTodayDeltaBadge(todayDelta, todayMatches);
+      const startRank = playerIdToStartRank.get(player.id) ?? rank;
+      const rankDelta = startRank - rank;
+      const todayRankBadge = RankingView.renderTodayRankBadge(rankDelta, todayMatches);
 
       tr.innerHTML = `
-        <td title="Posizione in classifica"><strong>${rankDisplay}°</strong></td>
+        <td title="Posizione in classifica"><strong>${rankDisplay}°</strong> ${todayRankBadge}</td>
         <td title="Nome giocatore"><div class="player-info">${avatarHTML}<span>${playerNameDisplay}</span></div></td>
         <td title="ELO rating attuale"><strong>${elo}</strong> ${todayBadge}</td>
         <td title="Ruolo preferito e percentuale">${role}</td>
@@ -707,7 +748,7 @@ export class RankingView {
       const winProbBPercent = (winProbB * 100).toFixed(1);
 
       const getWinProbClass = (percent: string): string => {
-        const value = parseFloat(percent);
+        const value = Number.parseFloat(percent);
         if (value < 50) return 'winprob-low';
         if (value > 50) return 'winprob-high';
         return 'winprob-neutral';
