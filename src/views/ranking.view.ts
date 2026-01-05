@@ -723,7 +723,11 @@ export class RankingView {
           </div>
           <div class="live-match-content">
             <div class="live-team">
-              <div class="live-team-winprob ${getWinProbClass(winProbAPercent)}">${winProbAPercent}%</div>
+              <div class="live-team-winprob ${getWinProbClass(winProbAPercent)}">
+                <span class="winprob-value">${winProbAPercent}%</span>
+                <span class="team-elo-label">team elo</span>
+                <span class="team-elo-value">${avgEloA}</span>
+              </div>
               <div class="live-players">
                 <div class="live-player">
                   <img src="/biliardino-elo/avatars/${defA.id}.webp" alt="${defA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
@@ -749,7 +753,11 @@ export class RankingView {
             </div>
             <div class="live-vs">VS</div>
             <div class="live-team">
-              <div class="live-team-winprob ${getWinProbClass(winProbBPercent)}">${winProbBPercent}%</div>
+              <div class="live-team-winprob ${getWinProbClass(winProbBPercent)}">
+                <span class="winprob-value">${winProbBPercent}%</span>
+                <span class="team-elo-label">team elo</span>
+                <span class="team-elo-value">${avgEloB}</span>
+              </div>
               <div class="live-players">
                 <div class="live-player">
                   <img src="/biliardino-elo/avatars/${defB.id}.webp" alt="${defB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
