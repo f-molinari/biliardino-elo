@@ -427,7 +427,7 @@ h2 {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.35rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem;
   background: rgba(248, 249, 250, 0.6);
   border-radius: 8px;
   transition: all 0.2s ease;

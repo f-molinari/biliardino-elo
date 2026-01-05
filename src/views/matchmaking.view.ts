@@ -1,5 +1,6 @@
 import { IRunningMatchDTO } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
+import { getPlayerElo } from '@/services/elo.service';
 import { addMatch } from '@/services/match.service';
 import { clearRunningMatch, fetchRunningMatch, saveMatch, saveRunningMatch } from '@/services/repository.service';
 import { availabilityList } from '@/utils/availability.util';
@@ -489,10 +490,6 @@ export class MatchmakingView {
     teamCard.className = 'team-card';
     teamCard.dataset.team = teamName;
 
-    const calcPerc = (count: number = 0, total: number = 0): number => {
-      return total > 0 ? Math.round((count / total) * 100) : 0;
-    };
-
     // Usa la property defence per calcolare la percentuale del ruolo
     const defPercP1 = Math.round(player1.defence * 100);
     const attPercP1 = 100 - defPercP1;
@@ -528,7 +525,7 @@ export class MatchmakingView {
             <div class="match-player-name"><span class="player-name">${roleIcon1} ${player1.name}</span></div>
             <div class="match-player-meta">
               <span class="role-badge ${roleBadgeClass1}" title="Percentuale partite nel ruolo assegnato">${roleLabel1}</span>
-              <span class="player-elo">${getDisplayElo(player1)}</span>
+              <span class="player-elo">${Math.round(getPlayerElo(player1, role1 === 'defence'))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(player1)})</span></span>
             </div>
           </div>
         </div>
@@ -545,7 +542,7 @@ export class MatchmakingView {
             <div class="match-player-name"><span class="player-name">${roleIcon2} ${player2.name}</span></div>
             <div class="match-player-meta">
               <span class="role-badge ${roleBadgeClass2}" title="Percentuale partite nel ruolo assegnato">${roleLabel2}</span>
-              <span class="player-elo">${getDisplayElo(player2)}</span>
+              <span class="player-elo">${Math.round(getPlayerElo(player2, role2 === 'defence'))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(player2)})</span></span>
             </div>
           </div>
         </div>
