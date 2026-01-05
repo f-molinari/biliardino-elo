@@ -180,7 +180,6 @@ export class RankingView {
    */
   private static renderTodayRankBadge(deltaRank: number, matches: number): string {
     const baseStyle = 'margin-left:6px;font-size:0.85em;';
-    if (matches === 0) return '';
 
     const rounded = Math.round(deltaRank);
     if (rounded > 0) {
@@ -189,7 +188,9 @@ export class RankingView {
     if (rounded < 0) {
       return `<span class="today-rank negative" title="Oggi: ${rounded} posizioni" style="${baseStyle}color:#dc3545;">▼ ${rounded}</span>`;
     }
-    return `<span class="today-rank neutral" title="Oggi: nessuna variazione di posizione" style="${baseStyle}color:#a0aec0;">=</span>`;
+    return matches === 0
+      ? ''
+      : `<span class="today-rank neutral" title="Oggi: nessuna variazione di posizione" style="${baseStyle}color:#a0aec0;">=</span>`;
   }
 
   /**
@@ -251,7 +252,7 @@ export class RankingView {
     const playerIdToRank = RankingView.buildRankMap(players, p => getDisplayElo(p));
     const playerIdToStartRank = RankingView.buildRankMap(
       players,
-      p => Math.round(getDisplayElo(p) - (todayDeltas.get(p.id)?.delta ?? 0))
+      p => Math.round(p.elo - (todayDeltas.get(p.id)?.delta ?? 0))
     );
 
     for (let i = 0; i < players.length; i++) {
