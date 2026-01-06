@@ -1,7 +1,7 @@
 import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { getPlayerElo } from '@/services/elo.service';
-import { getPlayerStats, MatchResult, PlayerStats } from '@/services/stats.service';
+import { getPlayerStats, PlayerStats } from '@/services/stats.service';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getAllPlayers, getPlayerById } from '../services/player.service';
 
@@ -85,14 +85,13 @@ export class PlayersView {
       return `${result.player.name} (${result.score > 0 ? '+' : ''}${result.score.toFixed(0)})`;
     };
 
-    const formatMatchResult = (result: { match: IMatch; delta: number } | null, playerId: number): { score: string; details: string } => {
-      if (!result) return { score: 'N/A', details: '' };
-      const m = result.match;
-      const isTeamA = m.teamA.attack === playerId || m.teamA.defence === playerId;
-      const score = isTeamA ? `${m.score[0]}-${m.score[1]}` : `${m.score[1]}-${m.score[0]}`;
+    const formatMatch = (match: IMatch | null, playerId: number): { score: string; details: string } => {
+      if (!match) return { score: 'N/A', details: '' };
+      const isTeamA = match.teamA.attack === playerId || match.teamA.defence === playerId;
+      const score = isTeamA ? `${match.score[0]}-${match.score[1]}` : `${match.score[1]}-${match.score[0]}`;
 
-      const myTeam = isTeamA ? m.teamA : m.teamB;
-      const opponentTeam = isTeamA ? m.teamB : m.teamA;
+      const myTeam = isTeamA ? match.teamA : match.teamB;
+      const opponentTeam = isTeamA ? match.teamB : match.teamA;
 
       const teammate = getPlayerById(myTeam.attack === playerId ? myTeam.defence : myTeam.attack);
       const opp1 = getPlayerById(opponentTeam.attack);
@@ -100,10 +99,11 @@ export class PlayersView {
 
       const teammateName = teammate?.name || '?';
       const opponentsNames = `${opp1?.name || '?'} & ${opp2?.name || '?'}`;
+      const delta = isTeamA ? match.deltaELO[0] : match.deltaELO[1];
 
       return {
         score,
-        details: `<small>vs ${opponentsNames}</small><br><small>con ${teammateName} (${result.delta > 0 ? '+' : ''}${result.delta.toFixed(0)} ELO)</small>`
+        details: `<small>vs ${opponentsNames}</small><br><small>con ${teammateName} (${delta > 0 ? '+' : ''}${delta.toFixed(0)} ELO)</small>`
       };
     };
 
@@ -130,8 +130,7 @@ export class PlayersView {
       };
     };
 
-    const formatMatchHistory = (matchResult: { match: IMatch; delta: number }, playerElo: number): string => {
-      const match = matchResult.match;
+    const formatMatchHistory = (match: IMatch, playerElo: number): string => {
       const isTeamA = match.teamA.attack === player.id || match.teamA.defence === player.id;
       const myTeam = isTeamA ? match.teamA : match.teamB;
       const opponentTeam = isTeamA ? match.teamB : match.teamA;
@@ -200,9 +199,10 @@ export class PlayersView {
       const isDefence = myTeam.defence === player.id;
       const eloWithMalus = Math.round(getPlayerElo(tempPlayer, isDefence));
       const realElo = Math.round(getDisplayElo(tempPlayer));
+      const delta = isTeamA ? match.deltaELO[0] : match.deltaELO[1];
 
       // Formatta delta del giocatore
-      const myDeltaFormatted = `<span style="color:${deltaColor};">(${matchResult.delta >= 0 ? '+' : ''}${Math.round(matchResult.delta)})</span>`;
+      const myDeltaFormatted = `<span style="color:${deltaColor};">(${delta >= 0 ? '+' : ''}${Math.round(delta)})</span>`;
 
       return `
         <tr class="${isWin ? 'match-win' : 'match-loss'}">
@@ -344,18 +344,18 @@ export class PlayersView {
           <div class="best-worst-item">
             <span class="stat-label">Migliore Vittoria (ELO)</span>
             <span class="stat-score positive">${(() => {
-              const result = formatMatchResult(stats.bestVictoryByElo, player.id);
+              const result = formatMatch(stats.bestVictoryByElo, player.id);
               return result.score === 'N/A' ? result.score : `<strong>${result.score}</strong>`;
             })()}</span>
-            <span class="stat-details">${formatMatchResult(stats.bestVictoryByElo, player.id).details}</span>
+            <span class="stat-details">${formatMatch(stats.bestVictoryByElo, player.id).details}</span>
           </div>
           <div class="best-worst-item">
             <span class="stat-label">Peggiore Sconfitta (ELO)</span>
             <span class="stat-score negative">${(() => {
-              const result = formatMatchResult(stats.worstDefeatByElo, player.id);
+              const result = formatMatch(stats.worstDefeatByElo, player.id);
               return result.score === 'N/A' ? result.score : `<strong>${result.score}</strong>`;
             })()}</span>
-            <span class="stat-details">${formatMatchResult(stats.worstDefeatByElo, player.id).details}</span>
+            <span class="stat-details">${formatMatch(stats.worstDefeatByElo, player.id).details}</span>
           </div>
           <div class="best-worst-item">
             <span class="stat-label">Migliore Vittoria (Punteggio)</span>
@@ -401,15 +401,18 @@ export class PlayersView {
               </thead>
               <tbody>
                 ${(() => {
-                  const playerElos: number[] = [1000];
-                  let currentElo = 1000;
-                  for (const element of stats.history) {
-                    currentElo += element.delta;
+                  const startElo = player.startElo;
+                  const playerElos: number[] = [startElo];
+                  let currentElo = startElo;
+                  for (const match of stats.history) {
+                    const isTeamA = match.teamA.attack === player.id || match.teamA.defence === player.id;
+                    const teamDelta = isTeamA ? match.deltaELO[0] : match.deltaELO[1];
+                    currentElo += teamDelta;
                     playerElos.push(currentElo);
                   }
-                  return stats.history.slice().reverse().map((matchResult, idx) => {
+                  return stats.history.slice().reverse().map((match, idx) => {
                     const eloBeforeMatch = playerElos[stats.history.length - idx - 1];
-                    return formatMatchHistory(matchResult, eloBeforeMatch);
+                    return formatMatchHistory(match, eloBeforeMatch);
                   }).join('');
                 })()}
               </tbody>
@@ -419,19 +422,19 @@ export class PlayersView {
       </div>
     `;
 
-    PlayersView.renderEloChart(stats);
+    PlayersView.renderEloChart(stats, player);
   }
 
   /**
    * Render the Elo progression chart at the bottom of the page.
    */
-  private static renderEloChart(stats: PlayerStats): void {
+  private static renderEloChart(stats: PlayerStats, player: IPlayer): void {
     const chartContainer = document.getElementById('elo-chart');
     if (!chartContainer) {
       return;
     }
 
-    const progression = PlayersView.buildEloProgression(stats.history);
+    const progression = PlayersView.buildEloProgression(stats.history, player.startElo, player.id);
 
     if (progression.length === 0) {
       chartContainer.innerHTML = '<p class="empty-state">Nessuna partita per calcolare l\'andamento ELO.</p>';
@@ -520,20 +523,22 @@ export class PlayersView {
     return 200;
   }
 
-  private static buildEloProgression(history: MatchResult[]): { value: number; label: string }[] {
+  private static buildEloProgression(history: IMatch[], startElo: number, playerId: number): { value: number; label: string }[] {
     if (history.length === 0) return [];
 
     const progression: { value: number; label: string }[] = [{
-      value: 1000,
+      value: startElo,
       label: '0'
     }];
 
-    let currentElo = 1000;
+    let currentElo = startElo;
     for (let i = 0; i < history.length; i++) {
       const match = history[i];
-      currentElo += match.delta;
+      const isTeamA = playerId === match.teamA.attack || playerId === match.teamA.defence;
+      const delta = isTeamA ? match.deltaELO[0] : match.deltaELO[1];
+      currentElo += delta;
       progression.push({
-        value: Math.round(currentElo),
+        value: currentElo,
         label: `${i + 1}`
       });
     }

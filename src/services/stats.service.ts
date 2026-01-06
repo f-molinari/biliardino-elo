@@ -3,11 +3,10 @@ import { IPlayer } from '@/models/player.interface';
 import { getAllMatches } from './match.service';
 import { getPlayerById } from './player.service';
 
-export type MatchResult = { match: IMatch; delta: number };
 export type PlayerResult = { player: IPlayer; score: number };
 
 export interface PlayerStats {
-  history: MatchResult[];
+  history: IMatch[];
 
   elo: number;
   bestElo: number;
@@ -32,8 +31,8 @@ export interface PlayerStats {
   bestOpponent: PlayerResult | null; // by Elo gain
   worstOpponent: PlayerResult | null; // by Elo loss
 
-  bestVictoryByElo: MatchResult | null;
-  worstDefeatByElo: MatchResult | null;
+  bestVictoryByElo: IMatch | null;
+  worstDefeatByElo: IMatch | null;
   bestVictoryByScore: IMatch | null;
   worstDefeatByScore: IMatch | null;
 
@@ -85,13 +84,13 @@ export function getPlayerStats(player: number): PlayerStats {
     if (team === -1) continue;
 
     const role = getRole(player, team, match);
-    const matchResult = updateEloResult(team, match);
-    result.history.push(matchResult);
+    updateEloResult(team, match);
+    result.history.push(match);
 
-    updateMatchCount(role, matchResult);
-    updateStreak(matchResult.delta);
-    updateOtherPlayers(team, role, matchResult);
-    updateBestMatch(matchResult);
+    updateMatchCount(role, match, team);
+    updateStreak(match.deltaELO[team]);
+    updateOtherPlayers(team, role, match);
+    updateBestMatch(match, team);
     updateGoalsCount(team, match);
   }
 
@@ -99,23 +98,21 @@ export function getPlayerStats(player: number): PlayerStats {
 
   return result;
 
-  function updateEloResult(team: number, match: IMatch): MatchResult {
+  function updateEloResult(team: number, match: IMatch): void {
     const delta = team === 0 ? match.deltaELO[0] : match.deltaELO[1];
 
     result.elo += delta;
 
     if (result.elo > result.bestElo) result.bestElo = result.elo;
     if (result.elo < result.worstElo) result.worstElo = result.elo;
-
-    return { match, delta };
   }
 
-  function updateMatchCount(role: number, matchResult: MatchResult): void {
+  function updateMatchCount(role: number, match: IMatch, team: number): void {
     const roleKey = role === 0 ? 'AsDefence' : 'AsAttack';
     result.matches++;
     result[`matches${roleKey}`]++;
 
-    if (matchResult.delta > 0) {
+    if (match.deltaELO[team] > 0) {
       result.wins++;
       result[`wins${roleKey}`]++;
     } else {
@@ -135,10 +132,10 @@ export function getPlayerStats(player: number): PlayerStats {
     }
   }
 
-  function updateOtherPlayers(team: number, role: number, matchResult: MatchResult): void {
-    const delta = matchResult.delta;
-    const teammate = getTeammate(team, role, matchResult.match);
-    const { attack: opponentA, defence: opponentB } = getOpponentTeam(team, matchResult.match);
+  function updateOtherPlayers(team: number, role: number, match: IMatch): void {
+    const delta = match.deltaELO[team];
+    const teammate = getTeammate(team, role, match);
+    const { attack: opponentA, defence: opponentB } = getOpponentTeam(team, match);
 
     teammateList[teammate] ??= [0, 0];
     teammateList[teammate][0]++;
@@ -149,30 +146,30 @@ export function getPlayerStats(player: number): PlayerStats {
     opponentList[opponentB] += delta;
   }
 
-  function updateBestMatch(matchResult: MatchResult): void {
-    const delta = matchResult.delta;
+  function updateBestMatch(match: IMatch, team: number): void {
+    const delta = match.deltaELO[team];
     const win = delta > 0;
-    const score = matchResult.match.score;
+    const score = match.score;
     const scoreDiff = Math.abs(score[0] - score[1]);
 
     if (win) {
       if (delta >= bestVictoryElo) {
-        result.bestVictoryByElo = matchResult;
+        result.bestVictoryByElo = match;
         bestVictoryElo = delta;
       }
 
       if (scoreDiff >= bestVictoryScore) {
-        result.bestVictoryByScore = matchResult.match;
+        result.bestVictoryByScore = match;
         bestVictoryScore = scoreDiff;
       }
     } else {
       if (delta <= worstDefeatElo) {
-        result.worstDefeatByElo = matchResult;
+        result.worstDefeatByElo = match;
         worstDefeatElo = delta;
       }
 
       if (scoreDiff >= worstDefeatScore) {
-        result.worstDefeatByScore = matchResult.match;
+        result.worstDefeatByScore = match;
         worstDefeatScore = scoreDiff;
       }
     }
