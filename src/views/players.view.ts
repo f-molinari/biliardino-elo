@@ -1,6 +1,8 @@
 import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
+import { getPlayerElo } from '@/services/elo.service';
 import { getPlayerStats, MatchResult, PlayerStats } from '@/services/stats.service';
+import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getAllPlayers, getPlayerById } from '../services/player.service';
 
 /**
@@ -70,6 +72,8 @@ export class PlayersView {
     const winPercentage = stats.matches > 0 ? ((stats.wins / stats.matches) * 100).toFixed(0) : '0';
     const winPercentageAttack = stats.matchesAsAttack > 0 ? ((stats.winsAsAttack / stats.matchesAsAttack) * 100).toFixed(0) : '0';
     const winPercentageDefence = stats.matchesAsDefence > 0 ? ((stats.winsAsDefence / stats.matchesAsDefence) * 100).toFixed(0) : '0';
+    const attackRolePercentage = stats.matches > 0 ? ((stats.matchesAsAttack / stats.matches) * 100).toFixed(0) : '0';
+    const defenceRolePercentage = stats.matches > 0 ? ((stats.matchesAsDefence / stats.matches) * 100).toFixed(0) : '0';
 
     const formatElo = (value: number): number | string => {
       if (!Number.isFinite(value)) return 'N/A';
@@ -191,10 +195,19 @@ export class PlayersView {
       const myExpColor = myExpectedPercent === '?' ? 'inherit' : (myExpectedPercent > 50 ? 'green' : myExpectedPercent < 50 ? 'red' : 'inherit');
       const oppExpColor = oppExpectedPercent === '?' ? 'inherit' : (oppExpectedPercent > 50 ? 'green' : oppExpectedPercent < 50 ? 'red' : 'inherit');
 
+      // Calcola ELO con malus per ruolo
+      const tempPlayer: IPlayer = { ...player, elo: playerElo };
+      const isDefence = myTeam.defence === player.id;
+      const eloWithMalus = Math.round(getPlayerElo(tempPlayer, isDefence));
+      const realElo = Math.round(getDisplayElo(tempPlayer));
+
+      // Formatta delta del giocatore
+      const myDeltaFormatted = `<span style="color:${deltaColor};">(${matchResult.delta >= 0 ? '+' : ''}${Math.round(matchResult.delta)})</span>`;
+
       return `
         <tr class="${isWin ? 'match-win' : 'match-loss'}">
-          <td><strong>${Math.round(playerElo)}</strong> <span style="color:${deltaColor};">(${matchResult.delta >= 0 ? '+' : ''}${Math.round(matchResult.delta)})</span></td>
-          <td><strong>${myTeamElo}</strong></td>
+          <td><strong>${eloWithMalus}</strong> <span style="font-size:0.85em;opacity:0.7;">(${realElo})</span></td>
+          <td><strong>${myTeamElo}</strong> ${myDeltaFormatted}</td>
           <td>${myRole}</td>
           <td>${teammateNames}</td>
           <td><span style="color:${myExpColor};font-size:0.85em;">(${myExpectedPercent}%)</span> <strong>${myScore}-${oppScore}</strong> <span style="color:${oppExpColor};font-size:0.85em;">(${oppExpectedPercent}%)</span></td>
@@ -232,11 +245,11 @@ export class PlayersView {
           </div>
           <div class="stat-item">
             <span class="stat-label">Come Attaccante</span>
-            <span class="stat-value">${stats.matchesAsAttack}</span>
+            <span class="stat-value">${stats.matchesAsAttack} <span class="percentage">(${attackRolePercentage}%)</span></span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Come Difensore</span>
-            <span class="stat-value">${stats.matchesAsDefence}</span>
+            <span class="stat-value">${stats.matchesAsDefence} <span class="percentage">(${defenceRolePercentage}%)</span></span>
           </div>
         </div>
       </div>
