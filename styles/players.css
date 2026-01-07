@@ -104,13 +104,6 @@ a.nav-link:hover {
   overflow: hidden;
 }
 
-.player-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
 .player-card:nth-child(7) {
   grid-column: span 2;
 }
@@ -146,13 +139,6 @@ a.nav-link:hover {
   border-left: 3px solid transparent;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.stat-item:hover {
-  border-left-color: #1d1d1f;
-  transform: translateX(6px);
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .stat-label {
@@ -327,13 +313,6 @@ a.nav-link:hover {
   box-shadow: var(--shadow-sm);
 }
 
-.best-worst-item:hover {
-  border-color: #1d1d1f;
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.98);
-}
-
 .best-worst-item .stat-label {
   font-size: clamp(0.75rem, 2vw, 0.95rem);
   color: var(--color-text-muted);
@@ -368,25 +347,7 @@ a.nav-link:hover {
 /* Chart */
 .chart-wrapper {
   margin-top: 0.5rem;
-  overflow-x: auto;
   padding-bottom: 0.5rem;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-primary) rgba(255, 255, 255, 0.1);
-  -webkit-overflow-scrolling: touch;
-}
-
-.chart-wrapper::-webkit-scrollbar {
-  height: 6px;
-}
-
-.chart-wrapper::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 4px;
-}
-
-.chart-wrapper::-webkit-scrollbar-thumb {
-  background: #1d1d1f;
-  border-radius: 4px;
 }
 
 .chart-meta {

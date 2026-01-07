@@ -458,7 +458,7 @@ export class PlayersView {
       return { ...point, x, y };
     });
 
-    const path = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
+    const path = PlayersView.createSmoothPath(points);
     const areaPath = `${path} L ${points.at(-1)?.x ?? padding} ${height - padding} L ${points[0]?.x ?? padding} ${height - padding} Z`;
 
     const labelStep = Math.max(1, Math.ceil(progression.length / 8));
@@ -480,7 +480,7 @@ export class PlayersView {
         <span>Max: ${Math.round(max)}</span>
         <span>Ultimo: ${Math.round(values[values.length - 1])}</span>
       </div>
-      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Andamento ELO nel tempo" style="min-width:${width}px">
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Andamento ELO nel tempo">
         <defs>
           <linearGradient id="eloGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#4a5568" stop-opacity="0.3" />
@@ -544,5 +544,36 @@ export class PlayersView {
     }
 
     return progression;
+  }
+
+  /**
+   * Create a smooth curve path using cubic Bézier curves.
+   */
+  private static createSmoothPath(points: { x: number; y: number }[]): string {
+    if (points.length === 0) return '';
+    if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+    if (points.length === 2) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} L ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}`;
+
+    let path = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+
+    // Calculate control points for smooth curves
+    const tension = 0.3; // Smoothness factor (0 = straight lines, 1 = very smooth)
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const current = points[i];
+      const next = points[i + 1];
+      const prev = i > 0 ? points[i - 1] : current;
+      const afterNext = i < points.length - 2 ? points[i + 2] : next;
+
+      // Calculate control points for the curve
+      const cp1x = current.x + (next.x - prev.x) * tension;
+      const cp1y = current.y + (next.y - prev.y) * tension;
+      const cp2x = next.x - (afterNext.x - current.x) * tension;
+      const cp2y = next.y - (afterNext.y - current.y) * tension;
+
+      path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${next.x.toFixed(2)} ${next.y.toFixed(2)}`;
+    }
+
+    return path;
   }
 }
