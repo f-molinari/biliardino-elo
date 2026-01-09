@@ -11,6 +11,23 @@ import { fetchRunningMatch } from '../services/repository.service';
 type SortKey = 'rank' | 'name' | 'elo' | 'matches' | 'winrate' | 'goaldiff' | 'form';
 
 export class RankingView {
+  // Finestre orarie in cui la partita è LIVE (orario locale)
+  private static readonly LIVE_WINDOWS: Array<{ start: number; end: number }> = [
+    { start: 11 * 60, end: 11 * 60 + 15 }, // 11:00 - 11:15
+    { start: 13 * 60, end: 14 * 60 }, // 13:00 - 14:00
+    { start: 16 * 60, end: 16 * 60 + 15 }, // 16:00 - 16:15
+    { start: 18 * 60, end: 20 * 60 } // 18:00 - 20:00
+  ];
+
+  /**
+   * Ritorna true se l'orario corrente ricade in una delle finestre LIVE.
+   * Confronto effettuato in minuti dal mezzanotte, con fine finestra esclusiva.
+   */
+  private static isLiveNow(date: Date = new Date()): boolean {
+    const minutes = date.getHours() * 60 + date.getMinutes();
+    return RankingView.LIVE_WINDOWS.some(w => minutes >= w.start && minutes < w.end);
+  }
+
   private static sortKey: SortKey = 'elo';
   private static sortAsc: boolean = false;
   // Indici colonne: 0=#, 1=Nome, 2=Elo, 3=Ruolo, 4=Match, 5=V/S, 6=%Win, 7=Goal F/S, 8=Forma
@@ -232,7 +249,10 @@ export class RankingView {
     headers.forEach((th, idx) => {
       // Non mostrare freccia su colonne non ordinabili
       if (!RankingView.sortKeys[idx]) return;
-      th.innerHTML = th.textContent.replaceAll(/[↑↓]/g, '').trim() + (arrows[idx] || '');
+      const title = th.getAttribute('title');
+      const text = th.textContent.replaceAll(/[↑↓]/g, '').trim();
+      th.innerHTML = text + (arrows[idx] || '');
+      if (title) th.setAttribute('title', title);
     });
   }
 
@@ -394,8 +414,8 @@ export class RankingView {
         <td title="Nome giocatore"><div class="player-info">${avatarHTML}<span>${playerNameDisplay}</span></div></td>
         <td title="ELO rating attuale"><strong>${elo}</strong> ${todayBadge}</td>
         <td title="Ruolo preferito e percentuale">${role}</td>
-        <td title="Vittorie - Sconfitte">${record}</td>
         <td title="Partite giocate">${player.matches}</td>
+        <td title="Vittorie - Sconfitte">${record}</td>
         <td title="Percentuale di vittorie">${winRate}%</td>
         <td title="Rapporto goal fatti/subiti">${goalDiff}</td>
         <td title="Ultime 5 partite e variazione ELO">${last5Results || '-'} ${last5Results ? eloGainedFormatted : ''}</td>
@@ -757,11 +777,12 @@ export class RankingView {
 
       const fallbackAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNlMGUwZTA7c3RvcC1vcGFjaXR5OjEiIC8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjVmNWY1O3N0b3Atb3BhY2l0eToxIiAvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgZmlsbD0idXJsKCNncmFkKSIvPjxjaXJjbGUgY3g9IjI0IiBjeT0iMTUiIHI9IjciIGZpbGw9IiM3OTdhYjEiLz48cGF0aCBkPSJNIDEwIDMwIEMgMTAgMjQgMTYgMjAgMjQgMjAgQyAzMiAyMCAzOCAyNCAzOCAzMCBDIDM4IDM4IDMyIDQyIDI0IDQyIEMgMTYgNDIgMTAgMzggMTAgMzAiIGZpbGw9IiM3OTdhYjEiLz48L3N2Zz4=';
 
+      const isLive = RankingView.isLiveNow();
       container.innerHTML = `
         <div class="live-match-panel">
           <div class="live-match-header">
-            <span class="live-badge">LIVE</span>
-            <span class="live-title">Partita in Corso</span>
+            ${isLive ? '<span class="live-badge">LIVE</span>' : ''}
+            <span class="live-title">${isLive ? 'Partita in Corso' : 'Prossima Partita'}</span>
           </div>
           <div class="live-match-content">
             <div class="live-team">
