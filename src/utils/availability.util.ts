@@ -12,7 +12,9 @@ export const availabilityList = {
     'Marco De Luca',
     'Nicola Sergio',
     'Matteo Attanasio',
-    'Gianluca De Vincenzo'
+    'Gianluca De Vincenzo',
+    'Giuseppe Larato',
+    'Francesco Giustino'
   ],
   tuesday: [
     'Francesco Molinari',
@@ -47,7 +49,9 @@ export const availabilityList = {
     'Matteo Attanasio',
     'Gianluca De Vincenzo',
     'Dario Spinosa',
-    'Andrea Difonzo'
+    'Andrea Difonzo',
+    'Giuseppe Larato',
+    'Francesco Giustino'
   ],
   thursday: [
     'Francesco Molinari',
