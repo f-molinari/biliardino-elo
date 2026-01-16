@@ -1,12 +1,20 @@
 import { IMatch, IMatchDTO, IRunningMatchDTO } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { db, MATCHES_COLLECTION, PLAYERS_COLLECTION, RUNNING_MATCH_COLLECTION } from '@/utils/firebase.util';
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore/lite';
+import { collection, deleteDoc, doc, getDoc, getDocs, getDocsFromCache, setDoc } from 'firebase/firestore';
 
 const CURRENT_RUNNING_MATCH = 'current';
 
 export async function fetchPlayers(): Promise<IPlayer[]> {
-  const snap = await getDocs(collection(db, PLAYERS_COLLECTION));
+  let snap;
+
+  try {
+    // Prova prima a leggere dalla cache (istantaneo)
+    snap = await getDocsFromCache(collection(db, PLAYERS_COLLECTION));
+  } catch {
+    // Se cache vuota o errore, scarica da Firebase
+    snap = await getDocs(collection(db, PLAYERS_COLLECTION));
+  }
 
   const players = snap.docs.map((d) => {
     const data = d.data() as IPlayer;
@@ -33,7 +41,16 @@ export async function fetchPlayers(): Promise<IPlayer[]> {
 }
 
 export async function fetchMatches(): Promise<IMatch[]> {
-  const snap = await getDocs(collection(db, MATCHES_COLLECTION));
+  let snap;
+
+  try {
+    // Prova prima a leggere dalla cache (istantaneo)
+    snap = await getDocsFromCache(collection(db, MATCHES_COLLECTION));
+  } catch {
+    // Se cache vuota o errore, scarica da Firebase
+    snap = await getDocs(collection(db, MATCHES_COLLECTION));
+  }
+
   const matches: IMatch[] = [];
 
   snap.docs.forEach((d) => {
