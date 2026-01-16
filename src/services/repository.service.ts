@@ -1,7 +1,7 @@
 import { IMatch, IMatchDTO, IRunningMatchDTO } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { db, MATCHES_COLLECTION, PLAYERS_COLLECTION, RUNNING_MATCH_COLLECTION } from '@/utils/firebase.util';
-import { collection, deleteDoc, doc, DocumentData, getDoc, getDocFromCache, getDocFromServer, getDocsFromCache, getDocsFromServer, QuerySnapshot, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, DocumentData, getDoc, getDocFromServer, getDocsFromCache, getDocsFromServer, QuerySnapshot, setDoc } from 'firebase/firestore';
 
 const CURRENT_RUNNING_MATCH = 'current';
 const CACHE_CONTROL_COLLECTION = 'cache-control';
@@ -128,7 +128,7 @@ export async function saveRunningMatch(match: IRunningMatchDTO): Promise<void> {
 }
 
 export async function fetchRunningMatch(): Promise<IRunningMatchDTO | null> {
-  const snap = await getDocCacheServer(RUNNING_MATCH_COLLECTION, CURRENT_RUNNING_MATCH);
+  const snap = await getDocFromServer(doc(collection(db, RUNNING_MATCH_COLLECTION), CURRENT_RUNNING_MATCH));
 
   if (!snap?.exists()) return null;
 
@@ -148,14 +148,4 @@ async function getDocsCacheServer(collectionName: string): Promise<QuerySnapshot
 
   console.log('server fetch for collection:', collectionName);
   return await getDocsFromServer(collection(db, collectionName));
-}
-
-async function getDocCacheServer(collectionName: string, docId: string): Promise<DocumentData | null> {
-  if (useCache) {
-    console.log('cached fetch for doc:', collectionName, docId);
-    return await getDocFromCache(doc(collection(db, collectionName), docId));
-  }
-
-  console.log('server fetch for doc:', collectionName, docId);
-  return await getDocFromServer(doc(collection(db, collectionName), docId));
 }

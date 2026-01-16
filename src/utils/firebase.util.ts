@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 /**
  * Firebase project configuration used by the web application.
@@ -26,7 +26,10 @@ const app = initializeApp(firebaseConfig);
  *
  * Used by the repository code to read and write collections.
  */
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+
 /**
  * Firebase Authentication instance for the current app.
  * Used to authenticate predefined users via email (username) and password.
