@@ -34,11 +34,11 @@ export interface IMatchProposal {
 }
 
 const config: IMatchmakingConfig = {
-  matchBalanceWeight: 0.4,
+  matchBalanceWeight: 0.3,
   teamBalanceWeight: 0.2,
   priorityWeight: 0.2,
-  diversityWeight: 0.2,
-  randomness: 0.05
+  diversityWeight: 0.3,
+  randomness: 0.08
 };
 
 export function findBestMatch(availablePlayerId: number[], priorityPlayersId: number[]): IMatchProposal | null {
@@ -239,9 +239,8 @@ function getOpponentDiversity(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB:
 }
 
 function calculateMatchScore(diversityScore: number, matchBalanceScore: number, priorityScore: number, teamBalanceScore: number): number {
-  const randomness = (Math.random() * 2 - 1) * config.randomness;
-  const baseScore = diversityScore + matchBalanceScore + priorityScore + teamBalanceScore;
-  return baseScore * (1 - randomness);
+  const randomness = Math.random() * config.randomness;
+  return diversityScore + matchBalanceScore + priorityScore + teamBalanceScore + randomness;
 }
 
 function getPlayersRolesArray(matches: IMatch[], players: IPlayer[], defArray: IPlayer[], attArray: IPlayer[]): void {
