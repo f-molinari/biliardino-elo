@@ -29,7 +29,17 @@ async function fetchCacheHashes(): Promise<{ hashPlayers: number | null; hashMat
   }
 }
 
-async function updateMatchesHash(): Promise<void> {
+export async function updatePlayersHash(): Promise<void> {
+  try {
+    const hashPlayers = Math.random();
+    const ref = doc(collection(db, CACHE_CONTROL_COLLECTION), CACHE_CONTROL_DOC);
+    await setDoc(ref, { hashPlayers }, { merge: true });
+  } catch (error) {
+    console.error('Error saving players cache hash:', error);
+  }
+}
+
+export async function updateMatchesHash(): Promise<void> {
   try {
     const hashMatches = Math.random();
     const ref = doc(collection(db, CACHE_CONTROL_COLLECTION), CACHE_CONTROL_DOC);
@@ -40,7 +50,7 @@ async function updateMatchesHash(): Promise<void> {
 }
 
 function getStoredHash(key: string): number | null {
-  const stored = localStorage.getItem(CACHE_HASH_PLAYERS_KEY);
+  const stored = localStorage.getItem(key);
   return stored ? Number(stored) : null;
 }
 
@@ -162,6 +172,22 @@ export async function fetchRunningMatch(): Promise<IRunningMatchDTO | null> {
 
 export async function clearRunningMatch(): Promise<void> {
   const ref = doc(collection(db, RUNNING_MATCH_COLLECTION), CURRENT_RUNNING_MATCH);
+  await deleteDoc(ref);
+}
+
+export async function savePlayer(player: IPlayer): Promise<void> {
+  const ref = doc(collection(db, PLAYERS_COLLECTION), player.id.toString());
+  const playerDTO = {
+    id: player.id,
+    name: player.name,
+    elo: player.elo,
+    defence: player.defence
+  };
+  await setDoc(ref, playerDTO, { merge: true });
+}
+
+export async function deletePlayer(id: number): Promise<void> {
+  const ref = doc(collection(db, PLAYERS_COLLECTION), id.toString());
   await deleteDoc(ref);
 }
 
