@@ -1,0 +1,182 @@
+:root {
+  /* Backgrounds */
+  --bg-100: #f5f5f7;
+  --bg-200: #e8e8ed;
+  --bg-gradient: linear-gradient(135deg, var(--bg-100) 0%, var(--bg-200) 100%);
+
+  /* Core text/colors */
+  --text-900: #1d1d1f;
+  --text-dark-2: #1a202c;
+  --muted: #6e6e73;
+  --muted-2: #64748b;
+
+  /* Brand */
+  --brand-blue: #062c7d;
+  --brand-blue-rgb: 6,44,125;
+  --brand-green: #34c759;
+  --brand-green-rgb: 52,199,89;
+  --brand-green-2: #2fa953;
+  --brand-green-3: #2a9348;
+
+  /* Alerts */
+  --orange: #ff9500;
+  --orange-rgb: 255,149,0;
+  --danger: #ef4444;
+  --danger-2: #dc3545;
+  --danger-3: #dc2626;
+  --success: #10b981;
+  --positive-green: #16a34a;
+  --warning-text: #5c4a2f;
+  --warning-sub: #6e5a3f;
+  --success-rgb: 40,167,69;
+  --success-2: #28a745;
+  --amber-rgb: 255,193,7;
+  --danger-rgb: 220,53,69;
+  --live-shimmer-grad: linear-gradient(90deg, var(--brand-blue) 0%, var(--brand-green) 50%, var(--brand-blue) 100%);
+  --danger-strong: #ff0000;
+
+  /* Misc */
+  --divider: #cbd5e0;
+  --deep: #2d3748;
+  --stat-blue: #0077cc;
+  --stat-blue-rgb: 0,119,204;
+  --badge-blue-bg: #e6f0ff;
+  --badge-blue-text: #0b61a4;
+  --badge-blue-rgb: 11,97,164;
+  --badge-red-bg: #ffe6e6;
+  --badge-red-text: #a40b0b;
+  --badge-red-rgb: 164,11,11;
+  --dark-ui: #020617;
+
+  /* Card / surfaces */
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-bg-variant: rgba(255, 255, 255, 0.7);
+  --border-06: rgba(0, 0, 0, 0.06);
+  --shadow-black-0-04: rgba(0, 0, 0, 0.04);
+  /* Additional rgba tokens standardized */
+  --play-disclaimer-stop1: rgba(255, 249, 240, 0.85);
+  --play-disclaimer-stop2: rgba(255, 245, 230, 0.85);
+  --black-0-08: rgba(0, 0, 0, 0.08);
+  --black-0-12: rgba(0, 0, 0, 0.12);
+  --black-0-16: rgba(0, 0, 0, 0.16);
+  --thead-bg: rgba(249, 249, 249, 0.95);
+  --row-bg: rgba(255, 255, 255, 0.05);
+  --deep-border: rgba(45, 55, 72, 0.2);
+  --border-08: rgba(0, 0, 0, 0.08);
+  --border-10: rgba(0, 0, 0, 0.10);
+  --live-player-stop2: rgba(248, 250, 252, 0.6);
+  --play-disclaimer-bg: linear-gradient(135deg, var(--play-disclaimer-stop1) 0%, var(--play-disclaimer-stop2) 100%);
+  --avatar-gradient: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+
+  /* Buttons */
+  --btn-green-gradient: linear-gradient(135deg, var(--brand-green) 0%, var(--brand-green-2) 100%);
+  --btn-green-hover: linear-gradient(135deg, var(--brand-green-2) 0%, var(--brand-green-3) 100%);
+
+  /* RGB helpers for rgba() uses */
+  --brand-blue-opaque-0-10: rgba(var(--brand-blue-rgb), 0.10);
+  --brand-blue-opaque-0-12: rgba(var(--brand-blue-rgb), 0.12);
+  --brand-blue-opaque-0-06: rgba(var(--brand-blue-rgb), 0.06);
+  --brand-blue-opaque-0-08: rgba(var(--brand-blue-rgb), 0.08);
+  --brand-green-opaque-0-3: rgba(var(--brand-green-rgb), 0.3);
+  --brand-green-opaque-0-2: rgba(var(--brand-green-rgb), 0.2);
+  --brand-green-opaque-0-35: rgba(var(--brand-green-rgb), 0.35);
+  --orange-opaque-0-3: rgba(var(--orange-rgb), 0.3);
+
+  /* Shadows / radius (kept from original) */
+  --radius: 18px;
+  --shadow-sm: 0 2px 16px var(--black-0-08);
+  --shadow-md: 0 4px 24px var(--black-0-12);
+  --shadow-lg: 0 8px 32px var(--black-0-16);
+
+  /* Login specific */
+  --backdrop-overlay: rgba(0, 0, 0, 0.45);
+  --shadow-strong: rgba(0, 0, 0, 0.25);
+  --stat-blue-hover: #3a7bd5;
+  --cancel-hover: #d0d0d0;
+
+  /* Editing background */
+  --editing-bg: #fff3cd;
+
+  /* Small aliases used elsewhere */
+  --card: var(--card-bg);
+  --text: var(--text-900);
+
+  /* Matchmaking specific */
+  --rules-bg: linear-gradient(135deg, #eaf6ff 0%, #d6eaff 100%);
+  --rules-border: #2196f3;
+  --rules-color: #1a3557;
+  --rules-shadow: rgba(33, 150, 243, 0.10);
+  --priority-bg: #fff9e6;
+  --priority-border: #ffd966;
+  --priority-hover: #fff3d1;
+  --priority-accent: #d4af37;
+  --disabled-bg: #f0f0f0;
+  --disabled-color: #999;
+  --delete-bg: linear-gradient(135deg, #ffecec 0%, #ffdede 100%);
+  --delete-hover: linear-gradient(135deg, #ffdede 0%, #ffc4c4 100%);
+  --delete-disabled: #f6f6f6;
+  --disclaimer-bg: linear-gradient(135deg, #fff9f0 0%, #fff5e6 100%);
+  --player-hover-bg: rgba(248, 249, 250, 1);
+}
+
+/* Dark theme overrides */
+:root[data-theme="dark"] {
+  --bg-100: #171a20;
+  --bg-200: #05060a;
+  --bg-gradient: linear-gradient(135deg, var(--bg-200) 0%, var(--bg-100) 100%);
+
+  --text-900: #e6eef8;
+  --text-dark-2: #dbe7f5;
+  --muted: #9aa3b2;
+  --muted-2: #94a3b8;
+
+  --brand-blue: #7fb0ff;
+  --brand-blue-rgb: 127,176,255;
+  --brand-green: #3fe77a;
+  --brand-green-rgb: 63,231,122;
+  --brand-green-2: #2fbf59;
+  --brand-green-3: #238f45;
+
+  --orange: #ffb86b;
+  --orange-rgb: 255,184,107;
+  --danger: #ff6b6b;
+  --danger-2: #ff4c4c;
+  --danger-3: #ff3b3b;
+  --success: #34e089;
+  --positive-green: #34e089;
+
+  --divider: #233243;
+  --card-bg: rgba(255,255,255,0.03);
+  --card-bg-variant: rgba(255,255,255,0.02);
+  --border-06: rgba(255,255,255,0.06);
+  --shadow-black-0-04: rgba(0,0,0,0.6);
+  /* dark-mode equivalents for new rgba tokens */
+  --play-disclaimer-stop1: rgba(30, 24, 20, 0.85);
+  --play-disclaimer-stop2: rgba(28, 24, 22, 0.85);
+  --black-0-08: rgba(0, 0, 0, 0.6);
+  --black-0-12: rgba(0, 0, 0, 0.7);
+  --black-0-16: rgba(0, 0, 0, 0.85);
+  --thead-bg: rgba(20, 24, 30, 0.9);
+  --row-bg: rgba(255,255,255,0.02);
+  --deep-border: rgba(255,255,255,0.06);
+  --border-08: rgba(255,255,255,0.08);
+  --border-10: rgba(255,255,255,0.10);
+  --dark-ui: #0b0f14;
+
+  --badge-blue-bg: rgba(127,176,255,0.08);
+  --badge-blue-text: #cfe6ff;
+  --badge-red-bg: rgba(255,107,107,0.08);
+  --badge-red-text: #ffdede;
+
+  /* Login specific */
+  --backdrop-overlay: rgba(0, 0, 0, 0.6);
+  --shadow-strong: rgba(0, 0, 0, 0.5);
+  --stat-blue-hover: #5a9eff;
+  --cancel-hover: #555555;
+
+  /* Editing background */
+  --editing-bg: #4a4a2a;
+
+  --btn-green-gradient: linear-gradient(135deg, var(--brand-green) 0%, var(--brand-green-2) 100%);
+  --btn-green-hover: linear-gradient(135deg, var(--brand-green-2) 0%, var(--brand-green-3) 100%);
+}
