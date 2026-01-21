@@ -1,24 +1,10 @@
-:root {
-  --color-bg: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
-  --color-card: rgba(255, 255, 255, 0.8);
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-primary: #1d1d1f;
-  --color-primary-dark: #000000;
-  --color-text: #1d1d1f;
-  --color-text-muted: #6e6e73;
-  --radius: 18px;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
-}
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Inter', system-ui, sans-serif;
-  background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+  background: var(--bg-gradient);
   background-attachment: fixed;
   margin: 0;
   padding: 2rem;
-  color: var(--color-text);
+  color: var(--text-900);
   line-height: 1.6;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -27,42 +13,42 @@ body {
 
 h1 {
   margin-top: 0;
-  color: var(--color-text);
+  color: var(--text-900);
   font-weight: 700;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+  text-shadow: 0 2px 20px var(--shadow-black-0-04);
   font-size: clamp(2rem, 5vw, 3rem);
 }
 
 a.nav-link {
-  color: var(--color-text);
+  color: var(--text-900);
   padding: 0.6rem 1.2rem;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--card-bg);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
   text-decoration: none;
   display: inline-block;
   font-weight: 600;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-08);
 }
 
 a.nav-link:hover {
-  background: rgba(255, 255, 255, 0.98);
-  color: var(--color-primary);
+  background: var(--card-bg);
+  color: var(--brand-blue);
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px var(--black-0-12);
+  border: 1px solid var(--black-0-12);
 }
 
 form {
   max-width: 460px;
   padding: 2rem;
   margin-bottom: 2rem;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--card-bg);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-08);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -70,15 +56,15 @@ form {
 
 form:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 48px var(--black-0-16);
 }
 
 fieldset {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-08);
   border-radius: 14px;
   padding: 1rem 1.2rem;
   margin-bottom: 1.2rem;
-  background: rgba(249, 249, 249, 0.8);
+  background: var(--thead-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -86,13 +72,13 @@ fieldset {
 legend {
   padding: 0 .5rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--text-900);
 }
 
 label {
   display: block;
   margin-bottom: .6rem;
-  color: var(--color-text);
+  color: var(--text-900);
   font-weight: 500;
 }
 
@@ -100,22 +86,22 @@ select,
 input[type="number"] {
   width: 100%;
   padding: 0.65rem;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-08);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--card-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: var(--color-text);
+  color: var(--text-900);
   font-size: 1rem;
 }
 
 select:focus,
 input[type="number"]:focus {
   outline: none;
-  border-color: var(--color-primary);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.08);
+  border-color: var(--brand-blue);
+  background: var(--card-bg);
+  box-shadow: 0 0 0 3px var(--border-08);
 }
 
 button[type="submit"] {
@@ -123,7 +109,7 @@ button[type="submit"] {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 14px;
-  background: var(--color-primary);
+  background: var(--brand-blue);
   color: white;
   cursor: pointer;
   font-size: 1rem;
@@ -133,9 +119,9 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover {
-  background: var(--color-primary-dark);
+  background: var(--brand-blue);
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px var(--black-0-16);
 }
 
 button[type="submit"]:active {
@@ -152,10 +138,10 @@ button[type="submit"]:active {
 table {
   width: 100%;
   border-collapse: collapse;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--card-bg);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-08);
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
@@ -164,35 +150,35 @@ table {
 th,
 td {
   padding: 0.75rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border-08);
   text-align: left;
-  color: var(--color-text);
+  color: var(--text-900);
 }
 
 thead {
-  background: rgba(249, 249, 249, 0.9);
+  background: var(--thead-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   font-weight: 600;
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 2px solid var(--border-08);
 }
 
 tr.editing {
-  background-color: #fff3cd;
+  background-color: var(--editing-bg);
 }
 
 button.edit-match {
   padding: .35rem .7rem;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--brand-blue);
   background: transparent;
   border-radius: var(--radius);
-  color: var(--color-primary);
+  color: var(--brand-blue);
   cursor: pointer;
 }
 
 button.edit-match:hover {
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--brand-blue);
+  color: white;
 }
 
 .layout {
@@ -228,4 +214,24 @@ body.dev-mode #add-match-form {
 
 body.dev-mode button.edit-match {
   display: inline-flex;
+}
+
+/* Navigation container for large nav links */
+.nav-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding-top: 1rem;
+}
+
+/* Large nav link variant */
+.nav-link-large {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-08);
+  transition: all 0.3s ease;
 }

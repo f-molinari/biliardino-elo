@@ -4,6 +4,7 @@ import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getAllMatches } from '../services/match.service';
 import { getAllPlayers, getPlayerById } from '../services/player.service';
 import { fetchRunningMatch } from '../services/repository.service';
+import { getTheme } from './theme';
 
 /**
  * Renders and handles UI interactions for the ranking table.
@@ -97,9 +98,32 @@ export class RankingView {
       return sortAsc ? -cmp : cmp;
     });
 
+    RankingView.renderThemeButton();
     RankingView.renderrRows(players, todayDeltas);
     RankingView.renderMatchStats();
     RankingView.renderRecentMatches();
+  }
+
+  /**
+   * Initialize the icon of the theme toggle button based on the current theme.
+   * And sets up the click event listener to toggle the theme.
+   */
+  private static renderThemeButton(): void {
+    const toggleThemebutton = document.getElementById('theme-toggle') as HTMLButtonElement;
+    if (!toggleThemebutton) {
+      throw new Error('Theme button not found');
+    }
+
+    toggleThemebutton.textContent = getTheme() === 'light' ? '☀️' : '🌙';
+
+    toggleThemebutton.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      toggleThemebutton.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+    });
   }
 
   /**
@@ -143,21 +167,20 @@ export class RankingView {
    */
   private static renderTodayDeltaBadge(delta: number, matches: number): string {
     const rounded = Math.round(delta);
-    const baseStyle = 'margin-left:6px;font-size:0.85em;';
 
     if (matches === 0) {
       return '';
     }
 
     if (rounded > 0) {
-      return `<span class="today-delta positive" title="Oggi: +${rounded} Elo in ${matches} partite" style="${baseStyle}color:green;">▲ +${rounded}</span>`;
+      return `<span class="today-delta positive" title="Oggi: +${rounded} Elo in ${matches} partite">▲ +${rounded}</span>`;
     }
 
     if (rounded < 0) {
-      return `<span class="today-delta negative" title="Oggi: ${rounded} Elo in ${matches} partite" style="${baseStyle}color:#dc3545;">▼ ${rounded}</span>`;
+      return `<span class="today-delta negative" title="Oggi: ${rounded} Elo in ${matches} partite">▼ ${rounded}</span>`;
     }
 
-    return `<span class="today-delta neutral" title="Oggi: nessuna variazione in ${matches} partite" style="${baseStyle}color:#a0aec0;">=</span>`;
+    return `<span class="today-delta neutral" title="Oggi: nessuna variazione in ${matches} partite">=</span>`;
   }
 
   /**
@@ -196,18 +219,16 @@ export class RankingView {
    * @returns The HTML string for the badge.
    */
   private static renderTodayRankBadge(deltaRank: number, matches: number): string {
-    const baseStyle = 'margin-left:6px;font-size:0.85em;';
-
     const rounded = Math.round(deltaRank);
     if (rounded > 0) {
-      return `<span class="today-rank positive" title="Oggi: +${rounded} posizioni" style="${baseStyle}color:green;">▲ +${rounded}</span>`;
+      return `<span class="today-rank positive" title="Oggi: +${rounded} posizioni">▲ +${rounded}</span>`;
     }
     if (rounded < 0) {
-      return `<span class="today-rank negative" title="Oggi: ${rounded} posizioni" style="${baseStyle}color:#dc3545;">▼ ${rounded}</span>`;
+      return `<span class="today-rank negative" title="Oggi: ${rounded} posizioni">▼ ${rounded}</span>`;
     }
     return matches === 0
       ? ''
-      : `<span class="today-rank neutral" title="Oggi: nessuna variazione di posizione" style="${baseStyle}color:#a0aec0;">=</span>`;
+      : `<span class="today-rank neutral" title="Oggi: nessuna variazione di posizione">=</span>`;
   }
 
   /**
@@ -319,17 +340,17 @@ export class RankingView {
       let role = '';
       let defenceValue = player.defence * 100;
       let label = '🛡️';
-      let color = '#0077cc';
+      let roleClass = 'role-defence';
       if (defenceValue === 50) {
         label = '⚖️';
-        color = '#6c757d';
+        roleClass = 'role-balanced';
       }
       if (defenceValue < 50) {
         defenceValue = 100 - defenceValue;
         label = '⚔️';
-        color = '#dc3545';
+        roleClass = 'role-attack';
       }
-      role = `<span style="font-size:0.9em;color:${color};">${label} ${defenceValue}%</span>`;
+      role = `<span class="${roleClass}">${label} ${defenceValue}%</span>`;
 
       // Usa matchesDelta precalcolato per ultimi 5 risultati e Elo guadagnato
       const matchesDelta = player.matchesDelta || [];
