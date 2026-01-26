@@ -3,7 +3,7 @@ import { IPlayer } from '@/models/player.interface';
 import { getPlayerElo } from '@/services/elo.service';
 import { getPlayerStats, PlayerStats } from '@/services/stats.service';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
-import { getAllPlayers, getPlayerById } from '../services/player.service';
+import { getPlayerById, getRank } from '../services/player.service';
 
 /**
  * Handles UI display for player details.
@@ -57,12 +57,6 @@ export class PlayersView {
       container.innerHTML = '<div class="empty-state">Nessuna statistica disponibile</div>';
       return;
     }
-
-    // Calculate rank considering only players with at least 1 match
-    const allPlayers = getAllPlayers().filter(p => p.matches > 0);
-    const sortedPlayers = allPlayers.toSorted((a, b) => b.elo - a.elo);
-    const rank = sortedPlayers.findIndex(p => p.id === player.id) + 1;
-    const rankText = rank > 0 ? ` (${rank}°)` : '';
 
     // Update page title (empty)
     const titleElement = document.getElementById('player-name');
@@ -254,7 +248,7 @@ export class PlayersView {
         <div class="pp-header">
           <h2 class="pp-name">${player.name}</h2>
           <div class="pp-badges">
-            <span class="pp-rank-badge">#${rank}</span>
+            <span class="pp-rank-badge">#${getRank(player.id)}</span>
             <span class="pp-winrate-badge ${winRateClass}">Win ${winPercentage}%</span>
           </div>
         </div>
@@ -387,6 +381,14 @@ export class PlayersView {
           <div class="stat-item">
             <span class="stat-label">Avversario Più Scarso</span>
             <span class="stat-value player-name positive">${formatPlayerResult(stats.worstOpponent)}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">ELO Medio Squadra</span>
+            <span class="stat-value">${stats.avgTeamElo ? Math.round(stats.avgTeamElo) : 'N/A'}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">ELO Medio Avversari</span>
+            <span class="stat-value">${stats.avgOpponentElo ? Math.round(stats.avgOpponentElo) : 'N/A'}</span>
           </div>
         </div>
       </div>

@@ -14,7 +14,9 @@ export const availabilityList = {
     'Matteo Attanasio',
     'Gianluca De Vincenzo',
     'Giuseppe Larato',
-    'Francesco Giustino'
+    'Francesco Giustino',
+    'Onofrio Petragallo',
+    'Gianni Labarile'
   ],
   tuesday: [
     'Francesco Molinari',
@@ -32,7 +34,9 @@ export const availabilityList = {
     'Marco De Luca',
     'Nicola Sergio',
     'Gianluca De Vincenzo',
-    'Ilenia Taccogna'
+    'Ilenia Taccogna',
+    'Onofrio Petragallo',
+    'Gianni Labarile'
   ],
   wednesday: [
     'Francesco Molinari',
@@ -52,7 +56,9 @@ export const availabilityList = {
     'Dario Spinosa',
     'Andrea Difonzo',
     'Giuseppe Larato',
-    'Francesco Giustino'
+    'Francesco Giustino',
+    'Onofrio Petragallo',
+    'Gianni Labarile'
   ],
   thursday: [
     'Francesco Molinari',
@@ -73,7 +79,9 @@ export const availabilityList = {
     'Marco De Luca',
     'Nicola Sergio',
     'Gianluca De Vincenzo',
-    'Ilenia Taccogna'
+    'Ilenia Taccogna',
+    'Onofrio Petragallo',
+    'Gianni Labarile'
   ],
   friday: [
     'Francesco Molinari',
@@ -90,6 +98,8 @@ export const availabilityList = {
     'Nicola Sergio',
     'Leonardo Galluzzi',
     'Gianluca De Vincenzo',
-    'Andrea Difonzo'
+    'Andrea Difonzo',
+    'Onofrio Petragallo',
+    'Gianni Labarile'
   ]
 };

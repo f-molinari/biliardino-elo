@@ -30,6 +30,8 @@ export interface PlayerStats {
   worstTeammate: PlayerResult | null; // by Elo loss
   bestOpponent: PlayerResult | null; // by Elo gain
   worstOpponent: PlayerResult | null; // by Elo loss
+  avgTeamElo: number | null;
+  avgOpponentElo: number | null;
 
   bestVictoryByElo: IMatch | null;
   worstDefeatByElo: IMatch | null;
@@ -67,7 +69,9 @@ export function getPlayerStats(player: number): PlayerStats {
     bestVictoryByScore: null,
     worstDefeatByScore: null,
     totalGoalsFor: 0,
-    totalGoalsAgainst: 0
+    totalGoalsAgainst: 0,
+    avgOpponentElo: null,
+    avgTeamElo: null
   };
 
   const matches = getAllMatches();
@@ -105,6 +109,12 @@ export function getPlayerStats(player: number): PlayerStats {
 
     if (result.elo > result.bestElo) result.bestElo = result.elo;
     if (result.elo < result.worstElo) result.worstElo = result.elo;
+
+    result.avgTeamElo ??= 0;
+    result.avgOpponentElo ??= 0;
+
+    result.avgTeamElo += team === 0 ? match.teamELO[0] : match.teamELO[1];
+    result.avgOpponentElo += team === 0 ? match.teamELO[1] : match.teamELO[0];
   }
 
   function updateMatchCount(role: number, match: IMatch, team: number): void {
@@ -228,6 +238,9 @@ export function getPlayerStats(player: number): PlayerStats {
 
     result.bestOpponent = { score: bestOpponentScore, player: getPlayerById(bestOpponentId)! };
     result.worstOpponent = { score: worstOpponentScore, player: getPlayerById(worstOpponentId)! };
+
+    result.avgTeamElo! /= result.history.length;
+    result.avgOpponentElo! /= result.history.length;
   }
 }
 
