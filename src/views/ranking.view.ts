@@ -362,8 +362,9 @@ export class RankingView {
       if (goalRatio === Infinity) {
         goalDiff = '<span style="color:green;">∞</span>';
       } else if (goalRatio > 0) {
-        const color = goalRatio <= 0.8 ? 'red' : goalRatio >= 1.2 ? 'green' : 'inherit';
-        goalDiff = `<span style="color:${color};">${goalRatio.toFixed(2)}</span>`;
+        const roundedRatio = parseFloat(goalRatio.toFixed(2));
+        const color = roundedRatio <= 0.8 ? 'red' : roundedRatio >= 1.2 ? 'green' : 'inherit';
+        goalDiff = `<span style="color:${color};">${roundedRatio.toFixed(2)}</span>`;
       }
 
       const tr = document.createElement('tr');

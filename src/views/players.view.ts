@@ -248,7 +248,7 @@ export class PlayersView {
         <div class="pp-header">
           <h2 class="pp-name">${player.name}</h2>
           <div class="pp-badges">
-            <span class="pp-rank-badge">#${getRank(player.id)}</span>
+            <span class="pp-rank-badge">${getRank(player.id)}°</span>
             <span class="pp-winrate-badge ${winRateClass}">Win ${winPercentage}%</span>
           </div>
         </div>
