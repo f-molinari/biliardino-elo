@@ -253,6 +253,13 @@ export class RankingView {
       const text = th.textContent.replaceAll(/[↑↓]/g, '').trim();
       th.innerHTML = text + (arrows[idx] || '');
       if (title) th.setAttribute('title', title);
+
+      // Aggiungi classe 'active' alla colonna attualmente ordinata
+      if (RankingView.sortKey === RankingView.sortKeys[idx]) {
+        th.classList.add('active');
+      } else {
+        th.classList.remove('active');
+      }
     });
   }
 

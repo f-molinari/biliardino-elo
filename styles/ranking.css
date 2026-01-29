@@ -295,6 +295,19 @@ tbody tr {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: fadeInRow 0.4s ease-out backwards;
   background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  position: relative;
+}
+
+tbody tr:hover {
+  transform: translateX(4px);
+  box-shadow: -4px 0 0 0 rgba(6, 44, 125, 0.3), 0 2px 12px rgba(6, 44, 125, 0.08);
+}
+
+tbody tr:hover .player-avatar {
+  border-color: rgba(6, 44, 125, 0.25);
+  box-shadow: 0 4px 12px rgba(6, 44, 125, 0.15);
+  transform: scale(1.05);
 }
 
 tbody tr:nth-child(1) {
@@ -371,6 +384,7 @@ tbody tr.podium-last {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .avatar-img {
@@ -387,12 +401,30 @@ tbody tr:last-child td {
 th[data-sort] {
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+th[data-sort]:hover {
+  background: rgba(6, 44, 125, 0.08);
+}
+
+th[data-sort].active {
+  font-weight: 700;
+  background: rgba(6, 44, 125, 0.03);
+  border-bottom: 3px solid rgba(6, 44, 125, 0.12);
 }
 
 .sort-indicator {
   font-size: 0.75em;
   margin-left: 0.25rem;
   opacity: 0.9;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+th[data-sort]:hover .sort-indicator {
+  transform: scale(1.2);
 }
 
 .positive {
