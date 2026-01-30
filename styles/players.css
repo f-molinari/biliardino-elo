@@ -827,6 +827,15 @@ a.nav-link:hover {
   color: #ef4444;
 }
 
+/* Role badges mantenere i loro colori */
+.pp-card .pp-stats .stat-value .role-badge.badge-def {
+  color: #0b61a4 !important;
+}
+
+.pp-card .pp-stats .stat-value .role-badge.badge-att {
+  color: #a40b0b !important;
+}
+
 /* =========================================================
    DESKTOP: card full-width, avatar a sinistra, layout ottimizzato
    ========================================================= */
@@ -987,10 +996,6 @@ a.nav-link:hover {
 
   .pp-card .pp-stats .stat-value.highlight {
     font-size: 1.15rem;
-  }
-
-  .pp-card .pp-stats .stat-item:last-child {
-    display: none;
   }
 }
 

@@ -2,6 +2,7 @@ import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { getPlayerElo } from '@/services/elo.service';
 import { getPlayerStats, PlayerStats } from '@/services/stats.service';
+import { formatRank } from '@/utils/format-rank.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getPlayerById, getRank } from '../services/player.service';
 
@@ -69,6 +70,13 @@ export class PlayersView {
     const winPercentageDefence = stats.matchesAsDefence > 0 ? ((stats.winsAsDefence / stats.matchesAsDefence) * 100).toFixed(0) : '0';
     const attackRolePercentage = stats.matches > 0 ? ((stats.matchesAsAttack / stats.matches) * 100).toFixed(0) : '0';
     const defenceRolePercentage = stats.matches > 0 ? ((stats.matchesAsDefence / stats.matches) * 100).toFixed(0) : '0';
+
+    // Calcola il ruolo come nella classifica (player.defence * 100)
+    let rolePercentage = Math.round(player.defence * 100);
+    let isDefender = rolePercentage >= 50;
+    if (rolePercentage < 50) {
+      rolePercentage = 100 - rolePercentage;
+    }
 
     // Classe per il colore del win rate badge
     const winRateClass = parseInt(winPercentage) > 50 ? 'pp-winrate-good' : parseInt(winPercentage) < 50 ? 'pp-winrate-bad' : 'pp-winrate-equal';
@@ -248,7 +256,7 @@ export class PlayersView {
         <div class="pp-header">
           <h2 class="pp-name">${player.name}</h2>
           <div class="pp-badges">
-            <span class="pp-rank-badge">${getRank(player.id)}°</span>
+            <span class="pp-rank-badge">${formatRank(getRank(player.id))}</span>
             <span class="pp-winrate-badge ${winRateClass}">Win ${winPercentage}%</span>
           </div>
         </div>
@@ -270,8 +278,8 @@ export class PlayersView {
           </div>
 
           <div class="stat-item">
-            <span class="stat-label">Partite</span>
-            <span class="stat-value">${stats.matches}</span>
+            <span class="stat-label">Ruolo</span>
+            <span class="stat-value">${rolePercentage === 50 ? `<span class="role-badge" style="color: #6c757d !important;">⚖️ ${rolePercentage}%</span>` : isDefender ? `<span class="role-badge badge-def">🛡️ ${rolePercentage}%</span>` : `<span class="role-badge badge-att">⚔️ ${rolePercentage}%</span>`}</span>
           </div>
         </div>
       </div>

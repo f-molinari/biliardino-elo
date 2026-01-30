@@ -1,5 +1,6 @@
 import { IPlayer } from '@/models/player.interface';
 import { getPlayerElo } from '@/services/elo.service';
+import { formatRank } from '@/utils/format-rank.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getAllMatches } from '../services/match.service';
 import { getAllPlayers, getPlayerById, getRank } from '../services/player.service';
@@ -814,7 +815,7 @@ export class RankingView {
                   <a href="./players.html?id=${defA.id}" class="live-player-link">
                     <img src="/biliardino-elo/avatars/${defA.id}.webp" alt="${defA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
                     <div class="live-player-info">
-                      <span class="live-player-name">🛡️ ${defA.name} <span style="font-size:0.9em;opacity:0.8;">(${rankDefA}°)</span></span>
+                      <span class="live-player-name">🛡️ ${defA.name} <span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankDefA)})</span></span>
                       <div style="display:flex;align-items:center;gap:0.5rem;">
                         <span class="role-badge badge-def">DIF ${defPercA}%</span>
                         <span class="live-player-elo">${Math.round(getPlayerElo(defA, true))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(defA)})</span></span>
@@ -826,7 +827,7 @@ export class RankingView {
                   <a href="./players.html?id=${attA.id}" class="live-player-link">
                     <img src="/biliardino-elo/avatars/${attA.id}.webp" alt="${attA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
                     <div class="live-player-info">
-                      <span class="live-player-name">⚔️ ${attA.name} <span style="font-size:0.9em;opacity:0.8;">(${rankAttA}°)</span></span>
+                      <span class="live-player-name">⚔️ ${attA.name} <span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankAttA)})</span></span>
                       <div style="display:flex;align-items:center;gap:0.5rem;">
                         <span class="role-badge badge-att">ATT ${attPercA}%</span>
                         <span class="live-player-elo">${Math.round(getPlayerElo(attA, false))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(attA)})</span></span>
@@ -848,7 +849,7 @@ export class RankingView {
                   <a href="./players.html?id=${defB.id}" class="live-player-link">
                     <img src="/biliardino-elo/avatars/${defB.id}.webp" alt="${defB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
                     <div class="live-player-info">
-                      <span class="live-player-name">🛡️ ${defB.name} <span style="font-size:0.9em;opacity:0.8;">(${rankDefB}°)</span></span>
+                      <span class="live-player-name">🛡️ ${defB.name} <span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankDefB)})</span></span>
                       <div style="display:flex;align-items:center;gap:0.5rem;">
                         <span class="role-badge badge-def">DIF ${defPercB}%</span>
                         <span class="live-player-elo">${Math.round(getPlayerElo(defB, true))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(defB)})</span></span>
@@ -860,7 +861,7 @@ export class RankingView {
                   <a href="./players.html?id=${attB.id}" class="live-player-link">
                     <img src="/biliardino-elo/avatars/${attB.id}.webp" alt="${attB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
                     <div class="live-player-info">
-                      <span class="live-player-name">⚔️ ${attB.name} <span style="font-size:0.9em;opacity:0.8;">(${rankAttB}°)</span></span>
+                      <span class="live-player-name">⚔️ ${attB.name} <span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankAttB)})</span></span>
                       <div style="display:flex;align-items:center;gap:0.5rem;">
                         <span class="role-badge badge-att">ATT ${attPercB}%</span>
                         <span class="live-player-elo">${Math.round(getPlayerElo(attB, false))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(attB)})</span></span>
