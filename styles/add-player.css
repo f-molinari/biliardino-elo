@@ -97,7 +97,8 @@ label {
 }
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+select {
   width: 100%;
   padding: 0.65rem;
   border: 1px solid rgba(0, 0, 0, 0.12);
@@ -109,10 +110,26 @@ input[type="number"] {
   color: var(--color-text);
   font-size: 1rem;
   box-sizing: border-box;
+  font-family: inherit;
+}
+
+select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 1.2em 1.2em;
+  padding-right: 2.5rem;
+}
+
+select::-ms-expand {
+  display: none;
 }
 
 input[type="text"]:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+select:focus {
   outline: none;
   border-color: var(--color-primary);
   background: rgba(255, 255, 255, 0.98);

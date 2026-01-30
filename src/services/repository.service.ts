@@ -1,5 +1,5 @@
 import { IMatch, IMatchDTO, IRunningMatchDTO } from '@/models/match.interface';
-import { IPlayer } from '@/models/player.interface';
+import { IPlayer, IPlayerDTO } from '@/models/player.interface';
 import { db, MATCHES_COLLECTION, PLAYERS_COLLECTION, RUNNING_MATCH_COLLECTION } from '@/utils/firebase.util';
 import { collection, deleteDoc, doc, DocumentData, getDoc, getDocFromServer, getDocsFromCache, getDocsFromServer, QuerySnapshot, setDoc } from 'firebase/firestore';
 
@@ -175,15 +175,15 @@ export async function clearRunningMatch(): Promise<void> {
   await deleteDoc(ref);
 }
 
-export async function savePlayer(player: IPlayer): Promise<void> {
+export async function savePlayer(player: IPlayerDTO): Promise<void> {
   const ref = doc(collection(db, PLAYERS_COLLECTION), player.id.toString());
   const playerDTO = {
-    id: player.id,
     name: player.name,
     elo: player.elo,
     defence: player.defence
   };
   await setDoc(ref, playerDTO, { merge: true });
+  await updatePlayersHash();
 }
 
 export async function deletePlayer(id: number): Promise<void> {

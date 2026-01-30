@@ -1,4 +1,4 @@
-import { IPlayer } from '@/models/player.interface';
+import { IPlayer, IPlayerDTO } from '@/models/player.interface';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { fetchPlayers } from './repository.service';
 
@@ -26,6 +26,20 @@ export function getAllPlayers(): IPlayer[] {
 export function getRank(id: number): number {
   if (rankOutdated) computeRanks();
   return getPlayerById(id)?.rank ?? -1;
+}
+
+export function createPlayerDTO(name: string, elo: number, defence: number): IPlayerDTO {
+  const lastId = Math.max(...playersArray.map(p => p.id));
+  const id = Number.isFinite(lastId) ? lastId + 1 : 1;
+
+  const newPlayer: IPlayerDTO = {
+    id,
+    name,
+    elo,
+    defence
+  };
+
+  return newPlayer;
 }
 
 export function updatePlayer(id: number, idMate: number, idOppoA: number, idOppoB: number, delta: number, isDefender: boolean, goalsFor: number, goalsAgainst: number): void {
