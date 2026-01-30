@@ -36,11 +36,11 @@ export interface IMatchProposal {
 export type Diversity = { teammate: number; opponent: number };
 
 const config: IMatchmakingConfig = {
-  matchBalanceWeight: 0.3,
-  teamBalanceWeight: 0.15,
+  matchBalanceWeight: 0.35,
+  teamBalanceWeight: 0.2,
   priorityWeight: 0.15,
-  diversityWeight: 0.4,
-  randomness: 0.1
+  diversityWeight: 0.3,
+  randomness: 0.08
 };
 
 export function findBestMatch(playersId: number[], priorityPlayersId: number[]): IMatchProposal | null {

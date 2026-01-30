@@ -16,7 +16,8 @@ export const availabilityList = {
     'Giuseppe Larato',
     'Francesco Giustino',
     'Onofrio Petragallo',
-    'Gianni Labarile'
+    'Gianni Labarile',
+    'Angela Tragni'
   ],
   tuesday: [
     'Francesco Molinari',
@@ -58,7 +59,9 @@ export const availabilityList = {
     'Giuseppe Larato',
     'Francesco Giustino',
     'Onofrio Petragallo',
-    'Gianni Labarile'
+    'Gianni Labarile',
+    'Arcangelo Clemente',
+    'Gianni Nitti'
   ],
   thursday: [
     'Francesco Molinari',
@@ -100,6 +103,9 @@ export const availabilityList = {
     'Gianluca De Vincenzo',
     'Andrea Difonzo',
     'Onofrio Petragallo',
-    'Gianni Labarile'
+    'Gianni Labarile',
+    'Angela Tragni',
+    'Arcangelo Clemente',
+    'Gianni Nitti'
   ]
 };
