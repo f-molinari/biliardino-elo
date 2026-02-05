@@ -2,7 +2,7 @@ export const availabilityList = {
   monday: [
     'Francesco Molinari',
     'Davide Colucci',
-    'Domenico Pace',
+    // 'Domenico Pace',
     'Michele Lillo',
     'Michele Sette',
     'Salvatore Defino',
@@ -44,7 +44,7 @@ export const availabilityList = {
   wednesday: [
     'Francesco Molinari',
     'Davide Colucci',
-    'Domenico Pace',
+    // 'Domenico Pace',
     'Michele Lillo',
     'Michele Sette',
     'Michele Porcu',
