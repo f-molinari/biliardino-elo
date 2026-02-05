@@ -16,6 +16,7 @@ export interface IPlayer extends IPlayerDTO {
   goalsAgainst: number;
   bestElo: number;
   rank: number;
+  class: number;
   teammatesDelta?: Map<number, number>;
   teammatesMatchCount?: Map<number, number>;
   opponentsMatchCount?: Map<number, number>;

@@ -1,5 +1,6 @@
 import { IPlayer, IPlayerDTO } from '@/models/player.interface';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
+import { MatchesK } from './elo.service';
 import { fetchPlayers } from './repository.service';
 
 const playersMap = new Map<number, IPlayer>();
@@ -75,9 +76,34 @@ export function updatePlayer(id: number, idMate: number, idOppoA: number, idOppo
     player.opponentsMatchCount.set(idOppoB, (player.opponentsMatchCount.get(idOppoB) ?? 0) + 1);
   }
 
+  updatePlayerClass(player, delta > 0);
+
   player.matchesDelta.push(delta);
 
   rankOutdated = true;
+}
+
+export function updatePlayerClass(player: IPlayer, win: boolean): void {
+  if (player.matches < MatchesK) return;
+
+  const currentClass = player.class;
+  let newClass = getClass(player.elo);
+
+  if (currentClass === newClass) return;
+
+  if (!win && player.elo % 100 > 65) { // treshold per non derankare subito se hai rankato e perdi una partita (deranki se perdi 34 punti)
+    newClass++;
+  }
+
+  player.class = newClass;
+}
+
+function getClass(elo: number): number {
+  if (elo >= 1200) return 0;
+  if (elo >= 1100) return 1;
+  if (elo >= 1000) return 2;
+  if (elo >= 900) return 3;
+  return 4;
 }
 
 export async function loadPlayers(): Promise<void> {

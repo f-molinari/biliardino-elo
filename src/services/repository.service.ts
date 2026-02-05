@@ -102,7 +102,8 @@ export async function fetchPlayers(): Promise<IPlayer[]> {
       matchesAsDefender: 0,
       matchesDelta: [],
       wins: 0,
-      rank: -1
+      rank: -1,
+      class: -1
     } satisfies IPlayer;
   });
 
