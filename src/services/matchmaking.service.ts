@@ -89,7 +89,7 @@ function generateBestMatch(maxEloDiff: number, maxMatches: number, maxDiversity:
           const p4 = att[l];
           if (p4 === p1 || p4 === p2 || p4 === p3) continue;
 
-          if (!validateGrades(p1, p2, p3, p4) || !validatePriority(p1, p2, p3, p4, priorityPlayers)) continue;
+          if (!validateClass(p1, p2, p3, p4) || !validatePriority(p1, p2, p3, p4, priorityPlayers)) continue;
 
           bestScore = checkProposal(p1, p2, p3, p4, maxEloDiff, maxMatches, maxDiversity, bestScore, bestProposal);
         }
@@ -112,16 +112,16 @@ function validatePriority(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer, pr
   return true;
 }
 
-function validateGrades(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer): boolean {
-  const rank1 = p1.rank === -1 ? getClass(p1.elo) : p1.rank;
-  const rank2 = p2.rank === -1 ? getClass(p2.elo) : p2.rank;
-  const rank3 = p3.rank === -1 ? getClass(p3.elo) : p3.rank;
-  const rank4 = p4.rank === -1 ? getClass(p4.elo) : p4.rank;
+function validateClass(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer): boolean {
+  const class1 = p1.class === -1 ? getClass(p1.elo) : p1.class;
+  const class2 = p2.class === -1 ? getClass(p2.elo) : p2.class;
+  const class3 = p3.class === -1 ? getClass(p3.elo) : p3.class;
+  const class4 = p4.class === -1 ? getClass(p4.elo) : p4.class;
 
-  const maxRank = Math.max(rank1, rank2, rank3, rank4);
-  const minRank = Math.min(rank1, rank2, rank3, rank4);
+  const maxClass = Math.max(class1, class2, class3, class4);
+  const minClass = Math.min(class1, class2, class3, class4);
 
-  return maxRank - minRank <= 1;
+  return maxClass - minClass <= 1;
 }
 
 function checkProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, maxEloDiff: number, maxMatches: number, maxDiversity: Diversity, bestScore: number, proposal: IMatchProposal): number {
