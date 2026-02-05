@@ -826,7 +826,10 @@ export class RankingView {
               <div class="live-players">
                 <div class="live-player">
                   <a href="./players.html?id=${defA.id}" class="live-player-link">
-                    <img src="/biliardino-elo/avatars/${defA.id}.webp" alt="${defA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                    <div class="live-avatar-wrapper">
+                      <img src="/biliardino-elo/avatars/${defA.id}.webp" alt="${defA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                      ${defA.class !== -1 ? `<img src="/biliardino-elo/class/${defA.class}.webp" alt="Class ${defA.class}" class="live-class-icon" />` : ''}
+                    </div>
                     <div class="live-player-info">
                       <span class="live-player-name">🛡️ ${defA.name} <span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankDefA)})</span></span>
                       <div style="display:flex;align-items:center;gap:0.5rem;">
@@ -838,7 +841,10 @@ export class RankingView {
                 </div>
                 <div class="live-player">
                   <a href="./players.html?id=${attA.id}" class="live-player-link">
-                    <img src="/biliardino-elo/avatars/${attA.id}.webp" alt="${attA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                    <div class="live-avatar-wrapper">
+                      <img src="/biliardino-elo/avatars/${attA.id}.webp" alt="${attA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                      ${attA.class !== -1 ? `<img src="/biliardino-elo/class/${attA.class}.webp" alt="Class ${attA.class}" class="live-class-icon" />` : ''}
+                    </div>
                     <div class="live-player-info">
                       <span class="live-player-name">⚔️ ${attA.name} <span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankAttA)})</span></span>
                       <div style="display:flex;align-items:center;gap:0.5rem;">
@@ -860,7 +866,10 @@ export class RankingView {
               <div class="live-players">
                 <div class="live-player">
                   <a href="./players.html?id=${defB.id}" class="live-player-link">
-                    <img src="/biliardino-elo/avatars/${defB.id}.webp" alt="${defB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                    <div class="live-avatar-wrapper">
+                      <img src="/biliardino-elo/avatars/${defB.id}.webp" alt="${defB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                      ${defB.class !== -1 ? `<img src="/biliardino-elo/class/${defB.class}.webp" alt="Class ${defB.class}" class="live-class-icon" />` : ''}
+                    </div>
                     <div class="live-player-info">
                       <span class="live-player-name">🛡️ ${defB.name} <span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankDefB)})</span></span>
                       <div style="display:flex;align-items:center;gap:0.5rem;">
@@ -872,7 +881,10 @@ export class RankingView {
                 </div>
                 <div class="live-player">
                   <a href="./players.html?id=${attB.id}" class="live-player-link">
-                    <img src="/biliardino-elo/avatars/${attB.id}.webp" alt="${attB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                    <div class="live-avatar-wrapper">
+                      <img src="/biliardino-elo/avatars/${attB.id}.webp" alt="${attB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                      ${attB.class !== -1 ? `<img src="/biliardino-elo/class/${attB.class}.webp" alt="Class ${attB.class}" class="live-class-icon" />` : ''}
+                    </div>
                     <div class="live-player-info">
                       <span class="live-player-name">⚔️ ${attB.name} <span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankAttB)})</span></span>
                       <div style="display:flex;align-items:center;gap:0.5rem;">
