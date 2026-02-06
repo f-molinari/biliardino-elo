@@ -82,18 +82,19 @@ export class PlayersView {
     const winRateClass = parseInt(winPercentage) > 50 ? 'pp-winrate-good' : parseInt(winPercentage) < 50 ? 'pp-winrate-bad' : 'pp-winrate-equal';
 
     const formatElo = (value: number): number | string => {
-      if (value === -Infinity || value === Infinity) return 'TBD';
+      if (value === -Infinity || value === Infinity || Number.isNaN(value)) return 'TBD';
       if (!Number.isFinite(value)) return 'N/A';
       return Math.round(value);
     };
 
     const formatPlayerResult = (result: { player: { name: string }; score: number } | null): string => {
       if (!result) return 'N/A';
+      if (!result.player) return 'TBD';
       return `${result.player.name} (${result.score > 0 ? '+' : ''}${result.score.toFixed(0)})`;
     };
 
     const formatMatch = (match: IMatch | null, playerId: number): { score: string; details: string } => {
-      if (!match) return { score: 'N/A', details: '' };
+      if (!match) return { score: 'TBD', details: '' };
       const isTeamA = match.teamA.attack === playerId || match.teamA.defence === playerId;
       const score = isTeamA ? `${match.score[0]}-${match.score[1]}` : `${match.score[1]}-${match.score[0]}`;
 
@@ -115,7 +116,7 @@ export class PlayersView {
     };
 
     const formatMatchByScore = (match: IMatch | null, playerId: number): { score: string; details: string } => {
-      if (!match) return { score: 'N/A', details: '' };
+      if (!match) return { score: 'TBD', details: '' };
       const isTeamA = match.teamA.attack === playerId || match.teamA.defence === playerId;
       const scoreFor = isTeamA ? match.score[0] : match.score[1];
       const scoreAgainst = isTeamA ? match.score[1] : match.score[0];
@@ -275,7 +276,7 @@ export class PlayersView {
             <span class="stat-label">Miglior ELO</span>
             <span class="stat-value positive" style="display: flex; align-items: center; gap: 8px;">
               ${formatElo(stats.bestElo)}
-              ${stats.bestClass !== -1 ? `<img src="/biliardino-elo/class/${stats.bestClass}.webp" alt="Class ${stats.bestClass}" style="width: 48px; height: 48px; object-fit: contain;" />` : ''}
+              ${Number.isFinite(stats.bestClass) && stats.bestClass !== -1 ? `<img src="/biliardino-elo/class/${stats.bestClass}.webp" alt="Class ${stats.bestClass}" style="width: 48px; height: 48px; object-fit: contain;" />` : ''}
             </span>
           </div>
 
@@ -364,11 +365,11 @@ export class PlayersView {
           </div>
           <div class="stat-item">
             <span class="stat-label">Media Goal Fatti</span>
-            <span class="stat-value">${(stats.totalGoalsFor / stats.matches).toFixed(2)}</span>
+            <span class="stat-value">${(() => { const val = stats.totalGoalsFor / stats.matches; return Number.isNaN(val) ? 'TBD' : val.toFixed(2); })()}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Media Goal Subiti</span>
-            <span class="stat-value">${(stats.totalGoalsAgainst / stats.matches).toFixed(2)}</span>
+            <span class="stat-value">${(() => { const val = stats.totalGoalsAgainst / stats.matches; return Number.isNaN(val) ? 'TBD' : val.toFixed(2); })()}</span>
           </div>
         </div>
       </div>
@@ -378,7 +379,7 @@ export class PlayersView {
         <div class="stats-grid">
             <div class="stat-item">
               <span class="stat-label">Compagno Frequente</span>
-              <span class="stat-value player-name">${stats.bestTeammateCount ? `${stats.bestTeammateCount.player.name} (${stats.bestTeammateCount.score})` : 'N/A'}</span>
+              <span class="stat-value player-name">${stats.bestTeammateCount && stats.bestTeammateCount.player ? `${stats.bestTeammateCount.player.name} (${stats.bestTeammateCount.score})` : (stats.bestTeammateCount ? 'TBD' : 'N/A')}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Miglior Compagno</span>
@@ -398,11 +399,11 @@ export class PlayersView {
           </div>
           <div class="stat-item">
             <span class="stat-label">ELO Medio Squadra</span>
-            <span class="stat-value">${stats.avgTeamElo ? Math.round(stats.avgTeamElo) : 'N/A'}</span>
+            <span class="stat-value">${formatElo(stats.avgTeamElo)}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">ELO Medio Avversari</span>
-            <span class="stat-value">${stats.avgOpponentElo ? Math.round(stats.avgOpponentElo) : 'N/A'}</span>
+            <span class="stat-value">${formatElo(stats.avgOpponentElo)}</span>
           </div>
         </div>
       </div>
@@ -414,7 +415,7 @@ export class PlayersView {
             <span class="stat-label">Migliore Vittoria (ELO)</span>
             <span class="stat-score positive">${(() => {
         const result = formatMatch(stats.bestVictoryByElo, player.id);
-        return result.score === 'N/A' ? result.score : `<strong>${result.score}</strong>`;
+        return result.score === 'TBD' ? result.score : `<strong>${result.score}</strong>`;
       })()}</span>
             <span class="stat-details">${formatMatch(stats.bestVictoryByElo, player.id).details}</span>
           </div>
@@ -422,7 +423,7 @@ export class PlayersView {
             <span class="stat-label">Peggiore Sconfitta (ELO)</span>
             <span class="stat-score negative">${(() => {
         const result = formatMatch(stats.worstDefeatByElo, player.id);
-        return result.score === 'N/A' ? result.score : `<strong>${result.score}</strong>`;
+        return result.score === 'TBD' ? result.score : `<strong>${result.score}</strong>`;
       })()}</span>
             <span class="stat-details">${formatMatch(stats.worstDefeatByElo, player.id).details}</span>
           </div>
@@ -430,7 +431,7 @@ export class PlayersView {
             <span class="stat-label">Migliore Vittoria (Punteggio)</span>
             <span class="stat-score positive">${(() => {
         const result = formatMatchByScore(stats.bestVictoryByScore, player.id);
-        return result.score === 'N/A' ? result.score : `<strong>${result.score}</strong>`;
+        return result.score === 'TBD' ? result.score : `<strong>${result.score}</strong>`;
       })()}</span>
             <span class="stat-details">${formatMatchByScore(stats.bestVictoryByScore, player.id).details}</span>
           </div>
@@ -438,7 +439,7 @@ export class PlayersView {
             <span class="stat-label">Peggiore Sconfitta (Punteggio)</span>
             <span class="stat-score negative">${(() => {
         const result = formatMatchByScore(stats.worstDefeatByScore, player.id);
-        return result.score === 'N/A' ? result.score : `<strong>${result.score}</strong>`;
+        return result.score === 'TBD' ? result.score : `<strong>${result.score}</strong>`;
       })()}</span>
             <span class="stat-details">${formatMatchByScore(stats.worstDefeatByScore, player.id).details}</span>
           </div>
