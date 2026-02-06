@@ -93,7 +93,7 @@ export function updatePlayerClass(player: IPlayer, win: boolean): void {
   if (currentClass === newClass) return;
 
   if (win) {
-    newClass = Math.min(newClass, currentClass); // to avoid to derank after win if in the treshold
+    newClass = Math.min(newClass, currentClass === -1 ? Infinity : currentClass); // to avoid to derank after win if in the treshold
   } else if (player.elo % 100 >= 100 - derankTreshold && player.elo >= 800) { // treshold per non derankare subito se hai rankato e perdi una partita (deranki se perdi più di 30 punti)
     newClass--;
   }

@@ -14,6 +14,7 @@ export default defineConfig(config => ({
         main: path.resolve(__dirname, 'index.html'),
         players: path.resolve(__dirname, 'players.html'),
         add: path.resolve(__dirname, 'add.html'),
+        addPlayer: path.resolve(__dirname, 'add-player.html'),
         matchmaking: path.resolve(__dirname, 'matchmaking.html')
       },
       output: {
