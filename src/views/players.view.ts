@@ -88,7 +88,7 @@ export class PlayersView {
     };
 
     const formatPlayerResult = (result: { player: { name: string }; score: number } | null): string => {
-      if (!result) return 'N/A';
+      if (!result) return 'TBD';
       if (!result.player) return 'TBD';
       return `${result.player.name} (${result.score > 0 ? '+' : ''}${result.score.toFixed(0)})`;
     };
@@ -379,7 +379,7 @@ export class PlayersView {
         <div class="stats-grid">
             <div class="stat-item">
               <span class="stat-label">Compagno Frequente</span>
-              <span class="stat-value player-name">${stats.bestTeammateCount && stats.bestTeammateCount.player ? `${stats.bestTeammateCount.player.name} (${stats.bestTeammateCount.score})` : (stats.bestTeammateCount ? 'TBD' : 'N/A')}</span>
+              <span class="stat-value player-name">${stats.bestTeammateCount && stats.bestTeammateCount.player ? `${stats.bestTeammateCount.player.name} (${stats.bestTeammateCount.score})` : 'TBD'}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Miglior Compagno</span>
