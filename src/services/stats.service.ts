@@ -1,7 +1,8 @@
 import { IMatch, ITeam } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
+import { MatchesK } from './elo.service';
 import { getAllMatches } from './match.service';
-import { getPlayerById } from './player.service';
+import { getClass, getPlayerById } from './player.service';
 
 export type PlayerResult = { player: IPlayer; score: number };
 
@@ -11,6 +12,8 @@ export interface PlayerStats {
   elo: number;
   bestElo: number;
   worstElo: number;
+  class: number;
+  bestClass: number;
 
   matches: number;
   matchesAsAttack: number;
@@ -21,7 +24,6 @@ export interface PlayerStats {
   losses: number;
   lossesAsAttack: number;
   lossesAsDefence: number;
-
   bestWinStreak: number;
   worstLossStreak: number;
 
@@ -48,6 +50,8 @@ export function getPlayerStats(player: number): PlayerStats {
     elo: getPlayerById(player)!.startElo,
     bestElo: -Infinity,
     worstElo: Infinity,
+    class: -1,
+    bestClass: Infinity,
     matches: 0,
     matchesAsAttack: 0,
     matchesAsDefence: 0,
@@ -107,14 +111,31 @@ export function getPlayerStats(player: number): PlayerStats {
 
     result.elo += delta;
 
-    if (result.elo > result.bestElo) result.bestElo = result.elo;
-    if (result.elo < result.worstElo) result.worstElo = result.elo;
+    if (result.matches >= MatchesK - 1) {
+      if (result.elo > result.bestElo) result.bestElo = result.elo;
+      if (result.elo < result.worstElo) result.worstElo = result.elo;
+
+      updatePlayerClass(delta > 0);
+      if (result.class < result.bestClass) result.bestClass = result.class;
+    }
 
     result.avgTeamElo ??= 0;
     result.avgOpponentElo ??= 0;
 
     result.avgTeamElo += team === 0 ? match.teamELO[0] : match.teamELO[1];
     result.avgOpponentElo += team === 0 ? match.teamELO[1] : match.teamELO[0];
+  }
+
+  function updatePlayerClass(win: boolean): void {
+    let newClass = getClass(result.elo);
+
+    if (result.class === newClass) return;
+
+    if (!win && result.elo % 100 >= 70 && result.elo >= 800) { // treshold per non derankare subito se hai rankato e perdi una partita (deranki se perdi più di 30 punti)
+      newClass--;
+    }
+
+    result.class = newClass;
   }
 
   function updateMatchCount(role: number, match: IMatch, team: number): void {

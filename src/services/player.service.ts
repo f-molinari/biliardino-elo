@@ -86,10 +86,8 @@ export function updatePlayer(id: number, idMate: number, idOppoA: number, idOppo
 export function updatePlayerClass(player: IPlayer, win: boolean): void {
   if (player.matches < MatchesK) return;
 
-  const currentClass = player.class;
   let newClass = getClass(player.elo);
-
-  if (currentClass === newClass) return;
+  if (player.class === newClass) return;
 
   if (!win && player.elo % 100 >= 70 && player.elo >= 800) { // treshold per non derankare subito se hai rankato e perdi una partita (deranki se perdi più di 30 punti)
     newClass--;

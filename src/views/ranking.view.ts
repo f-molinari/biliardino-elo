@@ -600,7 +600,7 @@ export class RankingView {
    */
   private static renderRecentMatches(): void {
     const allMatches = getAllMatches();
-    const matches = allMatches.toSorted((a, b) => b.createdAt - a.createdAt);
+    const matches = allMatches.toSorted((a, b) => b.createdAt - a.createdAt).slice(0, 30);
     if (!matches.length) return;
 
     const container = document.querySelector('.tables-container');

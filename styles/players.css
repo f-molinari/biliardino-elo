@@ -905,14 +905,6 @@ a.nav-link:hover {
   .pp-card .pp-stats .stat-label {
     font-size: 0.95rem;
   }
-
-  .pp-card .pp-stats .stat-value {
-    font-size: 1.4rem;
-  }
-
-  .pp-card .pp-stats .stat-value.highlight {
-    font-size: 1.45rem;
-  }
 }
 
 /* =========================================================

@@ -73,7 +73,7 @@ export class PlayersView {
 
     // Calcola il ruolo come nella classifica (player.defence * 100)
     let rolePercentage = Math.round(player.defence * 100);
-    let isDefender = rolePercentage >= 50;
+    const isDefender = rolePercentage >= 50;
     if (rolePercentage < 50) {
       rolePercentage = 100 - rolePercentage;
     }
@@ -82,6 +82,7 @@ export class PlayersView {
     const winRateClass = parseInt(winPercentage) > 50 ? 'pp-winrate-good' : parseInt(winPercentage) < 50 ? 'pp-winrate-bad' : 'pp-winrate-equal';
 
     const formatElo = (value: number): number | string => {
+      if (value === -Infinity || value === Infinity) return 'TBD';
       if (!Number.isFinite(value)) return 'N/A';
       return Math.round(value);
     };
@@ -264,23 +265,26 @@ export class PlayersView {
           </div>
         </div>
 
-        <div class="pp-stats">
-          <div class="stat-item">
+        <div class="pp-stats" style="display: flex; gap: 20px; font-size: 0.9em;">
+          <div class="stat-item" style="flex: 1;">
             <span class="stat-label">ELO Attuale</span>
             <span class="stat-value highlight">${formatElo(stats.elo)}</span>
           </div>
 
-          <div class="stat-item">
+          <div class="stat-item" style="flex: 1;">
             <span class="stat-label">Miglior ELO</span>
-            <span class="stat-value positive">${formatElo(stats.bestElo)}</span>
+            <span class="stat-value positive" style="display: flex; align-items: center; gap: 8px;">
+              ${formatElo(stats.bestElo)}
+              ${stats.bestClass !== -1 ? `<img src="/biliardino-elo/class/${stats.bestClass}.webp" alt="Class ${stats.bestClass}" style="width: 48px; height: 48px; object-fit: contain;" />` : ''}
+            </span>
           </div>
 
-          <div class="stat-item">
+          <div class="stat-item" style="flex: 1;">
             <span class="stat-label">Peggior ELO</span>
             <span class="stat-value negative">${formatElo(stats.worstElo)}</span>
           </div>
 
-          <div class="stat-item">
+          <div class="stat-item" style="flex: 1; text-align: center;">
             <span class="stat-label">Ruolo</span>
             <span class="stat-value">${rolePercentage === 50 ? `<span class="role-badge" style="color: #6c757d !important;">⚖️ ${rolePercentage}%</span>` : isDefender ? `<span class="role-badge badge-def">🛡️ ${rolePercentage}%</span>` : `<span class="role-badge badge-att">⚔️ ${rolePercentage}%</span>`}</span>
           </div>
@@ -290,12 +294,11 @@ export class PlayersView {
   </div>
 `;
 
-
     container.innerHTML = `
       ${profileCardHtml}
 
       <div class="player-card">
-        <h2>⚽ Partite</h2>
+        <h2>🎮 Partite</h2>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">Partite Totali</span>
