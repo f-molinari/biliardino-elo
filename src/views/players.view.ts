@@ -3,6 +3,7 @@ import { IPlayer } from '@/models/player.interface';
 import { getPlayerElo } from '@/services/elo.service';
 import { getPlayerStats, PlayerStats } from '@/services/stats.service';
 import { formatRank } from '@/utils/format-rank.util';
+import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getPlayerById, getRank } from '../services/player.service';
 
@@ -262,7 +263,7 @@ export class PlayersView {
       <div class="pp-content">
         <div class="pp-header">
           <div style="display: flex; align-items: center; gap: 12px;">
-            ${player.class !== -1 ? `<img src="/biliardino-elo/class/${player.class}.webp" alt="Class ${player.class}" style="width: 56px; height: 56px; object-fit: contain;" />` : ''}
+            ${player.class !== -1 ? `<img src="/biliardino-elo/class/${player.class}.webp" alt="Class ${player.class}" title="${getClassName(player.class)}" style="width: 56px; height: 56px; object-fit: contain; cursor: help;" />` : ''}
             <h2 class="pp-name">${player.name}</h2>
           </div>
           <div class="pp-badges">
@@ -281,7 +282,7 @@ export class PlayersView {
             <span class="stat-label">Miglior ELO</span>
             <span class="stat-value positive" style="display: flex; align-items: center; gap: 8px;">
               ${formatElo(stats.bestElo)}
-              ${Number.isFinite(stats.bestClass) && stats.bestClass !== -1 ? `<img src="/biliardino-elo/class/${stats.bestClass}.webp" alt="Class ${stats.bestClass}" style="width: 48px; height: 48px; object-fit: contain;" />` : ''}
+              ${Number.isFinite(stats.bestClass) && stats.bestClass !== -1 ? `<img src="/biliardino-elo/class/${stats.bestClass}.webp" alt="Class ${stats.bestClass}" title="${getClassName(stats.bestClass)}" style="width: 48px; height: 48px; object-fit: contain; cursor: help;" />` : ''}
             </span>
           </div>
 

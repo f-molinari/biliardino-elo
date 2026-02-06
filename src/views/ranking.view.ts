@@ -1,6 +1,7 @@
 import { IPlayer } from '@/models/player.interface';
 import { getPlayerElo } from '@/services/elo.service';
 import { formatRank } from '@/utils/format-rank.util';
+import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { getAllMatches } from '../services/match.service';
 import { getAllPlayers, getPlayerById, getRank } from '../services/player.service';
@@ -425,7 +426,9 @@ export class RankingView {
           <img 
             src="/biliardino-elo/class/${player.class}.webp" 
             alt="Class ${player.class}"
+            title="${getClassName(player.class)}"
             onerror="this.src='${fallbackClassIcon}'"
+            style="cursor: help;"
           />
         </div>
       ` : '';
