@@ -13,7 +13,6 @@ const API_TOKEN = process.env.CRON_API_TOKEN;
 describe('send-broadcast API', () => {
   it('should send a broadcast notification with valid token', async () => {
     const endpoint = `${BASE_URL}/send-broadcast`;
-    const matchTime = new Date().toISOString();
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -22,7 +21,7 @@ describe('send-broadcast API', () => {
         'Authorization': `Bearer ${API_TOKEN}`
       },
       body: JSON.stringify({
-        matchTime: matchTime
+        matchTime: '14:00'
       })
     });
 
