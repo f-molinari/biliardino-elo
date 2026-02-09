@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 /**
  * CRON Orchestrator
  *
@@ -7,10 +8,11 @@
  */
 import { withAuth } from './_auth.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
+import { validateHost } from './_validation.js';
 
-async function handler(req, res) {
+async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
   setCorsHeaders(res);
-  if (handleCorsPreFlight(req, res)) return;
+  if (handleCorsPreFlight(req, res)) return res;
 
   try {
     const now = new Date();
@@ -24,7 +26,9 @@ async function handler(req, res) {
       const matchTime = hour === 10 ? '11:00' : '16:00';
       console.log(`📢 Eseguo broadcast per match ${matchTime}`);
 
-      const broadcastUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/send-broadcast`;
+      // Valida host per prevenire Host Header Injection
+      const host = validateHost(req.headers.host as string);
+      const broadcastUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${host}/api/send-broadcast`;
       const response = await fetch(broadcastUrl);
       const data = await response.json();
 
@@ -41,7 +45,9 @@ async function handler(req, res) {
       const matchTime = hour === 11 ? '11:00' : '16:00';
       console.log(`🎮 Eseguo matchmaking per match ${matchTime}`);
 
-      const matchmakingUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/run-matchmaking?time=${matchTime}`;
+      // Valida host per prevenire Host Header Injection
+      const host = validateHost(req.headers.host as string);
+      const matchmakingUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${host}/api/run-matchmaking?time=${matchTime}`;
       const response = await fetch(matchmakingUrl);
       const data = await response.json();
 
@@ -62,7 +68,7 @@ async function handler(req, res) {
     });
   } catch (err) {
     console.error('Errore CRON handler:', err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: (err as Error).message });
   }
 }
 export default withAuth(handler, 'cron');

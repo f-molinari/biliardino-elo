@@ -27,7 +27,7 @@ describe('send-broadcast API', () => {
     });
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = await response.json() as { sent: number; total: number; failed: number };
     expect(data.sent).toBeGreaterThanOrEqual(data.total);
     expect(data.failed).toBe(0);
   });
@@ -69,7 +69,7 @@ describe('send-broadcast API', () => {
 
   it('should validate that API_TOKEN is configured', () => {
     expect(API_TOKEN).toBeDefined();
-    expect(API_TOKEN.length).toBeGreaterThan(0);
+    expect(API_TOKEN!.length).toBeGreaterThan(0);
   });
 
   it('should format endpoint correctly', () => {

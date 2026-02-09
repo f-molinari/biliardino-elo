@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import * as jose from 'jose';
 
 /**
@@ -9,11 +10,15 @@ import * as jose from 'jose';
 const SECRET = process.env.AUTH_JWT_SECRET;
 const ALGORITHM = 'HS256';
 
+type Role = 'admin' | 'cron' | 'notify';
+
 /**
  * Errori auth standard
  */
 class AuthError extends Error {
-  constructor(message, statusCode = 401) {
+  statusCode: number;
+
+  constructor(message: string, statusCode = 401) {
     super(message);
     this.statusCode = statusCode;
     this.name = 'AuthError';
@@ -22,12 +27,12 @@ class AuthError extends Error {
 
 /**
  * Estrae e verifica il JWT dal header Authorization
- * @param {Request} req
- * @param {string} requiredRole - Ruolo richiesto (admin|cron|notify)
- * @returns {Promise<object>} Payload decodificato del JWT
- * @throws {AuthError} Se token mancante, invalido o ruolo insufficiente
+ * @param req - Request object
+ * @param requiredRole - Ruolo richiesto (admin|cron|notify)
+ * @returns Payload decodificato del JWT
+ * @throws AuthError Se token mancante, invalido o ruolo insufficiente
  */
-export async function verifyAuth(req, requiredRole = null) {
+export async function verifyAuth(req: VercelRequest, requiredRole: Role | null = null): Promise<jose.JWTPayload> {
   // Verifica che la secret sia configurata
   if (!SECRET) {
     console.error('AUTH_JWT_SECRET non configurato');
@@ -74,39 +79,41 @@ export async function verifyAuth(req, requiredRole = null) {
     }
 
     // Errori di verifica JWT
-    if (err.code === 'ERR_JWT_EXPIRED') {
+    if ((err as any).code === 'ERR_JWT_EXPIRED') {
       throw new AuthError('Token expired', 401);
     }
-    if (err.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
+    if ((err as any).code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
       throw new AuthError('Invalid token signature', 401);
     }
 
-    console.error('JWT verification failed:', err.message);
+    console.error('JWT verification failed:', (err as Error).message);
     throw new AuthError('Invalid token', 401);
   }
 }
 
+type Handler = (req: VercelRequest, res: VercelResponse) => Promise<void | VercelResponse>;
+
 /**
  * Wrapper HOF per proteggere handler API con auth
- * @param {Function} handler - Handler originale (req, res)
- * @param {string} requiredRole - Ruolo richiesto (admin|cron|notify)
- * @returns {Function} Handler wrappato con verifica auth
+ * @param handler - Handler originale (req, res)
+ * @param requiredRole - Ruolo richiesto (admin|cron|notify)
+ * @returns Handler wrappato con verifica auth
  */
-export function withAuth(handler, requiredRole = null) {
-  return async (req, res) => {
+export function withAuth(handler: Handler, requiredRole: Role | null = null): Handler {
+  return async (req: VercelRequest, res: VercelResponse) => {
     try {
       // Verifica auth
       const payload = await verifyAuth(req, requiredRole);
 
       // Allega payload alla request per uso downstream
-      req.auth = payload;
+      (req as any).auth = payload;
 
       // Procedi con handler originale
       return await handler(req, res);
     } catch (err) {
       // Gestisci errori auth
-      const statusCode = err.statusCode || 500;
-      const message = err.message || 'Authentication failed';
+      const statusCode = (err as AuthError).statusCode || 500;
+      const message = (err as Error).message || 'Authentication failed';
 
       console.error(`Auth failed [${statusCode}]:`, message);
 

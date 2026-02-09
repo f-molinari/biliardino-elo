@@ -1,8 +1,11 @@
 import { list } from '@vercel/blob';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import webpush from 'web-push';
 import { withAuth } from './_auth.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
+import { combineMiddlewares, withSecurityMiddleware } from './_middleware.js';
 import { getRandomMessage } from './_randomMessage.js';
+import { sanitizeLogOutput, validateMatchTime, validateString } from './_validation.js';
 
 // Verifica configurazione
 if (!process.env.VITE_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
@@ -15,9 +18,22 @@ if (!process.env.BLOB_READ_WRITE_TOKEN) {
 
 webpush.setVapidDetails(
   'mailto:info@biliardino.app',
-  process.env.VITE_VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
+  process.env.VITE_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
 );
+
+interface SubscriptionData {
+  subscription: webpush.PushSubscription;
+  playerId: number;
+  playerName: string;
+  createdAt: string;
+}
+
+interface NotificationAction {
+  action: string;
+  title: string;
+  url: string;
+}
 
 /**
  * API per inviare broadcast a tutti gli utenti registrati
@@ -29,26 +45,36 @@ webpush.setVapidDetails(
  *   body?: string (opzionale)
  * }
  */
-async function handler(req, res) {
+async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
 
   setCorsHeaders(res);
-  if (handleCorsPreFlight(req, res)) return;
+  if (handleCorsPreFlight(req, res)) return res;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    /**
-     * @param {string} matchTime - Ora della partita (es: "14:30")
-     * @param {string} [title] - Titolo personalizzato della notifica
-     * @param {string} [body] - Corpo personalizzato della notifica
-     */
-    const { matchTime, title: customTitle, subtitle: customSubtitle, body: customBody } = req.body;
+    const {
+      matchTime: rawMatchTime,
+      title: rawTitle,
+      subtitle: rawSubtitle,
+      body: rawBody
+    } = req.body as {
+      matchTime?: string;
+      title?: string;
+      subtitle?: string;
+      body?: string;
+    };
 
-    if (!matchTime) {
+    if (!rawMatchTime) {
       return res.status(400).json({ error: 'matchTime è obbligatorio' });
     }
+
+    // Valida e sanitizza input
+    const matchTime = validateMatchTime(rawMatchTime);
+    const customTitle = rawTitle ? validateString(rawTitle, 'title', 100) : undefined;
+    const customBody = rawBody ? validateString(rawBody, 'body', 500) : undefined;
 
     // Verifica configurazione
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -74,7 +100,7 @@ async function handler(req, res) {
       blobs.map(async (blob) => {
         try {
           const response = await fetch(blob.url);
-          return await response.json();
+          return await response.json() as SubscriptionData;
         } catch (err) {
           console.error(`Errore caricamento blob ${blob.pathname}:`, err);
           return null;
@@ -82,7 +108,7 @@ async function handler(req, res) {
       })
     );
 
-    const validSubscriptions = subscriptionsData.filter(sub => sub !== null);
+    const validSubscriptions = subscriptionsData.filter((sub): sub is SubscriptionData => sub !== null);
 
     if (validSubscriptions.length === 0) {
       return res.status(404).json({
@@ -100,7 +126,7 @@ async function handler(req, res) {
         const _randomMessage = getRandomMessage(playerName.split(' ')[0]);
         const title = customTitle || _randomMessage.title;
         const body = customBody || _randomMessage.body;
-        const actions = [
+        const actions: NotificationAction[] = [
           { action: 'confirm', title: 'Partecipa', url: `${url}/confirm.html?c=true&matchTime=${matchTime}` },
           { action: 'cancel', title: 'Rifiuta', url: `${url}/confirm.html?c=false&matchTime=${matchTime}` }
         ];
@@ -134,7 +160,7 @@ async function handler(req, res) {
           }
         );
 
-        console.log(`✅ Notifica inviata a ${playerName}`);
+        console.log(`✅ Notifica inviata a ${sanitizeLogOutput(playerName)}`);
         return { playerName, success: true };
       })
     );
@@ -145,8 +171,8 @@ async function handler(req, res) {
     // Log errori
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
-        const playerName = validSubscriptions[index]?.playerName || validSubscriptions[index]?.playerId || 'Unknown';
-        console.warn('Errore invio a:', playerName, result.reason?.message || result.reason);
+        const playerName = validSubscriptions[index]?.playerName || validSubscriptions[index]?.playerId.toString() || 'Unknown';
+        console.warn('Errore invio a:', playerName, (result.reason as Error)?.message || result.reason);
       }
     });
 
@@ -162,10 +188,15 @@ async function handler(req, res) {
     console.error('Errore broadcast:', err);
     return res.status(500).json({
       error: 'Errore invio broadcast',
-      details: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      details: (err as Error).message,
+      stack: process.env.NODE_ENV === 'development' ? (err as Error).stack : undefined
     });
   }
 }
 
-export default withAuth(handler, 'cron');
+// Applica auth + security middleware
+export default combineMiddlewares(
+  handler,
+  (h) => withAuth(h, 'cron'),
+  (h) => withSecurityMiddleware(h, { timeout: 60000 }) // 60s per notifiche multiple
+);

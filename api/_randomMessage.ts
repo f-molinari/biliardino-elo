@@ -1,15 +1,22 @@
-export function getRandomMessage(playerName = '') {
+type Season = 'winter' | 'spring' | 'summer' | 'autumn';
+
+interface RandomMessage {
+  title: string;
+  body: string;
+}
+
+export function getRandomMessage(playerName = ''): RandomMessage {
   const now = new Date();
   const month = now.getMonth();
 
   // Determina la stagione
-  let season;
+  let season: Season;
   if (month >= 11 || month <= 1) season = 'winter';
   else if (month >= 2 && month <= 4) season = 'spring';
   else if (month >= 5 && month <= 7) season = 'summer';
   else season = 'autumn';
 
-  const titles = [
+  const titles: string[] = [
     '🎯 Matchmaking in corso!',
     '🔍 Cerchiamo avversari...',
     '⚡ Inizia la selezione!',
@@ -27,7 +34,11 @@ export function getRandomMessage(playerName = '') {
     '⚡ Chi accetta la sfida?'
   ];
 
-  const bodies = {
+  const bodies: {
+    greetings: string[];
+    seasonal: Record<Season, string[]>;
+    action: string[];
+  } = {
     greetings: [
       `Ciao${playerName ? ' ' + playerName : ''}! Voglia di una partita? 🎯`,
       `Bentornato/a${playerName ? ' ' + playerName : ''}! Si gioca? 🏓`,
@@ -118,7 +129,7 @@ export function getRandomMessage(playerName = '') {
     ]
   };
 
-  const allBodies = [
+  const allBodies: string[] = [
     ...bodies.greetings,
     ...bodies.seasonal[season],
     ...bodies.action
@@ -131,4 +142,4 @@ export function getRandomMessage(playerName = '') {
     title,
     body
   };
-};
+}

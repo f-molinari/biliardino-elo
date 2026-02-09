@@ -1,35 +1,55 @@
+import { list } from '@vercel/blob';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import webpush from 'web-push';
 import { withAuth } from './_auth.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { redis } from './_redisClient.js';
+import { sanitizeLogOutput, validateMatchTime } from './_validation.js';
 
 webpush.setVapidDetails(
   'mailto:info@biliardino.app',
-  process.env.VITE_VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
+  process.env.VITE_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
 );
 
-async function handler(req, res) {
+interface Confirmation {
+  playerId: number;
+  matchTime: string;
+  confirmedAt: string;
+  subscription?: any;
+}
+
+interface SubscriptionData {
+  playerId: number;
+  playerName?: string;
+  subscription: webpush.PushSubscription;
+  createdAt: string;
+}
+
+async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
   setCorsHeaders(res);
-  if (handleCorsPreFlight(req, res)) return;
+  if (handleCorsPreFlight(req, res)) return res;
 
   try {
-    const { matchTime } = req.query;
+    const { matchTime: rawMatchTime } = req.query as { matchTime?: string };
 
-    if (!matchTime) {
+    if (!rawMatchTime) {
       return res.status(400).json({ error: 'Missing matchTime parameter' });
     }
+
+    // Valida e sanitizza matchTime per prevenire injection
+    const matchTime = validateMatchTime(rawMatchTime);
 
     // Ottieni conferme da Redis
     const keys = await redis.keys(`availability:${matchTime}:*`);
     const confirmations = await Promise.all(
       keys.map(async (key) => {
-        const data = await redis.get(key);
+        const data = await redis.get(key) as Confirmation | null;
         return data;
       })
     );
 
-    const validConfirmations = confirmations.filter(Boolean);
+    const validConfirmations = confirmations.filter(Boolean) as Confirmation[];
 
     if (validConfirmations.length < 5) {
       console.log(`⚠️ Solo ${validConfirmations.length} conferme per ${matchTime}, minimo 5 richiesto`);
@@ -46,22 +66,28 @@ async function handler(req, res) {
     const selected = shuffled.slice(0, 4);
     const selectedIds = selected.map(c => c.playerId);
 
-    console.log(`🎮 Matchmaking per ${matchTime}: estratti ${selectedIds.join(', ')}`);
+    console.log(`🎮 Matchmaking per ${sanitizeLogOutput(matchTime)}: estratti ${selectedIds.join(', ')}`);
 
     // Ottieni le subscriptions di questi giocatori
-    const { blobs } = await list({
-      prefix: `${playerId}-subs/`,
-      token: process.env.BLOB_READ_WRITE_TOKEN
-    });
+    const allBlobs: SubscriptionData[] = [];
 
-    const allSubscriptions = await Promise.all(
-      blobs.map(async (blob) => {
-        const response = await fetch(blob.url);
-        return await response.json();
-      })
-    );
+    for (const playerId of selectedIds) {
+      const { blobs } = await list({
+        prefix: `${playerId}-subs/`,
+        token: process.env.BLOB_READ_WRITE_TOKEN
+      });
 
-    const selectedSubscriptions = allSubscriptions.filter(sub =>
+      const playerSubscriptions = await Promise.all(
+        blobs.map(async (blob) => {
+          const response = await fetch(blob.url);
+          return await response.json() as SubscriptionData;
+        })
+      );
+
+      allBlobs.push(...playerSubscriptions);
+    }
+
+    const selectedSubscriptions = allBlobs.filter(sub =>
       selectedIds.includes(sub.playerId)
     );
 
@@ -96,7 +122,7 @@ async function handler(req, res) {
         );
         success++;
       } catch (err) {
-        console.warn('Errore notifica a:', subData.playerId, err.message);
+        console.warn('Errore notifica a:', subData.playerId, (err as Error).message);
         fail++;
       }
     }
@@ -106,7 +132,7 @@ async function handler(req, res) {
 
     console.log(`✅ Matchmaking completato: ${success} notifiche inviate, ${fail} fallite`);
 
-    res.status(200).json({
+    return res.status(200).json({
       ok: true,
       selected: selectedIds,
       notified: success,
@@ -115,7 +141,7 @@ async function handler(req, res) {
     });
   } catch (err) {
     console.error('Errore matchmaking:', err);
-    res.status(500).json({ error: 'Errore matchmaking' });
+    return res.status(500).json({ error: 'Errore matchmaking' });
   }
 }
 

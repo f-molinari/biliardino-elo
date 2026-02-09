@@ -1,8 +1,20 @@
 import { list } from '@vercel/blob';
-import { handleCorsPreFlight } from './_cors.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
+import { withSecurityMiddleware } from './_middleware.js';
 import { redis } from './_redisClient.js';
+import { sanitizeLogOutput, validateMatchTime, validatePlayerId } from './_validation.js';
 
-async function findMatchingSubscription(playerId, incomingSubscription) {
+interface SubscriptionData {
+  subscription?: {
+    endpoint: string;
+    [key: string]: any;
+  };
+  playerId?: number;
+  [key: string]: any;
+}
+
+async function findMatchingSubscription(playerId: number, incomingSubscription?: any): Promise<{ exists: boolean; matched: boolean }> {
   const { blobs } = await list({
     prefix: `${playerId}-subs/`,
     token: process.env.BLOB_READ_WRITE_TOKEN
@@ -17,7 +29,7 @@ async function findMatchingSubscription(playerId, incomingSubscription) {
   const subscriptions = await Promise.all(
     blobs.map(async (b) => {
       const response = await fetch(b.url);
-      return await response.json();
+      return await response.json() as SubscriptionData;
     })
   );
 
@@ -27,25 +39,28 @@ async function findMatchingSubscription(playerId, incomingSubscription) {
   return { exists: true, matched };
 }
 
-export default async function handler(req, res) {
+async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
   setCorsHeaders(res);
 
-  if (handleCorsPreFlight(req, res)) return;
+  if (handleCorsPreFlight(req, res)) return res;
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { playerId, matchTime, subscription } = req.body;
+    const { playerId: rawPlayerId, matchTime: rawMatchTime, subscription } = req.body as {
+      playerId?: string | number;
+      matchTime?: string;
+      subscription?: any;
+    };
 
-    if (!playerId || !matchTime) {
+    if (!rawPlayerId || !rawMatchTime) {
       return res.status(400).json({ error: 'Missing playerId or matchTime' });
     }
 
-    const playerIdNum = Number(playerId);
-    if (Number.isNaN(playerIdNum)) {
-      return res.status(400).json({ error: 'playerId deve essere un numero' });
-    }
+    // Valida e sanitizza input per prevenire injection
+    const playerIdNum = validatePlayerId(rawPlayerId);
+    const matchTime = validateMatchTime(rawMatchTime);
 
     let parsedSubscription = subscription;
     if (typeof subscription === 'string') {
@@ -59,7 +74,7 @@ export default async function handler(req, res) {
     // const { exists, matched } = await findMatchingSubscription(playerIdNum, parsedSubscription);
     // if (!exists) {
     //   return res.status(401).json({ error: 'Nessuna subscription associata a questo utente' });
-    // }y
+    // }
     // if (!matched) {
     //   return res.status(401).json({ error: 'Subscription non valida per questo utente' });
     // }
@@ -78,13 +93,19 @@ export default async function handler(req, res) {
     const keys = await redis.keys(`availability:${matchTime}:*`);
     const count = keys.length;
 
-    console.log(`✅ Conferma da ${playerId} per match ${matchTime} (totale: ${count})`);
+    console.log(`✅ Conferma da ${sanitizeLogOutput(String(playerIdNum))} per match ${sanitizeLogOutput(matchTime)} (totale: ${count})`);
 
-    res.status(200).json({ ok: true, count });
+    return res.status(200).json({ ok: true, count });
   } catch (err) {
     console.error('Errore conferma availability:', err);
-    res.status(500).json({ error: 'Errore salvataggio conferma' });
+    return res.status(500).json({ error: 'Errore salvataggio conferma' });
   }
 }
+
+// Applica security middleware per protezione Node.js
+export default withSecurityMiddleware(handler, {
+  maxPayloadSize: 10 * 1024, // 10KB
+  timeout: 10000 // 10s
+});
 
 // export default withAuth(handler, 'admin');
