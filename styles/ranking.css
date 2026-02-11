@@ -1295,10 +1295,7 @@ th[data-sort]:hover .sort-indicator {
   position: absolute;
   bottom: -2px;
   right: -2px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
-  border: 2px solid rgba(6, 44, 125, 0.15);
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }
 
 .live-player-info {
