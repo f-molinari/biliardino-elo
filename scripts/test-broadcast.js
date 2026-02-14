@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 dotenv.config({ path: ['.env.local', '.env'] });
 
 // Check if API_TOKEN is set
-const API_TOKEN = process.env.CRON_API_TOKEN;
+const API_TOKEN = process.env.ADMIN_API_TOKEN;
 if (!API_TOKEN) {
   console.error('❌ Error: API_TOKEN not set in environment variables');
   process.exit(1);

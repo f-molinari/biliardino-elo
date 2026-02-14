@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import * as jose from 'jose';
+import { setCorsHeaders } from './_cors.js';
 
 /**
  * Auth middleware per API Vercel serverless
@@ -101,6 +102,12 @@ type Handler = (req: VercelRequest, res: VercelResponse) => Promise<void | Verce
  */
 export function withAuth(handler: Handler, requiredRole: Role | null = null): Handler {
   return async (req: VercelRequest, res: VercelResponse) => {
+    // Handle CORS preflight directly without auth and without calling handler
+    if (req.method === 'OPTIONS') {
+      setCorsHeaders(res);
+      return res.status(200).end();
+    }
+
     try {
       // Verifica auth
       const payload = await verifyAuth(req, requiredRole);
