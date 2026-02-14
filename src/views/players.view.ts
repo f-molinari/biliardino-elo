@@ -1,3 +1,4 @@
+import { BASE_PATH } from '@/config/env.config';
 import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { FinalK, MatchesK, StartK } from '@/services/elo.service';
