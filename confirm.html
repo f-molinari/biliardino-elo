@@ -1378,6 +1378,11 @@
 
     // ─── API ─────────────────────────────────────────────────────────────
 
+    let pollingIntervalId = null;
+    let pollingTimeoutId = null;
+    let pollingStartTime = 0;
+    let pollingElapsedTime = 0;
+
     async function loadConfirmations() {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/get-confirmations?time=` + matchTime);
@@ -1401,6 +1406,52 @@
       }
     }
 
+    function startPolling() {
+      loadConfirmations();
+
+      pollingIntervalId = setInterval(loadConfirmations, 5000);
+
+      const remainingTime = 60_000 - pollingElapsedTime;
+      pollingStartTime = Date.now();
+      pollingTimeoutId = setTimeout(() => {
+        stopPolling();
+        console.log('⏱️ Polling fermato per timeout (60 secondi)');
+      }, remainingTime);
+
+      console.log('🔄 Polling avviato');
+    }
+
+    function stopPolling() {
+      if (pollingIntervalId !== null) {
+        clearInterval(pollingIntervalId);
+        pollingIntervalId = null;
+
+        if (pollingStartTime > 0) {
+          pollingElapsedTime += Date.now() - pollingStartTime;
+        }
+
+        console.log('🛑 Polling fermato');
+      }
+      if (pollingTimeoutId !== null) {
+        clearTimeout(pollingTimeoutId);
+        pollingTimeoutId = null;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        if (pollingIntervalId !== null) {
+          stopPolling();
+          console.log('⏸️ Polling in pausa (pagina non visibile)');
+        }
+      } else {
+        if (pollingIntervalId === null && pollingElapsedTime < 60_000) {
+          startPolling();
+          console.log('▶️ Polling ripreso (pagina visibile)');
+        }
+      }
+    }
+
     async function init() {
       // Inizializza lo stato loading
       setState(AppState.LOADING);
@@ -1417,10 +1468,16 @@
         return; // Non avviare polling
       }
 
-      await loadConfirmations();
       setState(AppState.LOBBY_FOUND);
-      const intervalId = setInterval(loadConfirmations, 5000);
-      setTimeout(() => clearInterval(intervalId), 60_000);
+      startPolling();
+
+      // Cleanup al beforeunload
+      window.addEventListener('beforeunload', () => {
+        stopPolling();
+      });
+
+      // Pausa polling quando la pagina non è visibile
+      document.addEventListener('visibilitychange', handleVisibilityChange);
     }
 
     async function checkLobby() {

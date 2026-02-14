@@ -67,30 +67,6 @@ export class BroadcastAdminView {
       }
     });
 
-    // Long press per logout
-    let pressTimer: number | null = null;
-    button.addEventListener('mousedown', () => {
-      if (BroadcastAdminView.isAdminLoggedIn()) {
-        pressTimer = window.setTimeout(() => {
-          BroadcastAdminView.handleAdminLogout();
-        }, 2000);
-      }
-    });
-
-    button.addEventListener('mouseup', () => {
-      if (pressTimer !== null) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-    });
-
-    button.addEventListener('mouseleave', () => {
-      if (pressTimer !== null) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-    });
-
     document.body.appendChild(button);
     BroadcastAdminView.floatingButton = button;
   }
@@ -135,7 +111,7 @@ export class BroadcastAdminView {
         console.log('✅ Admin login effettuato');
 
         // Mostra messaggio di conferma
-        alert('✅ Login admin effettuato! Mantieni premuto il pulsante per 2 secondi per fare logout.');
+        alert('✅ Login admin effettuato!');
       } else {
         alert('Inserisci un token valido');
       }
@@ -240,7 +216,7 @@ export class BroadcastAdminView {
 
     if (isLoggedIn) {
       BroadcastAdminView.floatingButton.classList.add('logged-in');
-      BroadcastAdminView.floatingButton.title = 'Invia Broadcast (tieni premuto per logout)';
+      BroadcastAdminView.floatingButton.title = 'Invia Broadcast';
     } else {
       BroadcastAdminView.floatingButton.classList.remove('logged-in');
       BroadcastAdminView.floatingButton.title = 'Login Admin';
@@ -268,19 +244,6 @@ export class BroadcastAdminView {
     }
 
     BroadcastAdminView.broadcastDialog.showModal();
-  }
-
-  /**
-   * Gestisce il logout admin
-   */
-  private static handleAdminLogout(): void {
-    const confirm = window.confirm('Vuoi effettuare il logout admin?');
-    if (confirm) {
-      localStorage.removeItem(BroadcastAdminView.ADMIN_TOKEN_KEY);
-      BroadcastAdminView.updateFloatingButtonUI();
-      console.log('🚪 Admin logout effettuato');
-      alert('Logout effettuato con successo');
-    }
   }
 
   /**

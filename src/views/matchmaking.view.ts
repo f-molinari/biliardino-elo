@@ -25,6 +25,7 @@ export class MatchmakingView {
 
   // Conferme real-time
   private static pollingIntervalId: number | null = null;
+  private static pollingTimeoutId: number | null = null;
   private static confirmedPlayerIds: Set<number> = new Set();
   private static confirmationTimes: Map<number, string> = new Map();
   private static currentMatchTime: string = '';
@@ -817,6 +818,12 @@ export class MatchmakingView {
       MatchmakingView.loadConfirmations();
     }, 7000);
 
+    // Timeout massimo di 10 minuti per evitare polling infinito
+    MatchmakingView.pollingTimeoutId = window.setTimeout(() => {
+      MatchmakingView.stopConfirmationsPolling();
+      console.log('⏱️ Polling conferme fermato per timeout (10 minuti)');
+    }, 600_000);
+
     console.log(`🔄 Polling conferme avviato per match ${MatchmakingView.currentMatchTime}`);
   }
 
@@ -828,6 +835,10 @@ export class MatchmakingView {
       clearInterval(MatchmakingView.pollingIntervalId);
       MatchmakingView.pollingIntervalId = null;
       console.log('🛑 Polling conferme fermato');
+    }
+    if (MatchmakingView.pollingTimeoutId !== null) {
+      clearTimeout(MatchmakingView.pollingTimeoutId);
+      MatchmakingView.pollingTimeoutId = null;
     }
   }
 
