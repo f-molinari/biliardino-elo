@@ -602,7 +602,7 @@ export class MatchmakingView {
             <div class="match-player-meta">
               <span class="role-badge ${roleBadgeClass1}" title="Percentuale partite nel ruolo assegnato">${roleLabel1}</span>
               <span class="player-elo">${Math.round(getPlayerElo(player1, role1 === 'defence'))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(player1)})</span></span>
-              ${player1.class !== -1 ? `<img src="/biliardino-elo/class/${player1.class}.webp" alt="Class ${player1.class}" style="width:24px;height:24px;object-fit:contain;" />` : ''}
+              ${player1.class !== -1 ? `<img src="/class/${player1.class}.webp" alt="Class ${player1.class}" style="width:24px;height:24px;object-fit:contain;" />` : ''}
             </div>
           </div>
         </div>
@@ -620,7 +620,7 @@ export class MatchmakingView {
             <div class="match-player-meta">
               <span class="role-badge ${roleBadgeClass2}" title="Percentuale partite nel ruolo assegnato">${roleLabel2}</span>
               <span class="player-elo">${Math.round(getPlayerElo(player2, role2 === 'defence'))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(player2)})</span></span>
-              ${player2.class !== -1 ? `<img src="/biliardino-elo/class/${player2.class}.webp" alt="Class ${player2.class}" style="width:24px;height:24px;object-fit:contain;" />` : ''}
+              ${player2.class !== -1 ? `<img src="/class/${player2.class}.webp" alt="Class ${player2.class}" style="width:24px;height:24px;object-fit:contain;" />` : ''}
             </div>
           </div>
         </div>

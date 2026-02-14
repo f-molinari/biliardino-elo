@@ -279,7 +279,7 @@ export class PlayersView {
       <div class="pp-content">
         <div class="pp-header">
           <div class="pp-name-wrapper">
-            ${player.class !== -1 ? `<img src="/biliardino-elo/class/${player.class}.webp" alt="Class ${player.class}" title="${getClassName(player.class)}" class="pp-class-icon" />` : ''}
+            ${player.class !== -1 ? `<img src="/class/${player.class}.webp" alt="Class ${player.class}" title="${getClassName(player.class)}" class="pp-class-icon" />` : ''}
             <h2 class="pp-name">${player.name}</h2>
           </div>
           <div class="pp-badges">
@@ -298,7 +298,7 @@ export class PlayersView {
             <span class="stat-label">Miglior ELO</span>
             <span class="stat-value positive stat-value-with-icon">
               ${formatElo(stats.bestElo)}
-              ${Number.isFinite(stats.bestClass) && stats.bestClass !== -1 ? `<img src="/biliardino-elo/class/${stats.bestClass}.webp" alt="Class ${stats.bestClass}" title="${getClassName(stats.bestClass)}" class="stat-class-icon" />` : ''}
+              ${Number.isFinite(stats.bestClass) && stats.bestClass !== -1 ? `<img src="/class/${stats.bestClass}.webp" alt="Class ${stats.bestClass}" title="${getClassName(stats.bestClass)}" class="stat-class-icon" />` : ''}
             </span>
           </div>
 
