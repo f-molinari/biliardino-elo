@@ -10,4 +10,4 @@ async function init(): Promise<void> {
   initDevToolbar();
 }
 
-withAuthentication(init);
+withAuthentication(init, true); // true = richiede admin

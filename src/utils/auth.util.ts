@@ -1,4 +1,4 @@
-import { useMockData } from '@/config/env.config';
+import { API_BASE_URL, useMockData } from '@/config/env.config';
 import { browserSessionPersistence, onAuthStateChanged, setPersistence } from 'firebase/auth';
 import { AUTH, login } from './firebase.util';
 
@@ -90,8 +90,12 @@ async function promptLogin(): Promise<void> {
  * is confirmed.
  *
  * @param action - A function to execute after the user is authenticated. May be synchronous or return a Promise.
+ * @param requireAdmin - If true, verify user is in admin list via API
  */
-export function withAuthentication(action: () => void | Promise<void>): void {
+export function withAuthentication(
+  action: () => void | Promise<void>,
+  requireAdmin: boolean = false
+): void {
   // In dev/mock mode AUTH is null — skip Firebase auth entirely
   if (useMockData || !AUTH) {
     console.log('[MOCK] Skipping authentication, executing action directly');
@@ -110,6 +114,67 @@ export function withAuthentication(action: () => void | Promise<void>): void {
     }
 
     started = true;
+
+    // Verifica admin se richiesto
+    if (requireAdmin) {
+      const playerId = localStorage.getItem('biliardino_player_id');
+
+      if (!playerId) {
+        showAdminDenied('Utente non riconosciuto. Effettua il login come giocatore prima.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/check-admin?playerId=${playerId}`);
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.isAdmin) {
+          showAdminDenied('Accesso negato. Solo gli admin possono accedere a questa pagina.');
+          return;
+        }
+
+        console.log('✅ Admin verificato:', playerId);
+      } catch (error) {
+        console.error('❌ Errore verifica admin:', error);
+        showAdminDenied('Errore verifica permessi admin.');
+        return;
+      }
+    }
+
     await action();
   });
+}
+
+function showAdminDenied(message: string): void {
+  const container = document.querySelector('.container');
+  if (container) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 3rem 1rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">🚫</div>
+        <h2 style="color: #d32f2f; margin-bottom: 1rem;">Accesso Negato</h2>
+        <p style="color: #6e6e73; margin-bottom: 2rem; font-size: 1.1rem;">${message}</p>
+        <a href="./index.html" style="
+          display: inline-block;
+          padding: 0.75rem 2rem;
+          background: linear-gradient(135deg, #062c7d 0%, #1a4aad 100%);
+          color: white;
+          text-decoration: none;
+          border-radius: 12px;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(6, 44, 125, 0.3);
+          transition: transform 0.2s, box-shadow 0.2s;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(6, 44, 125, 0.4)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(6, 44, 125, 0.3)';">← Torna alla Home</a>
+      </div>
+    `;
+  }
+
+  // Redirect automatico dopo 5 secondi
+  setTimeout(() => {
+    window.location.href = './index.html';
+  }, 5000);
 }

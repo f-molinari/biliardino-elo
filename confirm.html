@@ -793,7 +793,8 @@
       );
       sorted.forEach((conf, i) => {
         const isMe = String(conf.playerId) === String(myPlayerId);
-        const name = isMe ? '🙋 Tu' : `Giocatore #${conf.playerId}`;
+        const fishName = conf.fishName || `Giocatore #${conf.playerId}`;
+        const name = isMe ? '🙋 Tu' : fishName;
         spawnFish(conf.playerId, name, i);
       });
     }
@@ -864,10 +865,59 @@
     async function init() {
       spawnBubbles();
       spawnGodRays();
+
+      // Verifica lobby prima di mostrare UI
+      const lobbyExists = await checkLobby();
+
+      if (!lobbyExists) {
+        showNoLobbyState();
+        return; // Non avviare polling
+      }
+
       await loadConfirmations();
       showState('confirm');
       const intervalId = setInterval(loadConfirmations, 5000);
       setTimeout(() => clearInterval(intervalId), 60_000);
+    }
+
+    async function checkLobby() {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/check-lobby?time=${matchTime}`);
+        if (!res.ok) {
+          console.warn(`❌ API check-lobby fallita: ${res.status}`);
+          return true; // Fail-open: permetti accesso in caso di errore
+        }
+
+        const data = await res.json();
+
+        if (!data.exists) {
+          console.warn(`❌ Nessuna lobby attiva per ${matchTime}`);
+          return false;
+        }
+
+        console.log(`✅ Lobby attiva per ${matchTime} (TTL: ${data.ttl}s)`);
+        return true;
+      } catch (err) {
+        console.error('❌ Errore verifica lobby:', err);
+        return true; // Fail-open
+      }
+    }
+
+    function showNoLobbyState() {
+      showState('error');
+
+      const errorTitle = document.getElementById('error-title');
+      errorTitle.textContent = '❌ Nessuna lobby attiva';
+
+      const errorMsg = document.getElementById('error-msg');
+      errorMsg.querySelector('.error-actions').innerHTML = `
+        <p style="margin: 1rem 0; color: #6e6e73; font-size: 0.95rem;">
+          Non ci sono partite programmate per le ${matchTime}.
+          <br>Attendi la notifica dal sistema o torna più tardi.
+        </p>
+        <a href="./index.html" class="btn-secondary">← Torna alla Home</a>
+        <button id="retry-lobby-btn" class="btn" onclick="location.reload()">↻ Riprova</button>
+      `;
     }
 
     async function confirmAttendance() {

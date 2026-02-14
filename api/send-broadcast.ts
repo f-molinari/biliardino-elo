@@ -5,6 +5,7 @@ import { withAuth } from './_auth.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { combineMiddlewares, withSecurityMiddleware } from './_middleware.js';
 import { getRandomMessage } from './_randomMessage.js';
+import { redis } from './_redisClient.js';
 import { sanitizeLogOutput, validateMatchTime, validateString } from './_validation.js';
 
 // Verifica configurazione
@@ -178,11 +179,34 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
 
     console.log(`✅ Broadcast completato: ${sent}/${validSubscriptions.length} inviati (Match: ${matchTime})`);
 
+    // Crea registry lobby in Redis
+    try {
+      const lobbyKey = `lobby:${matchTime}`;
+      await redis.set(
+        lobbyKey,
+        {
+          createdAt: new Date().toISOString(),
+          matchTime,
+          notificationsSent: sent,
+          active: true
+        },
+        {
+          ex: 1800 // TTL 30 minuti (1800 secondi)
+        }
+      );
+
+      console.log(`🏁 Lobby registry creata: ${lobbyKey} (TTL: 30 min)`);
+    } catch (err) {
+      console.error('❌ Errore creazione lobby registry:', err);
+      // Non bloccare la risposta se fallisce
+    }
+
     return res.status(200).json({
       sent,
       failed,
       total: validSubscriptions.length,
-      matchTime
+      matchTime,
+      lobbyActive: true
     });
   } catch (err) {
     console.error('Errore broadcast:', err);

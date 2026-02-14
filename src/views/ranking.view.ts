@@ -47,6 +47,7 @@ export class RankingView {
     RankingView.render();
     RankingView.makeHeadersSortable();
     await RankingView.renderLiveMatch();
+    RankingView.initPlayButton();
   }
 
   /**
@@ -885,5 +886,30 @@ export class RankingView {
       console.error('Failed to render live match', error);
       container.innerHTML = '';
     }
+  }
+
+  /**
+   * Calcola il prossimo matchTime basato sull'ora corrente
+   */
+  private static getNextMatchTime(): string {
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    if (mins < 660) return '11:00'; // Prima delle 11:00
+    if (mins < 960) return '16:00'; // Prima delle 16:00
+    return '11:00'; // Default giorno dopo
+  }
+
+  /**
+   * Inizializza il pulsante "Gioca" per redirect a confirm.html
+   */
+  private static initPlayButton(): void {
+    const playBtn = document.getElementById('play-btn');
+    if (!playBtn) return;
+
+    playBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const matchTime = RankingView.getNextMatchTime();
+      window.location.href = `./confirm.html?time=${matchTime}`;
+    });
   }
 }
