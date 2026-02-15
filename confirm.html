@@ -32,8 +32,9 @@
       position: relative;
     }
 
-    /* ====== STATE SYSTEM: 3 stati della pagina ====== */
-    /* LOBBY_FOUND: acqua + pesci + onde */
+    /* ====== STATE SYSTEM: stati della pagina ====== */
+    /* LOBBY_FOUND: acqua + pesci + onde + pulsante conferma */
+    /* CONFIRMED: acqua + pesci + onde + messaggio conferma */
     /* NO_LOBBY: ampolla isolata */
     /* ERROR: pesci morti */
 
@@ -42,6 +43,7 @@
     }
 
     body[data-state="LOBBY_FOUND"] .only-no-lobby,
+    body[data-state="CONFIRMED"] .only-no-lobby,
     body[data-state="ERROR"] .only-no-lobby {
       display: none !important;
     }
@@ -68,6 +70,7 @@
     }
 
     body[data-state="LOBBY_FOUND"] #water-layer,
+    body[data-state="CONFIRMED"] #water-layer,
     body[data-state="ERROR"] #water-layer {
       opacity: 1;
     }
@@ -86,6 +89,7 @@
     }
 
     body[data-state="LOBBY_FOUND"] #waves,
+    body[data-state="CONFIRMED"] #waves,
     body[data-state="ERROR"] #waves {
       opacity: 1;
     }
@@ -173,6 +177,7 @@
     }
 
     body[data-state="LOBBY_FOUND"] #aquarium,
+    body[data-state="CONFIRMED"] #aquarium,
     body[data-state="ERROR"] #aquarium {
       opacity: 1;
     }
@@ -303,6 +308,7 @@
     }
 
     body[data-state="LOBBY_FOUND"] .god-rays,
+    body[data-state="CONFIRMED"] .god-rays,
     body[data-state="ERROR"] .god-rays {
       opacity: 1;
     }
@@ -387,6 +393,7 @@
     }
 
     body[data-state="LOBBY_FOUND"] .seabed,
+    body[data-state="CONFIRMED"] .seabed,
     body[data-state="ERROR"] .seabed {
       opacity: 1;
     }
@@ -472,6 +479,7 @@
     }
 
     body[data-state="LOBBY_FOUND"] .time-watermark,
+    body[data-state="CONFIRMED"] .time-watermark,
     body[data-state="ERROR"] .time-watermark {
       opacity: 1;
     }
@@ -518,40 +526,99 @@
     }
 
     .btn {
-      display: block;
-      width: 100%;
-      max-width: 420px;
-      padding: 1rem 2rem;
-      font-size: 1.15rem;
-      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 140px;
+      height: 140px;
+      font-size: 1.4rem;
+      font-weight: 800;
       color: #fff;
-      background: linear-gradient(135deg, #062c7d 0%, #1a4aad 50%, #2563d4 100%);
-      border: none;
-      border-radius: 16px;
+      background: radial-gradient(circle at 30% 30%, #4fc3f7, #0288d1, #01579b);
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 24px rgba(6, 44, 125, 0.3);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:
+        0 8px 32px rgba(2, 136, 209, 0.5),
+        0 0 0 0 rgba(79, 195, 247, 0.7),
+        inset 0 -4px 12px rgba(1, 87, 155, 0.4),
+        inset 0 4px 12px rgba(255, 255, 255, 0.2);
       -webkit-tap-highlight-color: transparent;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      animation: ocean-pulse 3s ease-in-out infinite;
+    }
+
+    /* Effetto onda dentro il pulsante */
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+      transform: translate(-50%, -50%) scale(0);
+      transition: transform 0.6s ease-out;
+      border-radius: 50%;
+    }
+
+    @keyframes ocean-pulse {
+
+      0%,
+      100% {
+        box-shadow:
+          0 8px 32px rgba(2, 136, 209, 0.5),
+          0 0 0 0 rgba(79, 195, 247, 0.7),
+          inset 0 -4px 12px rgba(1, 87, 155, 0.4),
+          inset 0 4px 12px rgba(255, 255, 255, 0.2);
+      }
+
+      50% {
+        box-shadow:
+          0 8px 40px rgba(2, 136, 209, 0.6),
+          0 0 30px rgba(79, 195, 247, 0.5),
+          inset 0 -4px 12px rgba(1, 87, 155, 0.4),
+          inset 0 4px 12px rgba(255, 255, 255, 0.3);
+      }
     }
 
     .btn:hover {
-      background: linear-gradient(135deg, #0a3592 0%, #1e52b8 50%, #2d6ddf 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 32px rgba(6, 44, 125, 0.4);
+      background: radial-gradient(circle at 30% 30%, #5dd3ff, #0398e3, #0267ab);
+      transform: scale(1.05);
+      box-shadow:
+        0 12px 48px rgba(2, 136, 209, 0.7),
+        0 0 50px rgba(79, 195, 247, 0.6),
+        inset 0 -4px 12px rgba(1, 87, 155, 0.4),
+        inset 0 4px 12px rgba(255, 255, 255, 0.3);
+    }
+
+    .btn:hover::before {
+      transform: translate(-50%, -50%) scale(1.2);
     }
 
     .btn:active {
-      transform: scale(0.98);
-      box-shadow: 0 2px 12px rgba(6, 44, 125, 0.2);
+      transform: scale(0.95);
+      box-shadow:
+        0 4px 16px rgba(2, 136, 209, 0.4),
+        0 0 20px rgba(79, 195, 247, 0.4),
+        inset 0 -4px 12px rgba(1, 87, 155, 0.5),
+        inset 0 4px 12px rgba(255, 255, 255, 0.2);
     }
 
     .btn:disabled {
-      background: linear-gradient(135deg, #b0b0b0, #ccc);
-      color: #888;
+      background: radial-gradient(circle at 30% 30%, #b0bec5, #78909c, #546e7a);
+      color: #cfd8dc;
       cursor: not-allowed;
-      box-shadow: none;
+      box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.2),
+        inset 0 -4px 12px rgba(0, 0, 0, 0.3);
       transform: none;
+      animation: none;
+      border-color: rgba(255, 255, 255, 0.15);
     }
 
     .confirmed-msg {
@@ -565,6 +632,16 @@
       border-radius: 16px;
       background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
       border: 1px solid rgba(46, 125, 50, 0.15);
+      opacity: 0;
+      transform: scale(0.8);
+      animation: fade-in-scale 0.5s ease-out forwards;
+    }
+
+    @keyframes fade-in-scale {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     .confirmed-msg .confirmed-title {
@@ -603,6 +680,19 @@
 
     .error-msg .error-actions .btn {
       flex: 1;
+      width: auto;
+      height: auto;
+      border-radius: 16px;
+      padding: 0.85rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      animation: none;
+      background: linear-gradient(135deg, #062c7d 0%, #1a4aad 50%, #2563d4 100%);
+      border: none;
+    }
+
+    .error-msg .error-actions .btn:hover {
+      background: linear-gradient(135deg, #0a3592 0%, #1e52b8 50%, #2d6ddf 100%);
     }
 
     .btn-secondary {
@@ -1108,12 +1198,13 @@
 
   <script type="module">
     // ===============================================
-    // STATE MANAGER - 3 stati della pagina
+    // STATE MANAGER - stati della pagina
     // ===============================================
     const AppState = {
       LOADING: 'LOADING',
       LOBBY_FOUND: 'LOBBY_FOUND',
       NO_LOBBY: 'NO_LOBBY',
+      CONFIRMED: 'CONFIRMED',
       ERROR: 'ERROR'
     };
 
@@ -1150,6 +1241,14 @@
         case AppState.LOBBY_FOUND:
           confirmStateEl.style.display = 'block';
           confirmBtn.style.display = 'block';
+          ctaFooter.style.display = 'flex';
+          topBar.style.display = 'flex';
+          reviveFish();
+          break;
+
+        case AppState.CONFIRMED:
+          confirmStateEl.style.display = 'block';
+          confirmedMsg.style.display = 'flex';
           ctaFooter.style.display = 'flex';
           topBar.style.display = 'flex';
           reviveFish();
@@ -1397,6 +1496,14 @@
         // Sync the aquarium
         if (data.confirmations && data.confirmations.length > 0) {
           syncFish(data.confirmations);
+
+          // Check if I have confirmed
+          const iHaveConfirmed = data.confirmations.some(c => String(c.playerId) === String(myPlayerId));
+
+          // Update state to CONFIRMED only if currently in LOBBY_FOUND
+          if (iHaveConfirmed && currentState === AppState.LOBBY_FOUND) {
+            setState(AppState.CONFIRMED);
+          }
         } else {
           // Remove all fish
           for (const id of fishMap.keys()) removeFish(id);
@@ -1535,7 +1642,7 @@
 
     async function confirmAttendance() {
       confirmBtn.disabled = true;
-      confirmBtn.textContent = '⏳ Confermando...';
+      confirmBtn.textContent = '⏳';
 
       try {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/confirm-availability`, {
@@ -1544,7 +1651,7 @@
           body: JSON.stringify({ matchTime, playerId: myPlayerId, subscription: localStorage.getItem('biliardino_subscription') })
         });
         if (!res.ok) throw new Error('Errore nella conferma');
-        setState(AppState.LOBBY_FOUND);
+        setState(AppState.CONFIRMED);
       } catch (err) {
         document.getElementById('error-title').textContent = '❌ ' + (err.message || 'Errore nella conferma');
         setState(AppState.ERROR);
@@ -1587,6 +1694,7 @@
         <div class="dev-panel-title">DEV</div>
         <button data-state="LOADING">Loading</button>
         <button data-state="LOBBY_FOUND">Lobby Found</button>
+        <button data-state="CONFIRMED">Confirmed</button>
         <button data-state="NO_LOBBY">No Lobby</button>
         <button data-state="ERROR">Error</button>
         <button data-action="add-fish">+ Pesce</button>
@@ -1653,6 +1761,19 @@
                   window.__devSpawnFish?.(`dev-${devFishCount}`, name, devFishCount - 1);
                 }
               }
+              // Revive fish in caso venissero da ERROR
+              document.querySelectorAll('#aquarium .fish').forEach(f => {
+                f.classList.remove('dead');
+                f.style.marginTop = '';
+                f.style.top = '';
+                f.style.left = '';
+              });
+              break;
+            case 'CONFIRMED':
+              confirmStateEl.style.display = 'block';
+              confirmedMsg.style.display = 'flex';
+              ctaFooter.style.display = 'flex';
+              topBar.style.display = 'flex';
               // Revive fish in caso venissero da ERROR
               document.querySelectorAll('#aquarium .fish').forEach(f => {
                 f.classList.remove('dead');
