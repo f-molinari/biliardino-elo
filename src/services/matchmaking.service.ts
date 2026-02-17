@@ -43,8 +43,8 @@ export interface IHeuristicData {
 export type Diversity = { teammate: number; opponent: number };
 
 const config: IMatchmakingConfig = {
-  matchBalanceWeight: 0.35,
-  priorityWeight: 0.15,
+  matchBalanceWeight: 0.4,
+  priorityWeight: 0.1,
   diversityWeight: 0.35,
   randomness: 0.15
 };
