@@ -229,7 +229,7 @@ export class PlayersView {
       const deltaRounded = Math.round(delta);
       const totalDelta = Math.round(delta * multiplier);
       const myDeltaFormatted = multiplier !== 1
-        ? `<span style="color:${deltaColor};">${totalDelta >= 0 ? '+' : ''}${totalDelta} <span style="font-size:0.85em;">(${multiplier.toFixed(2)})</span></span>`
+        ? `<span style="color:${deltaColor};">${totalDelta >= 0 ? '+' : ''}${totalDelta} <span style="font-size:0.85em;">(x${multiplier.toFixed(2)})</span></span>`
         : `<span style="color:${deltaColor};">${delta >= 0 ? '+' : ''}${deltaRounded}</span>`;
 
       return `
