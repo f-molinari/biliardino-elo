@@ -1,5 +1,6 @@
 import { IPlayer } from '@/models/player.interface';
 import { expectedScore, getMatchPlayerElo } from '@/services/elo.service';
+import { getBonusK } from '@/services/player.service';
 import { formatRank } from '@/utils/format-rank.util';
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
@@ -114,23 +115,42 @@ export class RankingView {
     today.setHours(0, 0, 0, 0);
 
     const deltas = new Map<number, { delta: number; matches: number }>();
+    const playerMatchCounts = new Map<number, number>();
+
     const addDelta = (playerId: number, delta: number): void => {
       if (!Number.isFinite(delta)) return;
+      const matchesPlayed = playerMatchCounts.get(playerId) ?? 0;
+      const bonusMultiplier = getBonusK(matchesPlayed);
+      const adjustedDelta = delta * bonusMultiplier;
+
       const entry = deltas.get(playerId) ?? { delta: 0, matches: 0 };
-      entry.delta += delta;
+      entry.delta += adjustedDelta;
       entry.matches += 1;
       deltas.set(playerId, entry);
+
+      playerMatchCounts.set(playerId, matchesPlayed + 1);
     };
 
-    for (const match of getAllMatches()) {
+    // Ordina le partite per data per calcolare correttamente i moltiplicatori
+    const allMatches = getAllMatches().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    for (const match of allMatches) {
       const matchDate = new Date(match.createdAt);
       matchDate.setHours(0, 0, 0, 0);
-      if (matchDate.getTime() !== today.getTime()) continue;
 
-      addDelta(match.teamA.defence, match.deltaELO[0]);
-      addDelta(match.teamA.attack, match.deltaELO[0]);
-      addDelta(match.teamB.defence, match.deltaELO[1]);
-      addDelta(match.teamB.attack, match.deltaELO[1]);
+      if (matchDate.getTime() === today.getTime()) {
+        addDelta(match.teamA.defence, match.deltaELO[0]);
+        addDelta(match.teamA.attack, match.deltaELO[0]);
+        addDelta(match.teamB.defence, match.deltaELO[1]);
+        addDelta(match.teamB.attack, match.deltaELO[1]);
+      } else {
+        // Incrementa il contatore delle partite anche per i giorni precedenti
+        const players = [match.teamA.defence, match.teamA.attack, match.teamB.defence, match.teamB.attack];
+        for (const playerId of players) {
+          const count = playerMatchCounts.get(playerId) ?? 0;
+          playerMatchCounts.set(playerId, count + 1);
+        }
+      }
     }
 
     return deltas;
