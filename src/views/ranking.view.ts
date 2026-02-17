@@ -1,5 +1,5 @@
 import { IPlayer } from '@/models/player.interface';
-import { getMatchPlayerElo, expectedScore } from '@/services/elo.service';
+import { expectedScore, getMatchPlayerElo } from '@/services/elo.service';
 import { formatRank } from '@/utils/format-rank.util';
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
@@ -702,12 +702,12 @@ export class RankingView {
       const avgRating = (eloA + eloB) / 2;
       let rowBackgroundColor = '';
       let rowTextColor = '';
-      if (avgRating >= 1140) {
+      if (avgRating >= 1150) {
         rowBackgroundColor = 'background-color: #1e3a8a;'; // blu scuro
         rowTextColor = 'color: white;'; // scritta bianca
-      } else if (avgRating >= 1080) {
+      } else if (avgRating >= 1100) {
         rowBackgroundColor = 'background-color: rgba(0, 0, 255, 0.25);'; // blu leggero
-      } else if (avgRating >= 1040) {
+      } else if (avgRating >= 1050) {
         rowBackgroundColor = 'background-color: rgba(0, 127, 255, 0.1);'; // azzurro chiaro
       } else if (avgRating <= 900) {
         rowBackgroundColor = 'background-color: rgba(255, 0, 0, 0.2);'; // rosso leggero

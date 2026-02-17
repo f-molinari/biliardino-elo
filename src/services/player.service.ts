@@ -4,7 +4,7 @@ import { FinalK, MatchesToRank, StartK } from './elo.service';
 import { fetchPlayers } from './repository.service';
 
 const playersMap = new Map<number, IPlayer>();
-const derankTreshold = Math.round(125 * 0.3);
+const derankTreshold = Math.round(100 * 0.3);
 let playersArray: IPlayer[] = [];
 let rankOutdated = true;
 
@@ -48,7 +48,7 @@ export function updatePlayer(id: number, idMate: number, idOppoA: number, idOppo
   const player = getPlayerById(id);
   if (!player) return;
 
-  player.elo += delta * getK(player.matches);
+  player.elo += delta * getBonusK(player.matches);
   player.bestElo = Math.max(player.bestElo ?? player.elo, player.elo);
   player.matches++;
   player.wins += delta > 0 ? 1 : 0;
@@ -103,19 +103,19 @@ export function updatePlayerClass(player: IPlayer, win: boolean): void {
 
 export function getClass(elo: number): number {
   elo = Math.round(elo);
-  if (elo >= 1250) return 0;
-  if (elo >= 1125) return 1;
+  if (elo >= 1200) return 0;
+  if (elo >= 1100) return 1;
   if (elo >= 1000) return 2;
-  if (elo >= 875) return 3;
+  if (elo >= 900) return 3;
   return 4;
 }
 
 export function checkDerankThreshold(elo: number): boolean {
   elo = Math.round(elo);
-  if (elo >= 1125) return elo >= 1250 - derankTreshold;
-  if (elo >= 1000) return elo >= 1125 - derankTreshold;
-  if (elo >= 875) return elo >= 1000 - derankTreshold;
-  if (elo < 875) return elo >= 875 - derankTreshold;
+  if (elo >= 1100) return elo >= 1200 - derankTreshold;
+  if (elo >= 1000) return elo >= 1100 - derankTreshold;
+  if (elo >= 900) return elo >= 1000 - derankTreshold;
+  if (elo < 900) return elo >= 900 - derankTreshold;
   return false;
 }
 
@@ -157,6 +157,9 @@ function computeRanks(): void {
   rankOutdated = false;
 }
 
-export function getK(matches: number): number {
-  return Math.max(0, (1 - (matches / MatchesToRank))) * (StartK / FinalK - 1) + 1;
+export function getBonusK(matches: number): number {
+  // Decadimento esponenziale da K=60 (partita 0) a K=20 (partita 60+)
+  // Formula: K = max(20, 60 * e^(-matches/α)) dove α ≈ 54.59
+  const alpha = StartK / Math.log(3); // ≈ 54.59
+  return Math.max(FinalK, StartK * Math.exp(-matches / alpha)) / FinalK;
 }
