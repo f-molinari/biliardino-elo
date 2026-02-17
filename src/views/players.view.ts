@@ -1,6 +1,7 @@
 import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
-import { FinalK, MatchesK, StartK } from '@/services/elo.service';
+import { FinalK } from '@/services/elo.service';
+import { getK } from '@/services/player.service';
 import { getPlayerStats, PlayerStats } from '@/services/stats.service';
 import { formatRank } from '@/utils/format-rank.util';
 import { getClassName } from '@/utils/get-class-name.util';
@@ -224,8 +225,7 @@ export class PlayersView {
       const delta = isTeamA ? match.deltaELO[0] : match.deltaELO[1];
 
       // Calcola il K factor per il moltiplicatore
-      const firstMatchMultiplier = Math.max(0, (1 - (matchesPlayed / MatchesK)) * (StartK - FinalK));
-      const kFactor = FinalK + firstMatchMultiplier;
+      const kFactor = getK(matchesPlayed);
       const multiplier = kFactor / FinalK;
 
       // Formatta delta del giocatore con moltiplicatore

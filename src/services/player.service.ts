@@ -1,6 +1,6 @@
 import { IPlayer, IPlayerDTO } from '@/models/player.interface';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
-import { FinalK, MatchesK, StartK } from './elo.service';
+import { FinalK, MatchesToRank, StartK } from './elo.service';
 import { fetchPlayers } from './repository.service';
 
 const playersMap = new Map<number, IPlayer>();
@@ -48,7 +48,7 @@ export function updatePlayer(id: number, idMate: number, idOppoA: number, idOppo
   const player = getPlayerById(id);
   if (!player) return;
 
-  player.elo += delta * getFirstMatchesBonus(player.matches);
+  player.elo += delta * getK(player.matches);
   player.bestElo = Math.max(player.bestElo ?? player.elo, player.elo);
   player.matches++;
   player.wins += delta > 0 ? 1 : 0;
@@ -85,7 +85,7 @@ export function updatePlayer(id: number, idMate: number, idOppoA: number, idOppo
 }
 
 export function updatePlayerClass(player: IPlayer, win: boolean): void {
-  if (player.matches < MatchesK) return;
+  if (player.matches < MatchesToRank) return;
 
   const currentClass = player.class;
   let newClass = getClass(player.elo);
@@ -157,6 +157,6 @@ function computeRanks(): void {
   rankOutdated = false;
 }
 
-export function getFirstMatchesBonus(matches: number): number {
-  return Math.max(0, (1 - (matches / MatchesK))) * (StartK / FinalK - 1) + 1;
+export function getK(matches: number): number {
+  return Math.max(0, (1 - (matches / MatchesToRank))) * (StartK / FinalK - 1) + 1;
 }

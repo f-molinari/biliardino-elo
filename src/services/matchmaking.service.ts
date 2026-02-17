@@ -1,6 +1,6 @@
 import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
-import { getPlayerElo } from './elo.service';
+import { getMatchPlayerElo } from './elo.service';
 import { getAllMatches } from './match.service';
 import { getAllPlayers, getClass, getPlayerById } from './player.service';
 
@@ -43,10 +43,10 @@ export interface IHeuristicData {
 export type Diversity = { teammate: number; opponent: number };
 
 const config: IMatchmakingConfig = {
-  matchBalanceWeight: 0.3,
-  priorityWeight: 0.1,
-  diversityWeight: 0.4,
-  randomness: 0.2
+  matchBalanceWeight: 0.35,
+  priorityWeight: 0.15,
+  diversityWeight: 0.35,
+  randomness: 0.15
 };
 
 export function findBestMatch(playersId: number[], priorityPlayersId: number[]): IMatchProposal | null {
@@ -128,8 +128,8 @@ function getClassDiff(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer): numbe
 
 function checkProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, maxEloDiff: number, maxMatches: number, maxDiversity: Diversity, bestScore: number, proposal: IMatchProposal, classDiff: number): number {
   // MATCH ELO DIFFERENCE SCORE
-  const teamAElo = (getPlayerElo(defA, true) + getPlayerElo(attA, false)) / 2; // il / 2 può essere tolgo se usiamo la somma
-  const teamBElo = (getPlayerElo(defB, true) + getPlayerElo(attB, false)) / 2;
+  const teamAElo = (getMatchPlayerElo(defA, true) + getMatchPlayerElo(attA, false)) / 2; // il / 2 può essere tolgo se usiamo la somma
+  const teamBElo = (getMatchPlayerElo(defB, true) + getMatchPlayerElo(attB, false)) / 2;
   const matchEloDiff = Math.abs(teamAElo - teamBElo);
   const matchEloDiffNormalized = 1 - (matchEloDiff / maxEloDiff);
   const matchBalanceScore = matchEloDiffNormalized * config.matchBalanceWeight;
