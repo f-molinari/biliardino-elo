@@ -2,9 +2,10 @@ import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { getPlayerById } from './player.service';
 
-export const StartK = 50;
-export const FinalK = 25;
+export const StartK = 24 * 2.5;
+export const FinalK = 24;
 export const MatchesToRank = 10;
+export const MatchesToTransition = 50; // Numero di partite dopo le quali il moltiplicatore K diventa 1
 
 export function updateMatch(match: IMatch): void {
   const teamAP1 = getPlayerById(match.teamA.defence);
@@ -64,7 +65,7 @@ export function getMatchPlayerElo(player: IPlayer, isDef: boolean): number {
 }
 
 export function expectedScore(eloA: number, eloB: number): number {
-  return 1 / (1 + Math.pow(10, (eloB - eloA) / 200));
+  return 1 / (1 + Math.pow(10, (eloB - eloA) / 300));
 }
 
 function marginMultiplier(goalsA: number, goalsB: number): number {

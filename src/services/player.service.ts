@@ -1,6 +1,6 @@
 import { IPlayer, IPlayerDTO } from '@/models/player.interface';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
-import { FinalK, MatchesToRank, StartK } from './elo.service';
+import { FinalK, MatchesToRank, MatchesToTransition, StartK } from './elo.service';
 import { fetchPlayers } from './repository.service';
 
 const playersMap = new Map<number, IPlayer>();
@@ -158,6 +158,6 @@ function computeRanks(): void {
 }
 
 export function getBonusK(matches: number): number {
-  const alpha = StartK / Math.log(1.785);
+  const alpha = MatchesToTransition / Math.log(StartK / FinalK);
   return Math.max(FinalK, StartK * Math.exp(-matches / alpha)) / FinalK;
 }
