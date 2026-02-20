@@ -37,15 +37,25 @@ export const subscribeToPushNotifications = async (playerId: number, playerName:
   const header = document.querySelector(`.${styles.notificationHeader}`);
   if (header) header.classList.add(styles.loading);
 
-  localStorage.setItem(PLAYER_ID_KEY, String(playerId));
-  localStorage.setItem(PLAYER_NAME_KEY, playerName);
-
   const pushManager = await getPushManager();
   const existing = await pushManager.getSubscription();
   const subscription = existing ?? await pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
   });
+
+  // Check if this player is already subscribed on this device
+  const savedPlayerId = localStorage.getItem(PLAYER_ID_KEY);
+  const savedSubscription = localStorage.getItem(SUBSCRIPTION_KEY);
+  if (savedPlayerId === String(playerId) && savedSubscription) {
+    // Already subscribed for this player on this device
+    if (header) header.classList.remove(styles.loading);
+    return JSON.parse(savedSubscription);
+  }
+
+  localStorage.setItem(PLAYER_ID_KEY, String(playerId));
+  localStorage.setItem(PLAYER_NAME_KEY, playerName);
+
   const response = await fetch(`${API_BASE_URL}/subscription`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

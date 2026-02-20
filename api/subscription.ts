@@ -22,8 +22,7 @@ interface SubscriptionData {
 
 function generateId(playerId: number, subscription: PushSubscription): string {
   const deviceHash = subscription.endpoint.slice(-20).replace(/[^a-zA-Z0-9]/g, '');
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
-  return `${playerId}-subs/${deviceHash}-${randomSuffix}.json`;
+  return `${playerId}-subs/${deviceHash}.json`;
 }
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
