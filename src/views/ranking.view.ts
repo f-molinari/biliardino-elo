@@ -460,6 +460,17 @@ export class RankingView {
 
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
+
+    // Scroll to selected player if exists
+    if (selectedPlayerId) {
+      // Use setTimeout to ensure DOM is fully rendered
+      setTimeout(() => {
+        const selectedRow = tbody.querySelector('tr.selected-player');
+        if (selectedRow) {
+          selectedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
   }
 
   /**
