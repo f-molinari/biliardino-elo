@@ -1,5 +1,6 @@
 import { list, put } from '@vercel/blob';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createHash } from 'crypto';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { combineMiddlewares, withRateLimiting, withSecurityMiddleware } from './_middleware.js';
 import { sanitizeLogOutput, validatePlayerId, validateString } from './_validation.js';
@@ -21,7 +22,7 @@ interface SubscriptionData {
 }
 
 function generateId(playerId: number, subscription: PushSubscription): string {
-  const deviceHash = subscription.endpoint.slice(-20).replace(/[^a-zA-Z0-9]/g, '');
+  const deviceHash = createHash('sha256').update(subscription.endpoint).digest('hex').slice(0, 16);
   return `${playerId}-subs/${deviceHash}.json`;
 }
 

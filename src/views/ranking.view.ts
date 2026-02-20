@@ -305,6 +305,9 @@ export class RankingView {
     const tbody = table.querySelector('tbody')!;
     const fragment = document.createDocumentFragment();
 
+    // Get the selected player ID from notifications
+    const selectedPlayerId = Number(localStorage.getItem('biliardino_player_id') || 0);
+
     const playerIdToStartRank = RankingView.buildRankMap(
       players,
       p => Math.round(p.elo - (todayDeltas.get(p.id)?.delta ?? 0))
@@ -385,6 +388,11 @@ export class RankingView {
 
       if (rank === 3) {
         tr.classList.add('podium-last');
+      }
+
+      // Highlight the selected player from notifications
+      if (selectedPlayerId && player.id === selectedPlayerId) {
+        tr.classList.add('selected-player');
       }
 
       tr.addEventListener('click', () => {

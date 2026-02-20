@@ -115,18 +115,28 @@ export class MatchmakingView {
       playersToRender.push(...sortedPlayers);
     }
 
-    // Determine today's availability key
-    const dayKeyMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-    const todayKey = dayKeyMap[new Date().getDay()];
-    const todaysAvailable = (availabilityList as any)[todayKey] as string[] | undefined;
-
+    // Render players without considering daily availability
     const fragment = document.createDocumentFragment();
 
+    // Determine if there's an active lobby (confirmations from DB)
+    const hasActiveLobby = MatchmakingView.confirmedPlayerIds.size > 0;
+
+    // Get today's availability if there's no active lobby
+    let todaysAvailable: string[] | undefined;
+    if (!hasActiveLobby) {
+      const dayKeyMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+      const todayKey = dayKeyMap[new Date().getDay()];
+      todaysAvailable = (availabilityList as any)[todayKey] as string[] | undefined;
+    }
+
     playersToRender.forEach((player) => {
-      // Default state
+      // If there's an active lobby, show only confirmed players
+      // If there's no active lobby, use daily availability
       let initialState: PlayerState = 0;
-      const isAvailableToday = Array.isArray(todaysAvailable) && todaysAvailable.includes(player.name);
-      if (isAvailableToday) {
+      const isConfirmed = MatchmakingView.confirmedPlayerIds.has(player.id);
+      const isAvailableToday = !hasActiveLobby && Array.isArray(todaysAvailable) && todaysAvailable.includes(player.name);
+
+      if (isConfirmed || isAvailableToday) {
         initialState = 1; // queue
       }
       MatchmakingView.playerStates.set(player.name, initialState);
@@ -136,7 +146,6 @@ export class MatchmakingView {
       label.dataset.playerName = player.name;
 
       // Controlla se il giocatore ha confermato tramite app
-      const isConfirmed = MatchmakingView.confirmedPlayerIds.has(player.id);
       if (isConfirmed) {
         label.classList.add('confirmed');
       }
