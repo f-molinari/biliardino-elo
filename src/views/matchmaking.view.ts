@@ -743,8 +743,12 @@ export class MatchmakingView {
    * Save the match with the entered scores.
    */
   private static async saveMatch(form: HTMLFormElement): Promise<void> {
+    const submitButton = form.querySelector<HTMLButtonElement>('.save-match-button')!;
+    submitButton.disabled = true;
+
     if (!MatchmakingView.currentMatch) {
       alert('Nessuna partita da salvare.');
+      submitButton.disabled = false;
       return;
     }
 
@@ -754,16 +758,19 @@ export class MatchmakingView {
 
     if (Number.isNaN(scoreTeamA) || Number.isNaN(scoreTeamB)) {
       alert('Inserisci punteggi validi per entrambi i team.');
+      submitButton.disabled = false;
       return;
     }
 
     if (scoreTeamA < 0 || scoreTeamB < 0 || scoreTeamA > 8 || scoreTeamB > 8) {
       alert('I punteggi devono essere compresi tra 0 e 8.');
+      submitButton.disabled = false;
       return;
     }
 
     if (scoreTeamA === scoreTeamB) {
       alert('La partita non può finire in parità. Inserisci punteggi diversi.');
+      submitButton.disabled = false;
       return;
     }
 
@@ -810,6 +817,7 @@ export class MatchmakingView {
     } catch (error) {
       console.error('Errore durante il salvataggio della partita:', error);
       alert('Errore durante il salvataggio della partita. Riprova.');
+      submitButton.disabled = false;
     }
   }
 
