@@ -1,6 +1,6 @@
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-const VERSION = '0.0.1';
+const VERSION = '0.0.2';
 const CACHE_NAME = 'CAlcio-Balilla-cache';
 
 // Firebase/API endpoints che vogliamo cachare
@@ -107,7 +107,8 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
   if (event.action === 'cancel') {
-    // ignora l'azione
+    // ignora l'azione e chiudi la notifica
+    event.notification.close();
     return;
   }
   clients.openWindow(event.action.url || '/');

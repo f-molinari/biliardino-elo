@@ -1,12 +1,16 @@
 name: Broadcast Notifications
+# Schedule disabled. To re-enable automated broadcasts, restore the
+# `on.schedule` section below.
 on:
+  # Manual trigger only (disabled scheduled/automatic runs)
+  workflow_dispatch: {}
   # push:
   #   branches: [main]
-  schedule:
-    # https://crontab.guru/#45_9,14_*_*_1-5
-    # (Ogni giorno della settimana alle 09:45 UTC e 14:45 UTC)
-    # Adattato per l'ora di Roma (UTC+1/UTC+2) per inviare prima delle partite alle 11:00 e 16:00
-    - cron: 45 9,14 * * 1-5
+  # schedule:
+  #   # https://crontab.guru/#45_9,14_*_*_1-5
+  #   # (Ogni giorno della settimana alle 09:45 UTC e 14:45 UTC)
+  #   # Adattato per l'ora di Roma (UTC+1/UTC+2) per inviare prima delle partite alle 11:00 e 16:00
+  #   - cron: 45 9,14 * * 1-5
 jobs:
   scheduled-job:
     runs-on: ubuntu-latest

@@ -128,8 +128,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
         const title = customTitle || _randomMessage.title;
         const body = customBody || _randomMessage.body;
         const actions: NotificationAction[] = [
-          { action: 'confirm', title: 'Partecipa', url: `${url}/confirm.html?c=true&time=${matchTime}` },
-          { action: 'cancel', title: 'Rifiuta', url: `${url}/confirm.html?c=false&time=${matchTime}` }
+          { action: 'cancel', title: 'Ignora', url: `${url}/confirm.html?c=false&time=${matchTime}` }
         ];
 
         await webpush.sendNotification(
