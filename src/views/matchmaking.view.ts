@@ -943,17 +943,6 @@ export class MatchmakingView {
   }
 
   /**
-   * Formatta un timestamp ISO come "Xm fa" o "adesso"
-   */
-  private static formatTimeAgo(isoDate: string): string {
-    const diff = Date.now() - new Date(isoDate).getTime();
-    const mins = Math.floor(diff / 60_000);
-    if (mins < 1) return 'adesso';
-    if (mins === 1) return '1 min fa';
-    return `${mins} min fa`;
-  }
-
-  /**
    * Auto-seleziona i giocatori che hanno confermato tramite app
    * e aggiorna badge inline nella lista principale.
    */
@@ -1003,9 +992,6 @@ export class MatchmakingView {
    * Aggiunge o aggiorna il badge "📱 confermato Xm fa" dentro la label.
    */
   private static upsertConfirmationBadge(label: HTMLLabelElement, playerId: number): void {
-    const isoDate = MatchmakingView.confirmationTimes.get(playerId);
-    const timeText = isoDate ? MatchmakingView.formatTimeAgo(isoDate) : '';
-
     let badge = label.querySelector('.confirmation-badge') as HTMLSpanElement | null;
     if (!badge) {
       badge = document.createElement('span');
