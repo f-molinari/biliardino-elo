@@ -3,7 +3,6 @@
  */
 export interface IConfirmation {
   playerId: number;
-  matchTime: string;
   confirmedAt: string;
   subscription?: unknown;
 }

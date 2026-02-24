@@ -8,7 +8,6 @@ import {
   sanitizeRedisKey,
   validateHost,
   validateJSON,
-  validateMatchTime,
   validatePath,
   validatePayloadSize,
   validatePlayerId,
@@ -17,41 +16,6 @@ import {
 } from '../../api/_validation';
 
 describe('API Security Validation', () => {
-  describe('validateMatchTime', () => {
-    it('should accept valid time formats', () => {
-      expect(validateMatchTime('11:00')).toBe('11:00');
-      expect(validateMatchTime('16:00')).toBe('16:00');
-      expect(validateMatchTime('00:00')).toBe('00:00');
-      expect(validateMatchTime('23:59')).toBe('23:59');
-    });
-
-    it('should trim whitespace', () => {
-      expect(validateMatchTime('  11:00  ')).toBe('11:00');
-    });
-
-    it('should reject invalid time formats', () => {
-      expect(() => validateMatchTime('25:00')).toThrow();
-      expect(() => validateMatchTime('11:60')).toThrow();
-      expect(() => validateMatchTime('1:00')).toThrow(); // Missing leading zero
-      expect(() => validateMatchTime('11:0')).toThrow(); // Missing leading zero
-      expect(() => validateMatchTime('11')).toThrow();
-      expect(() => validateMatchTime('11:00:00')).toThrow();
-    });
-
-    it('should reject injection attempts', () => {
-      expect(() => validateMatchTime('11:00*')).toThrow();
-      expect(() => validateMatchTime('*')).toThrow();
-      expect(() => validateMatchTime('11:00; DROP TABLE')).toThrow();
-      expect(() => validateMatchTime('11:00\nmalicious')).toThrow();
-    });
-
-    it('should reject non-string input', () => {
-      expect(() => validateMatchTime(123 as any)).toThrow();
-      expect(() => validateMatchTime(null as any)).toThrow();
-      expect(() => validateMatchTime(undefined as any)).toThrow();
-      expect(() => validateMatchTime({} as any)).toThrow();
-    });
-  });
 
   describe('validatePlayerId', () => {
     it('should accept valid player IDs', () => {

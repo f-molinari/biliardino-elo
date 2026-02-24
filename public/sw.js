@@ -1,6 +1,6 @@
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-const VERSION = '0.0.3';
+const VERSION = '0.1.0';
 const CACHE_NAME = 'CAlcio-Balilla-cache';
 
 // Firebase/API endpoints che vogliamo cachare
@@ -94,7 +94,9 @@ self.addEventListener('push', async (event) => {
   }
 
   try {
-    await self.registration.showNotification(title, { ...options, data: { navigate: notification?.navigate } });
+    if (options.tag) { // Questo dovrebbe prevenire le notifiche del aggiornamento del service worker e mostrare solo quelle definite dall'app
+      await self.registration.showNotification(title, { ...options, data: { navigate: notification?.navigate } });
+    }
   } catch (exception) {
     console.error('[push event] Error showing notification:', exception);
   }

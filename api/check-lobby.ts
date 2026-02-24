@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { redis } from './_redisClient.js';
-import { validateMatchTime } from './_validation.js';
+// Lobby is global; no matchTime required
 
 export default async function handler(
   req: VercelRequest,
@@ -11,14 +11,8 @@ export default async function handler(
   if (handleCorsPreFlight(req, res)) return res;
 
   try {
-    const { time: rawTime } = req.query as { time?: string };
-
-    if (!rawTime) {
-      return res.status(400).json({ error: 'Missing time parameter', exists: false });
-    }
-
-    const time = validateMatchTime(rawTime);
-    const lobbyKey = `lobby:${time}`;
+    // Global lobby key
+    const lobbyKey = `lobby`;
 
     const lobbyData = await redis.get(lobbyKey);
     const exists = lobbyData !== null;
@@ -31,7 +25,6 @@ export default async function handler(
 
     return res.status(200).json({
       exists,
-      matchTime: time,
       ttl, // Secondi rimanenti
       data: lobbyData
     });

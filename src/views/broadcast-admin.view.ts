@@ -1,7 +1,6 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { API_BASE_URL } from '../config/env.config';
 import { AUTH } from '../utils/firebase.util';
-import { getNextMatchTime } from '../utils/next-match-time.util';
 
 /**
  * Classe standalone per gestire il sistema di notifiche broadcast admin.
@@ -138,10 +137,7 @@ export class BroadcastAdminView {
       <form method="dialog" id="sendBroadcastForm" class="login-form">
         <h3>Invia Notifica Broadcast</h3>
 
-        <label>
-          Orario Match (HH:MM)
-          <input type="text" id="broadcastMatchTime" required placeholder="es: 14:30" />
-        </label>
+        <!-- Orario rimosso: la lobby è globale -->
 
         <label>
           Titolo (opzionale)
@@ -166,21 +162,14 @@ export class BroadcastAdminView {
     form.addEventListener('submit', async (e: SubmitEvent) => {
       e.preventDefault();
 
-      const matchTimeInput = dialog.querySelector('#broadcastMatchTime') as HTMLInputElement;
       const titleInput = dialog.querySelector('#broadcastTitle') as HTMLInputElement;
       const bodyInput = dialog.querySelector('#broadcastBody') as HTMLTextAreaElement;
 
-      const matchTime = matchTimeInput.value.trim();
       const title = titleInput.value.trim();
       const body = bodyInput.value.trim();
 
-      if (!matchTime) {
-        alert('Inserisci un orario valido (es: 14:30)');
-        return;
-      }
-
       try {
-        await BroadcastAdminView.sendBroadcast(matchTime, title || undefined, body || undefined);
+        await BroadcastAdminView.sendBroadcast(title || undefined, body || undefined);
         dialog.close();
         form.reset();
       } catch (error) {
@@ -237,11 +226,7 @@ export class BroadcastAdminView {
   private static showBroadcastDialog(): void {
     if (!BroadcastAdminView.broadcastDialog) return;
 
-    // Pre-compila l'orario con il prossimo match time
-    const matchTimeInput = BroadcastAdminView.broadcastDialog.querySelector('#broadcastMatchTime') as HTMLInputElement;
-    if (matchTimeInput) {
-      matchTimeInput.value = getNextMatchTime();
-    }
+    // Lobby is global: no prefill needed
 
     BroadcastAdminView.broadcastDialog.showModal();
   }
@@ -249,7 +234,7 @@ export class BroadcastAdminView {
   /**
    * Invia una notifica broadcast tramite API
    */
-  private static async sendBroadcast(matchTime: string, title?: string, body?: string): Promise<void> {
+  private static async sendBroadcast(title?: string, body?: string): Promise<void> {
     const token = localStorage.getItem(BroadcastAdminView.ADMIN_TOKEN_KEY);
 
     if (!token) {
@@ -257,12 +242,9 @@ export class BroadcastAdminView {
     }
 
     const payload: {
-      matchTime: string;
       title?: string;
       body?: string;
-    } = {
-      matchTime
-    };
+    } = {};
 
     if (title) payload.title = title;
     if (body) payload.body = body;

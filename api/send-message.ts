@@ -5,7 +5,6 @@ import { redis } from './_redisClient.js';
 import { validatePlayerId, validateString } from './_validation.js';
 
 interface SendMessageBody {
-  matchTime: string;
   playerId: number;
   playerName: string;
   fishType: string;
@@ -29,12 +28,9 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
   }
 
   try {
-    const { matchTime, playerId, playerName, fishType, text, sentAt, timestamp } = req.body as SendMessageBody;
+    const { playerId, playerName, fishType, text, sentAt, timestamp } = req.body as SendMessageBody;
 
     // Validazioni
-    if (!validateString(matchTime, 1, 20)) {
-      return res.status(400).json({ error: 'Invalid matchTime' });
-    }
     if (!validatePlayerId(playerId)) {
       return res.status(400).json({ error: 'Invalid playerId' });
     }
@@ -65,8 +61,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       timestamp
     };
 
-    // Chiave Redis per i messaggi di questa partita
-    const messagesKey = `messages:${matchTime}`;
+    // Chiave Redis per i messaggi globali della lobby
+    const messagesKey = `messages`;
     const messageDataKey = `message:${messageId}`;
 
     // Salva il messaggio
@@ -74,8 +70,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     await redis.lpush(messagesKey, messageId); // Aggiungi a lista
     await redis.expire(messagesKey, 240); // TTL 4 minuti per la lista
 
-    // Incrementa counter per questa partita
-    await redis.incr(`message-count:${matchTime}`);
+    // Incrementa counter globale per la chat
+    await redis.incr(`message-count`);
 
     return res.status(201).json(message);
   } catch (error) {

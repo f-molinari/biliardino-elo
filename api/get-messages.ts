@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { IMessage, IMessagesResponse } from '../src/models/message.interface.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { redis } from './_redisClient.js';
-import { validateString } from './_validation.js';
 
 /**
  * API per ottenere i messaggi chat di una partita
@@ -18,16 +17,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
   }
 
   try {
-    const { time: matchTime, since } = req.query;
-
-    if (!validateString(String(matchTime), 1, 20)) {
-      return res.status(400).json({ error: 'Invalid matchTime' });
-    }
-
-    const sinceTimestamp = since ? parseInt(String(since), 10) : 0;
-
-    // Chiave Redis per i messaggi di questa partita
-    const messagesKey = `messages:${matchTime}`;
+    // Global messages for lobby
+    const messagesKey = `messages`;
 
     // Recupera gli ID dei messaggi
     const messageIds = await redis.lrange(messagesKey, 0, -1);
@@ -38,15 +29,9 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     for (const messageId of messageIds) {
       const message = await redis.get<IMessage>(`message:${messageId}`);
       if (message) {
-        // Filtra per timestamp se richiesto
-        if (message.sentAt >= sinceTimestamp) {
-          messages.push(message);
-        }
+        messages.push(message);
       }
     }
-
-    // Inverti l'ordine per mostrare i messaggi più recenti in fondo
-    messages.reverse();
 
     const response: IMessagesResponse = {
       messages,

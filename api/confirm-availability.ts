@@ -1,9 +1,8 @@
-import { list } from '@vercel/blob';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { withSecurityMiddleware } from './_middleware.js';
 import { redis } from './_redisClient.js';
-import { sanitizeLogOutput, validateMatchTime, validatePlayerId } from './_validation.js';
+import { sanitizeLogOutput, validatePlayerId } from './_validation.js';
 
 interface SubscriptionData {
   subscription?: {
@@ -12,31 +11,6 @@ interface SubscriptionData {
   };
   playerId?: number;
   [key: string]: any;
-}
-
-async function findMatchingSubscription(playerId: number, incomingSubscription?: any): Promise<{ exists: boolean; matched: boolean }> {
-  const { blobs } = await list({
-    prefix: `${playerId}-subs/`,
-    token: process.env.BLOB_READ_WRITE_TOKEN
-  });
-
-  if (!blobs.length) return { exists: false, matched: false };
-
-  if (!incomingSubscription) {
-    return { exists: true, matched: false };
-  }
-
-  const subscriptions = await Promise.all(
-    blobs.map(async (b) => {
-      const response = await fetch(b.url);
-      return await response.json() as SubscriptionData;
-    })
-  );
-
-  const incomingEndpoint = incomingSubscription?.endpoint;
-  const matched = subscriptions.some((item) => item?.subscription?.endpoint === incomingEndpoint);
-
-  return { exists: true, matched };
 }
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
@@ -54,13 +28,12 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       subscription?: any;
     };
 
-    if (!rawPlayerId || !rawMatchTime) {
-      return res.status(400).json({ error: 'Missing playerId or matchTime' });
+    if (!rawPlayerId) {
+      return res.status(400).json({ error: 'Missing playerId' });
     }
 
     // Valida e sanitizza input per prevenire injection
     const playerIdNum = validatePlayerId(rawPlayerId);
-    const matchTime = validateMatchTime(rawMatchTime);
 
     let parsedSubscription = subscription;
     if (typeof subscription === 'string') {
@@ -71,29 +44,21 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       }
     }
 
-    // const { exists, matched } = await findMatchingSubscription(playerIdNum, parsedSubscription);
-    // if (!exists) {
-    //   return res.status(401).json({ error: 'Nessuna subscription associata a questo utente' });
-    // }
-    // if (!matched) {
-    //   return res.status(401).json({ error: 'Subscription non valida per questo utente' });
-    // }
 
-    const key = `availability:${matchTime}:${playerIdNum}`;
+    const key = `availability:${playerIdNum}`;
 
     await redis.set(key, {
       playerId: playerIdNum,
-      matchTime,
       confirmedAt: new Date().toISOString(),
       subscription: parsedSubscription
     }, {
-      ex: 1800 // Expire dopo 30 minuti
+      ex: 5400 // Expire dopo 90 minuti
     });
 
-    const keys = await redis.keys(`availability:${matchTime}:*`);
+    const keys = await redis.keys(`availability:*`);
     const count = keys.length;
 
-    console.log(`✅ Conferma da ${sanitizeLogOutput(String(playerIdNum))} per match ${sanitizeLogOutput(matchTime)} (totale: ${count})`);
+    console.log(`✅ Conferma da ${sanitizeLogOutput(String(playerIdNum))} (totale: ${count})`);
 
     return res.status(200).json({ ok: true, count });
   } catch (err) {

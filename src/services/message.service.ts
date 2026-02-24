@@ -7,7 +7,6 @@ export class MessageService {
    * Invia un messaggio durante il confirmation
    */
   static async sendMessage(
-    matchTime: string,
     playerId: number,
     playerName: string,
     fishType: string,
@@ -17,7 +16,6 @@ export class MessageService {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        matchTime,
         playerId,
         playerName,
         fishType,
@@ -37,9 +35,8 @@ export class MessageService {
   /**
    * Carica i messaggi per una partita
    */
-  static async getMessages(matchTime: string, since?: number): Promise<IMessagesResponse> {
+  static async getMessages(since?: number): Promise<IMessagesResponse> {
     const url = new URL(`${API_BASE_URL}/get-messages`);
-    url.searchParams.set('time', matchTime);
     if (since) {
       url.searchParams.set('since', String(since));
     }
@@ -56,11 +53,11 @@ export class MessageService {
   /**
    * Cancella i messaggi di una partita (solo per admin)
    */
-  static async clearMessages(matchTime: string, token: string): Promise<{ ok: boolean }> {
+  static async clearMessages(token: string): Promise<{ ok: boolean }> {
     const res = await fetch(`${API_BASE_URL}/clear-messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matchTime, token })
+      body: JSON.stringify({ token })
     });
 
     if (!res.ok) {

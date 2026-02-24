@@ -3,11 +3,9 @@ import { generateFishName } from './_fishNames.js';
 import { redis } from './_redisClient.js';
 // import { withAuth } from './_auth.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
-import { validateMatchTime } from './_validation.js';
 
 interface Confirmation {
   playerId: number;
-  matchTime: string;
   confirmedAt: string;
   subscription?: any;
 }
@@ -19,14 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   try {
     const { time: rawTime } = req.query as { time?: string };
 
-    if (!rawTime) {
-      return res.status(400).json({ error: 'Missing time parameter' });
-    }
-
-    // Valida e sanitizza time per prevenire injection
-    const time = validateMatchTime(rawTime);
-
-    const keys = await redis.keys(`availability:${time}:*`);
+    // Retrieve all confirmations for the global lobby
+    const keys = await redis.keys(`availability:*`);
     const confirmations = await Promise.all(
       keys.map(async (key) => {
         const data = (await redis.get(key)) as Confirmation | null;

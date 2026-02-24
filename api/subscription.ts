@@ -1,4 +1,4 @@
-import { list, put } from '@vercel/blob';
+import { del, list, put } from '@vercel/blob';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'crypto';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
@@ -32,13 +32,37 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
 
   if (req.method === 'POST') {
     try {
-      const { subscription, playerId: rawPlayerId, playerName: rawPlayerName } = req.body as {
+      const body = req.body as {
         subscription?: PushSubscription;
         playerId?: string | number;
         playerName?: string;
+        verify?: boolean;
       };
 
-      // Validazione input
+      // If client only wants to verify whether the local subscription exists on server,
+      // handle that server-side without returning the list of server endpoints.
+      if (body.verify) {
+        const { subscription, playerId: rawPlayerId } = body;
+        if (!subscription || !rawPlayerId) {
+          return res.status(400).json({ error: 'Missing subscription or playerId for verification' });
+        }
+
+        const endpointValue = subscription.endpoint;
+        if (!endpointValue) return res.status(400).json({ error: 'Missing subscription endpoint' });
+
+        // Compute same device hash used when saving subscriptions and look for a matching blob
+        const deviceHash = createHash('sha256').update(endpointValue).digest('hex').slice(0, 16);
+        const targetPathname = `${deviceHash}.json`;
+
+        const { blobs } = await list();
+        const matching = blobs.filter(b => b.pathname === targetPathname || b.pathname.endsWith(targetPathname));
+
+        return res.status(200).json({ exists: matching.length > 0, count: matching.length });
+      }
+
+      const { subscription, playerId: rawPlayerId, playerName: rawPlayerName } = body;
+
+      // Validazione input for create
       if (!subscription || !rawPlayerId || !rawPlayerName) {
         return res.status(400).json({ error: 'Missing subscription, playerId or playerName' });
       }
@@ -57,12 +81,13 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
 
       const blob = await put(key, JSON.stringify(data), {
         access: 'public',
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-        contentType: 'application/json'
+        contentType: 'application/json',
+        allowOverwrite: true // Permetti sovrascrittura per aggiornamenti della stessa subscription
       });
 
       console.log('✅ Subscription salvata:', sanitizeLogOutput(playerName), '(ID:', playerIdNum, ')');
-      return res.status(201).json({ ok: true, url: blob.url, playerId: playerIdNum });
+      // Do not return blob.url to client to avoid exposing endpoints
+      return res.status(201).json({ ok: true, playerId: playerIdNum });
     } catch (err) {
       console.error('Errore salvataggio subscription:', err);
       return res.status(500).json({ error: 'Write error' });
@@ -82,20 +107,66 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
 
       const { blobs } = await list({
         prefix: `${playerIdNum}-subs/`,
-        token: process.env.BLOB_READ_WRITE_TOKEN
       });
 
-      const subscriptions = await Promise.all(
-        blobs.map(async (b) => {
-          const response = await fetch(b.url);
-          return await response.json() as SubscriptionData;
-        })
-      );
+      // Since blobs are public at storage level, avoid returning raw URLs or payloads
+      const subscriptionsMeta = blobs.map((b) => ({
+        pathname: b.pathname,
+        name: b.name,
+        size: (b as any).size ?? null,
+        lastModified: (b as any).lastModified ?? null
+      }));
 
-      return res.status(200).json({ subscriptions });
+      return res.status(200).json({ subscriptions: subscriptionsMeta });
     } catch (err) {
       console.error('Errore lettura subscriptions:', err);
       return res.status(500).json({ error: 'Read error' });
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    try {
+      const { playerId: rawPlayerId, subscription, endpoint } = req.body as {
+        playerId?: string | number;
+        subscription?: PushSubscription;
+        endpoint?: string;
+      };
+
+      if (!rawPlayerId || (!subscription && !endpoint)) {
+        return res.status(400).json({ error: 'Missing playerId or subscription/endpoint' });
+      }
+
+      const playerIdNum = validatePlayerId(rawPlayerId);
+
+      const endpointValue = endpoint ?? subscription?.endpoint;
+      if (!endpointValue) {
+        return res.status(400).json({ error: 'Missing subscription endpoint' });
+      }
+
+      // Compute device hash same as generateId
+      const deviceHash = createHash('sha256').update(endpointValue).digest('hex').slice(0, 16);
+      const targetPathname = `${deviceHash}.json`;
+
+      const { blobs } = await list();
+
+      const found = blobs.filter(b => b.pathname === targetPathname || b.pathname.endsWith(targetPathname));
+      if (!found.length) {
+        return res.status(404).json({ error: 'Subscription not found' });
+      }
+
+      // Delete the blob
+      try {
+        await del(found.map(b => b.url));
+      } catch (err) {
+        console.error('Errore cancellazione subscription blob:', err);
+        return res.status(500).json({ error: 'Delete error' });
+      }
+
+      console.log('🗑️ Subscription cancellata:', sanitizeLogOutput(String(playerIdNum)));
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('Errore delete subscription:', err);
+      return res.status(500).json({ error: 'Delete error' });
     }
   }
 

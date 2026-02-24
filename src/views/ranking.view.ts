@@ -946,8 +946,7 @@ export class RankingView {
 
     playBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      const matchTime = RankingView.getNextMatchTime();
-      window.location.href = `./confirm.html?time=${matchTime}`;
+      window.location.href = `./confirm.html`;
     });
 
     // Mostra pulsante Matchmaking solo per admin (id: 25, 18, 22, 13)

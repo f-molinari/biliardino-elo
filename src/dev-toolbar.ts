@@ -10,7 +10,6 @@
  * - Pulire le conferme Redis per il prossimo match
  */
 import { getAllPlayers } from '@/services/player.service';
-import { getNextMatchTime } from '@/utils/next-match-time.util';
 
 const API = import.meta.env.VITE_API_BASE_URL as string;
 const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN as string | undefined;
@@ -18,8 +17,9 @@ const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN as string | undefined;
 // ID dei mock player da usare per le simulazioni (corrispondono a repository.mock.ts: id 1-35)
 let nextMockIndex = 0;
 
-function getMatchTime(): string {
-  return getNextMatchTime();
+function getLobbyKey(): string {
+  // Dev toolbar: lobby is global
+  return 'lobby';
 }
 
 function getRandomMockPlayerId(): number {
@@ -32,16 +32,16 @@ function getRandomMockPlayerId(): number {
 
 // ─── API helpers ────────────────────────────────────────────────────────────
 
-async function simulateConfirmation(playerId: number, matchTime: string): Promise<{ ok: boolean; count: number }> {
+async function simulateConfirmation(playerId: number): Promise<{ ok: boolean; count: number }> {
   const res = await fetch(`${API}/confirm-availability`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ playerId, matchTime })
+    body: JSON.stringify({ playerId })
   });
   return res.json();
 }
 
-async function clearConfirmations(matchTime: string): Promise<any> {
+async function clearConfirmations(): Promise<any> {
   const token = ADMIN_TOKEN || localStorage.getItem('biliardino_admin_token') || '';
   const res = await fetch(`${API}/clear-confirmations`, {
     method: 'POST',
@@ -49,12 +49,12 @@ async function clearConfirmations(matchTime: string): Promise<any> {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ matchTime })
+    body: JSON.stringify({})
   });
   return res.json();
 }
 
-async function sendBroadcast(matchTime: string): Promise<any> {
+async function sendBroadcast(): Promise<any> {
   const token = ADMIN_TOKEN || localStorage.getItem('biliardino_admin_token') || '';
   const res = await fetch(`${API}/send-broadcast`, {
     method: 'POST',
@@ -62,7 +62,7 @@ async function sendBroadcast(matchTime: string): Promise<any> {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ matchTime })
+    body: JSON.stringify({})
   });
   return res.json();
 }
@@ -194,13 +194,25 @@ function createToolbar(): void {
 
       <div class="dev-row">
         <span style="color:#888">Match:</span>
-        <span class="dev-matchtime" id="dev-matchtime">${getMatchTime()}</span>
+        <span class="dev-matchtime" id="dev-matchtime">${getLobbyKey()}</span>
       </div>
 
       <div class="dev-row">
         <button class="dev-btn primary" id="dev-add-1">+1 Conferma</button>
         <button class="dev-btn" id="dev-add-3">+3 Conferme</button>
         <button class="dev-btn" id="dev-add-5">+5 Conferme</button>
+      </div>
+
+      <div class="dev-row">
+        <span style="color:#888">Notifiche:</span>
+        <button class="dev-btn" id="dev-sim-sub">Simula sub locale</button>
+        <button class="dev-btn" id="dev-rem-sub">Rimuovi sub locale</button>
+      </div>
+
+      <div class="dev-row">
+        <button class="dev-btn" id="dev-mark-verified">Marca BE OK</button>
+        <button class="dev-btn" id="dev-unmark-verified">Rimuovi BE OK</button>
+        <button class="dev-btn" id="dev-verify-be">Trigger verify BE</button>
       </div>
 
       <div class="dev-row">
@@ -234,15 +246,15 @@ function log(msg: string, type: 'ok' | 'err' | '' = ''): void {
 }
 
 async function addConfirmations(count: number): Promise<void> {
-  const matchTime = getMatchTime();
+  const lobbyKey = getLobbyKey();
   const players = getAllPlayers();
-  log(`Invio ${count} conferme per ${matchTime}...`);
+  log(`Invio ${count} conferme alla lobby...`);
 
   for (let i = 0; i < count; i++) {
     const playerId = getRandomMockPlayerId();
     const name = players.find(p => p.id === playerId)?.name ?? `#${playerId}`;
     try {
-      const data = await simulateConfirmation(playerId, matchTime);
+      const data = await simulateConfirmation(playerId);
       log(`✓ ${name} confermato (tot: ${data.count})`, 'ok');
     } catch (e: any) {
       log(`✗ ${name}: ${e.message}`, 'err');
@@ -250,26 +262,90 @@ async function addConfirmations(count: number): Promise<void> {
   }
 }
 
+// --- Notification dev helpers ------------------------------------------------
+const SUBSCRIPTION_KEY = 'biliardino_subscription';
+const SUBSCRIPTION_VERIFIED_KEY = 'biliardino_subscription_verified';
+const PLAYER_ID_KEY = 'biliardino_player_id';
+const PLAYER_NAME_KEY = 'biliardino_player_name';
+
+function createFakeSubscription(): any {
+  return {
+    endpoint: `https://dev.push/fake/${Date.now()}`,
+    keys: { p256dh: 'FAKEP256', auth: 'FAKEA' }
+  };
+}
+
+function setLocalSubscriptionForPlayer(playerId: number): void {
+  const players = getAllPlayers();
+  const name = players.find(p => p.id === playerId)?.name ?? `#${playerId}`;
+  const sub = createFakeSubscription();
+  try { localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(sub)); } catch { }
+  try { localStorage.setItem(PLAYER_ID_KEY, String(playerId)); } catch { }
+  try { localStorage.setItem(PLAYER_NAME_KEY, name); } catch { }
+  try { localStorage.removeItem(SUBSCRIPTION_VERIFIED_KEY); } catch { }
+}
+
+function removeLocalSubscription(): void {
+  try { localStorage.removeItem(SUBSCRIPTION_KEY); } catch { }
+  try { localStorage.removeItem(PLAYER_ID_KEY); } catch { }
+  try { localStorage.removeItem(PLAYER_NAME_KEY); } catch { }
+  try { localStorage.removeItem(SUBSCRIPTION_VERIFIED_KEY); } catch { }
+}
+
+function markLocalVerified(): void { try { localStorage.setItem(SUBSCRIPTION_VERIFIED_KEY, 'true'); } catch { } }
+function unmarkLocalVerified(): void { try { localStorage.removeItem(SUBSCRIPTION_VERIFIED_KEY); } catch { } }
+
+function dispatchDevNotificationAction(action: { verify?: boolean } = {}): void {
+  window.dispatchEvent(new CustomEvent('dev-notifications-action', { detail: action }));
+}
+
+
 function bindEvents(): void {
   const fab = document.getElementById('dev-fab')!;
   const panel = document.getElementById('dev-panel')!;
 
   fab.addEventListener('click', () => {
     panel.classList.toggle('open');
-    // Aggiorna match time quando si apre
+    // Aggiorna lobby key quando si apre
     const mtEl = document.getElementById('dev-matchtime');
-    if (mtEl) mtEl.textContent = getMatchTime();
+    if (mtEl) mtEl.textContent = getLobbyKey();
   });
 
   document.getElementById('dev-add-1')!.addEventListener('click', () => addConfirmations(1));
   document.getElementById('dev-add-3')!.addEventListener('click', () => addConfirmations(3));
   document.getElementById('dev-add-5')!.addEventListener('click', () => addConfirmations(5));
 
+  // Notification dev controls
+  document.getElementById('dev-sim-sub')!.addEventListener('click', () => {
+    const pid = getRandomMockPlayerId();
+    setLocalSubscriptionForPlayer(pid);
+    log(`Simulata subscription locale per player ${pid}`, 'ok');
+    dispatchDevNotificationAction({ verify: false });
+  });
+  document.getElementById('dev-rem-sub')!.addEventListener('click', () => {
+    removeLocalSubscription();
+    log('Rimossa subscription locale', 'ok');
+    dispatchDevNotificationAction({ verify: false });
+  });
+  document.getElementById('dev-mark-verified')!.addEventListener('click', () => {
+    markLocalVerified();
+    log('Marcata subscription come verificata localmente', 'ok');
+    dispatchDevNotificationAction({ verify: false });
+  });
+  document.getElementById('dev-unmark-verified')!.addEventListener('click', () => {
+    unmarkLocalVerified();
+    log('Rimosso flag di verifica locale', 'ok');
+    dispatchDevNotificationAction({ verify: false });
+  });
+  document.getElementById('dev-verify-be')!.addEventListener('click', () => {
+    log('Trigger verifica BE (server)...');
+    dispatchDevNotificationAction({ verify: true });
+  });
+
   document.getElementById('dev-broadcast')!.addEventListener('click', async () => {
-    const matchTime = getMatchTime();
-    log(`Invio broadcast per ${matchTime}...`);
+    log(`Invio broadcast alla lobby...`);
     try {
-      const data = await sendBroadcast(matchTime);
+      const data = await sendBroadcast();
       log(`📣 Broadcast: ${data.sent ?? 0} notifiche inviate`, 'ok');
     } catch (e: any) {
       log(`✗ Broadcast fallito: ${e.message}`, 'err');
@@ -277,10 +353,9 @@ function bindEvents(): void {
   });
 
   document.getElementById('dev-clear')!.addEventListener('click', async () => {
-    const matchTime = getMatchTime();
-    log(`Pulizia conferme ${matchTime}...`);
+    log(`Pulizia conferme...`);
     try {
-      const data = await clearConfirmations(matchTime);
+      const data = await clearConfirmations();
       log(`🗑 ${data.deleted ?? 0} conferme eliminate`, 'ok');
       nextMockIndex = 0;
     } catch (e: any) {

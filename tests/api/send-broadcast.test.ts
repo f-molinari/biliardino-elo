@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 const BASE_URL = process.env.VITE_API_BASE_URL;
 
-const API_TOKEN = process.env.CRON_API_TOKEN;
+const API_TOKEN = process.env.ADMIN_API_TOKEN;
 
 describe('send-broadcast API', () => {
   it('should send a broadcast notification with valid token', async () => {
@@ -21,7 +21,8 @@ describe('send-broadcast API', () => {
         'Authorization': `Bearer ${API_TOKEN}`
       },
       body: JSON.stringify({
-        matchTime: '14:00'
+        title: 'Test Broadcast',
+        body: 'This is a test broadcast message.'
       })
     });
 

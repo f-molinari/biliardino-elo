@@ -4,7 +4,6 @@ import webpush from 'web-push';
 import { withAuth } from './_auth.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { redis } from './_redisClient.js';
-import { sanitizeLogOutput, validateMatchTime } from './_validation.js';
 
 webpush.setVapidDetails(
   'mailto:info@biliardino.app',
@@ -31,17 +30,10 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
   if (handleCorsPreFlight(req, res)) return res;
 
   try {
-    const { matchTime: rawMatchTime } = req.query as { matchTime?: string };
+    // No matchTime: matchmaking uses global lobby confirmations
 
-    if (!rawMatchTime) {
-      return res.status(400).json({ error: 'Missing matchTime parameter' });
-    }
-
-    // Valida e sanitizza matchTime per prevenire injection
-    const matchTime = validateMatchTime(rawMatchTime);
-
-    // Ottieni conferme da Redis
-    const keys = await redis.keys(`availability:${matchTime}:*`);
+    // Ottieni tutte le conferme per la lobby globale
+    const keys = await redis.keys(`availability:*`);
     const confirmations = await Promise.all(
       keys.map(async (key) => {
         const data = await redis.get(key) as Confirmation | null;
@@ -52,7 +44,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     const validConfirmations = confirmations.filter(Boolean) as Confirmation[];
 
     if (validConfirmations.length < 5) {
-      console.log(`⚠️ Solo ${validConfirmations.length} conferme per ${matchTime}, minimo 5 richiesto`);
+      console.log(`⚠️ Solo ${validConfirmations.length} conferme, minimo 5 richiesto`);
       return res.status(200).json({
         ok: false,
         message: 'Conferme insufficienti',
@@ -66,7 +58,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     const selected = shuffled.slice(0, 4);
     const selectedIds = selected.map(c => c.playerId);
 
-    console.log(`🎮 Matchmaking per ${sanitizeLogOutput(matchTime)}: estratti ${selectedIds.join(', ')}`);
+    console.log(`🎮 Matchmaking: estratti ${selectedIds.join(', ')}`);
 
     // Ottieni le subscriptions di questi giocatori
     const allBlobs: SubscriptionData[] = [];
@@ -103,9 +95,9 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
             web_push: 8030,
             notification: {
               title: '⚽ SEI STATO CONVOCATO!',
-              body: `Partita alle ${matchTime}! Preparati a dominare il campo!`,
+              body: `Sei stato convocato! Preparati a dominare il campo!`,
               navigate: '/matchmaking.html',
-              tag: `selected-${matchTime}`,
+              tag: `selected`,
               requireInteraction: true,
               icon: '/icons/icon-192.jpg',
               badge: '/icons/icon-192.jpg',
@@ -136,8 +128,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       ok: true,
       selected: selectedIds,
       notified: success,
-      failed: fail,
-      matchTime
+      failed: fail
     });
   } catch (err) {
     console.error('Errore matchmaking:', err);

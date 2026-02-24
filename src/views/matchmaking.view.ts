@@ -6,7 +6,7 @@ import { addMatch } from '@/services/match.service';
 import { clearRunningMatch, fetchRunningMatch, saveMatch, saveRunningMatch } from '@/services/repository.service';
 import { availabilityList } from '@/utils/availability.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
-import { getNextMatchTime } from '@/utils/next-match-time.util';
+// Lobby is global; no matchTime required
 import { API_BASE_URL, BASE_PATH } from '../config/env.config';
 import { findBestMatch, IMatchProposal } from '../services/matchmaking.service';
 import { getAllPlayers, getPlayerById, getPlayerByName, getRank } from '../services/player.service';
@@ -825,9 +825,7 @@ export class MatchmakingView {
    * Inizializza il polling delle conferme ogni 7 secondi
    */
   private static startConfirmationsPolling(): void {
-    MatchmakingView.currentMatchTime = getNextMatchTime();
-
-    // Carica subito
+    // Carica subito (global lobby)
     MatchmakingView.loadConfirmations();
 
     // Polling ogni 7 secondi
@@ -841,7 +839,7 @@ export class MatchmakingView {
       console.log('⏱️ Polling conferme fermato per timeout (10 minuti)');
     }, 600_000);
 
-    console.log(`🔄 Polling conferme avviato per match ${MatchmakingView.currentMatchTime}`);
+    console.log(`🔄 Polling conferme avviato per lobby globale`);
   }
 
   /**
@@ -864,9 +862,7 @@ export class MatchmakingView {
    */
   private static async loadConfirmations(): Promise<void> {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/get-confirmations?time=${MatchmakingView.currentMatchTime}`
-      );
+      const response = await fetch(`${API_BASE_URL}/get-confirmations`);
 
       if (!response.ok) {
         console.error('Errore caricamento conferme:', response.status);
@@ -925,7 +921,7 @@ export class MatchmakingView {
 
     // Orario match
     const timeEl = document.getElementById('conf-match-time');
-    if (timeEl) timeEl.textContent = MatchmakingView.currentMatchTime;
+    if (timeEl) timeEl.textContent = 'Lobby';
 
     // Badge conteggio
     const badge = document.getElementById('conf-count-badge');
@@ -1044,9 +1040,7 @@ export class MatchmakingView {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        matchTime: MatchmakingView.currentMatchTime
-      })
+      body: JSON.stringify({})
     });
 
     if (!response.ok) {

@@ -3,26 +3,7 @@
  * Prevents injection attacks and validates input formats
  */
 
-/**
- * Valida e sanitizza il formato matchTime (HH:MM)
- * Previene Redis key injection
- */
-export function validateMatchTime(matchTime: unknown): string {
-  if (typeof matchTime !== 'string') {
-    throw new Error('matchTime deve essere una stringa');
-  }
-
-  // Rimuovi spazi extra
-  const cleaned = matchTime.trim();
-
-  // Valida formato HH:MM
-  const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
-  if (!timeRegex.test(cleaned)) {
-    throw new Error('matchTime deve essere nel formato HH:MM (es: 14:30)');
-  }
-
-  return cleaned;
-}
+/* `validateMatchTime` rimosso: il concetto di matchTime è deprecato nel nuovo flusso lobby */
 
 /**
  * Valida e sanitizza il playerId

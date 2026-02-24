@@ -2,17 +2,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { withAuth } from './_auth.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { redis } from './_redisClient.js';
-import { validateString } from './_validation.js';
-
-interface ClearMessagesBody {
-  matchTime: string;
-}
+// messages are global for the lobby
 
 /**
- * API per cancellare i messaggi chat di una partita (admin only)
+/**
+ * API per cancellare i messaggi chat della lobby (admin only)
  *
  * POST /api/clear-messages
- * Body: { matchTime: string }
+ * Body: { }
  */
 async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
   setCorsHeaders(res);
@@ -23,13 +20,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
   }
 
   try {
-    const { matchTime } = req.body as ClearMessagesBody;
-
-    if (!validateString(matchTime, 1, 20)) {
-      return res.status(400).json({ error: 'Invalid matchTime' });
-    }
-
-    const messagesKey = `messages:${matchTime}`;
+    // Clear global messages
+    const messagesKey = `messages`;
 
     // Recupera gli ID dei messaggi da cancellare
     const messageIds = await redis.lrange(messagesKey, 0, -1);
@@ -41,7 +33,6 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
 
     // Cancella la lista e il counter
     await redis.del(messagesKey);
-    await redis.del(`message-count:${matchTime}`);
 
     return res.status(200).json({ ok: true, deletedCount: messageIds.length });
   } catch (error) {

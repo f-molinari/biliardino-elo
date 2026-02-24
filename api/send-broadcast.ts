@@ -6,7 +6,7 @@ import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { combineMiddlewares, withSecurityMiddleware } from './_middleware.js';
 import { getRandomMessage } from './_randomMessage.js';
 import { redis } from './_redisClient.js';
-import { sanitizeLogOutput, validateMatchTime, validateString } from './_validation.js';
+import { sanitizeLogOutput, validateString } from './_validation.js';
 
 // Verifica configurazione
 if (!process.env.VITE_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
@@ -57,32 +57,21 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
 
   try {
     const {
-      matchTime: rawMatchTime,
       title: rawTitle,
       subtitle: rawSubtitle,
       body: rawBody
-    } = req.body as {
-      matchTime?: string;
-      title?: string;
-      subtitle?: string;
-      body?: string;
-    };
+    } = req.body
 
-    if (!rawMatchTime) {
-      return res.status(400).json({ error: 'matchTime è obbligatorio' });
-    }
-
-    // Valida e sanitizza input
-    const matchTime = validateMatchTime(rawMatchTime);
+    // Valida e sanitizza input (se mancante, sarà usata la chiave 'default')
     const customTitle = rawTitle ? validateString(rawTitle, 'title', 100) : undefined;
+    // matchTime is ignored: lobby is global
     const customBody = rawBody ? validateString(rawBody, 'body', 500) : undefined;
 
     // Verifica configurazione
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       console.error('BLOB_READ_WRITE_TOKEN non configurato');
       return res.status(500).json({
-        error: 'Configurazione server incompleta',
-        details: 'BLOB_READ_WRITE_TOKEN mancante'
+        error: 'Configurazione server incompleta'
       });
     }
 
@@ -119,7 +108,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     }
 
     const url = process.env.BASE_URL || '.';
-    const matchDate = new Date(matchTime).toLocaleTimeString('it-IT', { hour: '2-digit' });
+
     // Invia tutte le notifiche in parallelo
     const results = await Promise.allSettled(
       validSubscriptions.map(async (data) => {
@@ -128,7 +117,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
         const title = customTitle || _randomMessage.title;
         const body = customBody || _randomMessage.body;
         const actions: NotificationAction[] = [
-          { action: 'cancel', title: 'Ignora', url: `${url}/confirm.html?c=false&time=${matchTime}` }
+          { action: 'cancel', title: 'Ignora', url: `${url}/confirm.html?c=false` }
         ];
 
         await webpush.sendNotification(
@@ -138,8 +127,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
             notification: {
               title,
               body,
-              navigate: `${url}/confirm.html?time=${matchTime}`,
-              tag: `match`,
+              navigate: `${url}/confirm.html`,
+              tag: `lobby`,
               requireInteraction: true,
               icon: '/icons/icon-192.jpg',
               badge: '/icons/icon-192.jpg',
@@ -156,7 +145,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
               'Content-Type': 'application/notification+json'
             },
             urgency: 'high',
-            TTL: 86400
+            TTL: 5400 // 1 ora e mezza
           }
         );
 
@@ -176,35 +165,34 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       }
     });
 
-    console.log(`✅ Broadcast completato: ${sent}/${validSubscriptions.length} inviati (Match: ${matchTime})`);
+    console.log(`✅ Broadcast completato: ${sent}/${validSubscriptions.length} inviati`);
 
-    // Crea registry lobby in Redis
-    try {
-      const lobbyKey = `lobby:${matchTime}`;
-      await redis.set(
-        lobbyKey,
-        {
-          createdAt: new Date().toISOString(),
-          matchTime,
-          notificationsSent: sent,
-          active: true
-        },
-        {
-          ex: 1800 // TTL 30 minuti (1800 secondi)
-        }
-      );
+    if (!process.env.VITE_DEV_MODE)
+      // Crea registry lobby in Redis
+      try {
+        const lobbyKey = `lobby`;
+        await redis.set(
+          lobbyKey,
+          {
+            createdAt: new Date().toISOString(),
+            notificationsSent: sent,
+            active: true
+          },
+          {
+            ex: 5400 // TTL 90 minuti (5400 secondi)
+          }
+        );
 
-      console.log(`🏁 Lobby registry creata: ${lobbyKey} (TTL: 30 min)`);
-    } catch (err) {
-      console.error('❌ Errore creazione lobby registry:', err);
-      // Non bloccare la risposta se fallisce
-    }
+        console.log(`🏁 Lobby registry creata: ${lobbyKey} (TTL: 90 min)`);
+      } catch (err) {
+        console.error('❌ Errore creazione lobby registry:', err);
+        // Non bloccare la risposta se fallisce
+      }
 
     return res.status(200).json({
       sent,
       failed,
       total: validSubscriptions.length,
-      matchTime,
       lobbyActive: true
     });
   } catch (err) {
