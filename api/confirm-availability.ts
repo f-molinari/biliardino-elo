@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { withSecurityMiddleware } from './_middleware.js';
-import { redis } from './_redisClient.js';
+import { prefixed, redisRaw } from './_redisClient.js';
 import { sanitizeLogOutput, validatePlayerId } from './_validation.js';
 
 interface SubscriptionData {
@@ -44,18 +44,39 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     }
 
 
-    const key = `availability:${playerIdNum}`;
 
-    await redis.set(key, {
+    const availabilityKey = 'availability';
+    const field = String(playerIdNum);
+    const confirmedAt = new Date().toISOString();
+    const valueObj = {
       playerId: playerIdNum,
-      confirmedAt: new Date().toISOString(),
+      confirmedAt,
       subscription: parsedSubscription
-    }, {
-      ex: 5400 // Expire dopo 90 minuti
-    });
+    };
 
-    const keys = await redis.keys(`availability:*`);
-    const count = keys.length;
+    // Salva nello hash globale (una singola chiave) per ridurre richieste
+    await redisRaw.hset(prefixed(availabilityKey), field, JSON.stringify(valueObj));
+
+    // Aggiungi index temporale per cleanup TTL (score = epoch seconds)
+    try {
+      const ts = Math.floor(Date.now() / 1000);
+      await redisRaw.zadd(prefixed('availability_ts'), ts, field);
+    } catch (e) {
+      console.warn('ZADD availability_ts fallito:', (e as Error).message || e);
+    }
+
+    // Pubblica evento per aggiornamenti realtime sui client connessi
+    try {
+      // Publish on a stable topic name (no env prefix) so clients can subscribe
+      await redisRaw.publish('availability_events', JSON.stringify({ playerId: playerIdNum, confirmedAt }));
+    } catch (e) {
+      // Non bloccare l'operazione se publish fallisce
+      console.warn('Publish availability event fallito:', (e as Error).message || e);
+    }
+
+    // Conta le conferme con HLEN (una chiamata)
+    const rawCount = await redisRaw.hlen(prefixed(availabilityKey));
+    const count = Number(rawCount || 0);
 
     console.log(`✅ Conferma da ${sanitizeLogOutput(String(playerIdNum))} (totale: ${count})`);
 

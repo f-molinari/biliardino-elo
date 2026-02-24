@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 
@@ -40,7 +41,7 @@ function devModePlugin(): Plugin {
 
 export default defineConfig(config => ({
   base: '/',
-  plugins: [devModePlugin()],
+  plugins: [devModePlugin(), tailwindcss()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')

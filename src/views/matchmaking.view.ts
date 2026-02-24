@@ -7,6 +7,7 @@ import { clearRunningMatch, fetchRunningMatch, saveMatch, saveRunningMatch } fro
 import { availabilityList } from '@/utils/availability.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 // Lobby is global; no matchTime required
+import AvailabilitySubscriber from '@/utils/availability-subscriber';
 import { API_BASE_URL, BASE_PATH } from '../config/env.config';
 import { findBestMatch, IMatchProposal } from '../services/matchmaking.service';
 import { getAllPlayers, getPlayerById, getPlayerByName, getRank } from '../services/player.service';
@@ -29,6 +30,7 @@ export class MatchmakingView {
   private static confirmedPlayerIds: Set<number> = new Set();
   private static confirmationTimes: Map<number, string> = new Map();
   private static currentMatchTime: string = '';
+  private static availabilitySubscriber: AvailabilitySubscriber | null = null;
 
   /**
    * Initialize the matchmaking UI.
@@ -828,24 +830,44 @@ export class MatchmakingView {
     // Carica subito (global lobby)
     MatchmakingView.loadConfirmations();
 
-    // Polling ogni 7 secondi
-    MatchmakingView.pollingIntervalId = window.setInterval(() => {
-      MatchmakingView.loadConfirmations();
-    }, 7000);
-
-    // Timeout massimo di 10 minuti per evitare polling infinito
-    MatchmakingView.pollingTimeoutId = window.setTimeout(() => {
-      MatchmakingView.stopConfirmationsPolling();
-      console.log('⏱️ Polling conferme fermato per timeout (10 minuti)');
-    }, 600_000);
-
-    console.log(`🔄 Polling conferme avviato per lobby globale`);
+    // Prova a connettere subscriber WebSocket a Upstash Pub/Sub (se configurato)
+    try {
+      const env = (import.meta as any).env || {};
+      if (env.VITE_UPSTASH_PUBSUB_TOKEN) {
+        if (!MatchmakingView.availabilitySubscriber) {
+          MatchmakingView.availabilitySubscriber = new AvailabilitySubscriber();
+          MatchmakingView.availabilitySubscriber.connect();
+          MatchmakingView.availabilitySubscriber.onMessage(() => {
+            // On event, ricarica lo stato (singola richiesta HGETALL)
+            MatchmakingView.loadConfirmations();
+          });
+          console.log('🔔 AvailabilitySubscriber avviato per aggiornamenti realtime');
+        }
+      } else {
+        // No realtime available: keep single initial fetch only (minimal polling)
+        console.warn('AvailabilitySubscriber non configurato: realtime non disponibile, uso single fetch fallback');
+      }
+    } catch (e) {
+      console.warn('Errore inizializzazione AvailabilitySubscriber, uso fallback polling', e);
+      MatchmakingView.pollingIntervalId = window.setInterval(() => {
+        MatchmakingView.loadConfirmations();
+      }, 7000);
+    }
   }
 
   /**
    * Ferma il polling delle conferme
    */
   private static stopConfirmationsPolling(): void {
+    // Close subscriber if present
+    if (MatchmakingView.availabilitySubscriber) {
+      try {
+        MatchmakingView.availabilitySubscriber.close();
+      } catch (e) {
+        // ignore
+      }
+      MatchmakingView.availabilitySubscriber = null;
+    }
     if (MatchmakingView.pollingIntervalId !== null) {
       clearInterval(MatchmakingView.pollingIntervalId);
       MatchmakingView.pollingIntervalId = null;

@@ -21,6 +21,8 @@ export class ConfirmView {
   private static lastMessageTimestamp = 0;
   private static myPlayerId: string | null = null;
 
+  private static availabilitySubscriber: any = null;
+
   // Config
   private static MIN_PLAYERS = 5;
 
@@ -351,17 +353,41 @@ export class ConfirmView {
     }
   }
 
-  private static startPolling(): void {
+  private static async startPolling(): Promise<void> {
     this.loadConfirmations();
-    // this.pollingIntervalId = window.setInterval(() => this.loadConfirmations(), 10_000);
-    const remainingTime = 60_000 - this.pollingElapsedTime;
-    this.pollingStartTime = Date.now();
-    this.pollingTimeoutId = window.setTimeout(() => {
-      this.stopPolling();
-    }, remainingTime);
+
+    try {
+      const env = (import.meta as any).env || {};
+      if (env.VITE_UPSTASH_PUBSUB_TOKEN) {
+        // lazy import to avoid module resolution issues in some builds
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const { default: AvailabilitySubscriber } = await import('@/utils/availability-subscriber');
+        if (!this.availabilitySubscriber) {
+          this.availabilitySubscriber = new AvailabilitySubscriber();
+          this.availabilitySubscriber.connect();
+          this.availabilitySubscriber.onMessage(() => this.loadConfirmations());
+          console.log('🔔 AvailabilitySubscriber avviato (confirm view)');
+        }
+      } else {
+        // No realtime available: keep single initial fetch only (minimal polling)
+        console.warn('AvailabilitySubscriber non configurato: realtime non disponibile, uso single fetch fallback');
+      }
+    } catch (e) {
+      console.warn('Errore inizializzazione AvailabilitySubscriber in confirm view, uso single fetch fallback', e);
+    }
   }
 
   private static stopPolling(): void {
+    // Close websocket subscriber if active
+    if (this.availabilitySubscriber) {
+      try {
+        this.availabilitySubscriber.close();
+      } catch (e) {
+        // ignore
+      }
+      this.availabilitySubscriber = null;
+    }
     if (this.pollingIntervalId !== null) {
       clearInterval(this.pollingIntervalId);
       this.pollingIntervalId = null;
