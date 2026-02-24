@@ -6,4 +6,47 @@ console.log(
   !!(process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN),
 );
 
-export const redis = Redis.fromEnv();
+const vercelEnv = (process.env.VERCEL_ENV || process.env.NODE_ENV || 'production').toLowerCase();
+
+function makeVercelPrefix(): string {
+  if (vercelEnv === 'production') return '';
+  const id = process.env.VERCEL_GIT_COMMIT_REF
+    || process.env.VERCEL_GIT_BRANCH
+    || process.env.VERCEL_URL
+    || 'local';
+  const safe = String(id).replace(/[^a-z0-9-_]/gi, '_').toLowerCase().slice(0, 64);
+  return `${vercelEnv}_${safe}_`;
+}
+
+export const redisPrefix = makeVercelPrefix();
+console.log('Redis key prefix:', redisPrefix || '<none>');
+
+export const prefixed = (key: string) => `${redisPrefix}${key}`;
+
+// underlying client from environment
+const _redis = Redis.fromEnv();
+
+// Create a small explicit wrapper that prefixes string keys (first arg).
+const wrap = <T extends Record<string, any>>(client: T, methods: string[]) => {
+  const out: Record<string, any> = {};
+  for (const m of methods) {
+    const fn = (client as any)[m];
+    if (typeof fn !== 'function') continue;
+    out[m] = (...args: any[]) => {
+      if (args.length > 0) {
+        const a0 = args[0];
+        if (typeof a0 === 'string') args[0] = prefixed(a0);
+        else if (Array.isArray(a0)) args[0] = a0.map((v: any) => (typeof v === 'string' ? prefixed(v) : v));
+      }
+      return fn.apply(client, args);
+    };
+  }
+  return out as T;
+};
+
+const methodsToWrap = [
+  'get', 'set', 'del', 'keys', 'lrange', 'lpush', 'expire', 'incr', 'ttl', 'scan'
+];
+
+export const redisRaw = _redis;
+export const redis = wrap(_redis as any, methodsToWrap) as unknown as typeof _redis;
