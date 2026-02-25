@@ -2,71 +2,21 @@
 <html lang="it">
 
 <head>
-  <link rel="stylesheet" href="./src/style.css" />
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CAlcio Balilla</title>
-  <meta name="description" content="CA Biliardino Championship" />
-  <meta name="theme-color" content="#062c7d" />
+  <title>Biliardino ELO — Shark Season</title>
+  <meta name="description" content="Biliardino ELO Rating System — Shark Season" />
+  <meta name="theme-color" content="#0F2A20" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.jpg" />
   <link rel="apple-touch-icon" href="./icons/icon-192.jpg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles/ranking.css" />
 </head>
 
 <body>
-  <div class="play-card-container">
-    <div class="play-card play-card-flex">
-      <div class="shark-season-grid">
-        <img src="shark.webp" alt="Shark" class="shark-img" />
-        <div class="shark-info-col">
-          <div class="shark-title">Shark Season</div>
-          <div class="season-end">Termina il 28 Febbraio</div>
-          <a href="#" id="play-btn" class="play-btn">Gioca</a>
-          <a href="./matchmaking.html" id="admin-matchmaking-btn"
-            style="display: none; margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; text-decoration: none; border-radius: 12px; background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%); color: white; text-align: center; box-sizing: border-box; max-width: 100%;">Matchmaking</a>
-        </div>
-      </div>
-    </div>
-    <div class="play-disclaimer play-disclaimer-centered">
-      <div class="disclaimer-icon">⚠️</div>
-      <div class="disclaimer-content">
-        <strong>Promemoria importante</strong>
-        <p>Il biliardino non è scontato: solo in pausa e con rispetto, per evitare sanzioni.</p>
-      </div>
-    </div>
-  </div>
-  <div id="live-match-container"></div>
-  </div>
-  <div class="tables-container">
-    <div class="table-wrapper">
-      <table id="ranking">
-        <thead>
-          <tr>
-            <th title="Posizione in classifica">#</th>
-            <th title="Classe">Classe</th>
-            <th title="Nome giocatore" data-sort>Nome</th>
-            <th title="ELO rating attuale" data-sort>Elo</th>
-            <th title="Ruolo preferito e percentuale">Ruolo</th>
-            <th title="Partite giocate" data-sort>Match</th>
-            <th title="Vittorie - Sconfitte">V/S</th>
-            <th title="Percentuale di vittorie" data-sort>% Win</th>
-            <th title="Rapporto goal fatti/subiti" data-sort>Goal F/S</th>
-            <th title="Ultime 5 partite e variazione ELO" data-sort>Forma</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <script type="module" src="./src/ranking.ts"></script>
-  <footer style="font-size: 0.8em; opacity: 0.5; text-align: center; margin: 20px 0;">
-    version <span id="pwa-version"></span> - &copy; 2026 CA Biliardino Championship
-  </footer>
+  <div id="app"></div>
+  <script type="module" src="./src/app/main.ts"></script>
 </body>
 
 </html>

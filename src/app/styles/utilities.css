@@ -1,0 +1,245 @@
+/* ═══════════════════════════════════════════════════════════════
+   Utility Classes — Glassmorphism, Scrollbar, Animations
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Glassmorphism Cards ──────────────────────────────────── */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-lg);
+}
+
+.glass-card-light {
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border-light);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-lg);
+}
+
+.glass-card-gold {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-gold);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-lg);
+}
+
+/* ── Font Shorthands ──────────────────────────────────────── */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+  letter-spacing: 0.08em;
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+/* ── Gold Gradient Button ─────────────────────────────────── */
+.btn-gold {
+  background: linear-gradient(135deg, var(--color-gold), var(--color-gold-secondary));
+  color: var(--color-bg-deep);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.btn-gold:hover {
+  transform: translateY(-1px);
+  filter: brightness(110%);
+}
+
+.btn-gold:active {
+  transform: translateY(0);
+}
+
+/* ── Gold Accent Line ─────────────────────────────────────── */
+.gold-line {
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  height: 1px;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 215, 0, 0.5);
+}
+
+/* ── Status Dot ───────────────────────────────────────────── */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg-dark);
+}
+
+.status-dot--online {
+  background: var(--color-online);
+}
+
+.status-dot--offline {
+  background: var(--color-offline);
+}
+
+/* ── Win/Loss Badge ───────────────────────────────────────── */
+.badge-win {
+  color: var(--color-win);
+  background: rgba(74, 222, 128, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.badge-loss {
+  color: var(--color-loss);
+  background: rgba(248, 113, 113, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* ── Search Input ─────────────────────────────────────────── */
+.search-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border-light);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.search-input:focus {
+  border-color: var(--color-gold-dim);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.1);
+}
+
+/* ── Transition helper ────────────────────────────────────── */
+.page-transition {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* ── Login Dialog (restyled for new theme) ────────────────── */
+dialog#loginDialog {
+  background: var(--glass-bg-solid);
+  border: 1px solid var(--glass-border-gold);
+  border-radius: var(--radius-xl);
+  color: var(--color-text-primary);
+  backdrop-filter: blur(var(--glass-blur-heavy));
+  padding: 2rem;
+  max-width: 360px;
+  width: 90%;
+}
+
+dialog#loginDialog::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+dialog#loginDialog h3 {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--color-gold);
+  text-align: center;
+  margin: 0 0 1.5rem;
+}
+
+dialog#loginDialog label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+dialog#loginDialog input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border-light);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+dialog#loginDialog input:focus {
+  border-color: var(--color-gold-dim);
+}
+
+dialog#loginDialog menu {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 0;
+  margin: 1rem 0 0;
+}
+
+dialog#loginDialog button {
+  padding: 0.5rem 1.2rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s, filter 0.15s;
+}
+
+dialog#loginDialog button#cancelLoginBtn {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+}
+
+dialog#loginDialog button#cancelLoginBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+dialog#loginDialog button#loginBtn {
+  background: linear-gradient(135deg, var(--color-gold), var(--color-gold-secondary));
+  color: var(--color-bg-deep);
+  font-weight: 600;
+}
+
+dialog#loginDialog button#loginBtn:hover {
+  filter: brightness(110%);
+  transform: translateY(-1px);
+}

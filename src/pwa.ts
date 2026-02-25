@@ -1,13 +1,8 @@
-import { initNotification } from './notifications';
-
 const baseUrl = import.meta.env.BASE_URL || '/';
 
 navigator.serviceWorker.register(`${baseUrl}sw.js`, { scope: baseUrl })
-  .then((registration) => {
-
+  .then(() => {
     updateSWVersionInFooter();
-
-    initNotification();
   })
   .catch((error) => {
     console.warn(`Error registering service worker:\n${error}.`);

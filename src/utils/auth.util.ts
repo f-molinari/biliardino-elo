@@ -1,84 +1,41 @@
 import { API_BASE_URL } from '@/config/env.config';
-import { browserSessionPersistence, onAuthStateChanged, setPersistence } from 'firebase/auth';
-import { AUTH, login } from './firebase.util';
+import { onAuthStateChanged } from 'firebase/auth';
+import { AUTH } from './firebase.util';
 
 /**
- * Prompts the user to log in using a modal dialog and resolves only after
- * authentication succeeds.
+ * Prompts the user to log in via the UserDropdown event bus.
+ *
+ * Dispatches 'user-dropdown:open-login' to expand the admin login form
+ * inside the unified user dropdown. Resolves when 'user-dropdown:login-success'
+ * fires, rejects when 'user-dropdown:login-cancel' fires.
  *
  * @returns A promise that resolves once the user has successfully logged in.
- * @throws An error if the user cancels the login dialog.
+ * @throws An error if the user cancels.
  */
 async function promptLogin(): Promise<void> {
-  const dialog = document.getElementById('loginDialog') as HTMLDialogElement;
-  const form = document.getElementById('loginForm') as HTMLFormElement;
-  const cancelBtn = document.getElementById('cancelLoginBtn') as HTMLButtonElement | null;
-
-  if (!dialog || !form || !cancelBtn) {
-    throw new Error('Login dialog elements not found');
-  }
-
-  dialog.showModal();
-
   return new Promise((resolve, reject) => {
     let settled = false;
 
-    const cleanup = (): void => {
-      form.removeEventListener('submit', onSubmit);
-      cancelBtn.removeEventListener('click', onCancelClick);
-      dialog.removeEventListener('cancel', onDialogCancel);
-      dialog.removeEventListener('close', onDialogClose);
-    };
-
-    const settleResolve = (): void => {
+    const onSuccess = (): void => {
       if (settled) return;
       settled = true;
-      cleanup();
+      window.removeEventListener('user-dropdown:login-success', onSuccess);
+      window.removeEventListener('user-dropdown:login-cancel', onCancel);
       resolve();
     };
 
-    const settleReject = (err: Error): void => {
+    const onCancel = (): void => {
       if (settled) return;
       settled = true;
-      cleanup();
-      reject(err);
+      window.removeEventListener('user-dropdown:login-success', onSuccess);
+      window.removeEventListener('user-dropdown:login-cancel', onCancel);
+      reject(new Error('Login cancelled'));
     };
 
-    const onCancelClick = (): void => {
-      dialog.close('cancel');
-    };
+    window.addEventListener('user-dropdown:login-success', onSuccess);
+    window.addEventListener('user-dropdown:login-cancel', onCancel);
 
-    const onDialogCancel = (e: Event): void => {
-      e.preventDefault();
-      dialog.close('cancel');
-    };
-
-    const onDialogClose = (): void => {
-      if (dialog.returnValue === 'cancel') {
-        settleReject(new Error('Login cancelled'));
-      }
-    };
-
-    const onSubmit = async (e: SubmitEvent): Promise<void> => {
-      e.preventDefault();
-
-      const email = (document.getElementById('loginEmail') as HTMLInputElement).value;
-      const password = (document.getElementById('loginPassword') as HTMLInputElement).value;
-
-      try {
-        await setPersistence(AUTH, browserSessionPersistence);
-        await login(email, password);
-        dialog.close('ok');
-        settleResolve();
-      } catch {
-        alert('Invalid username or password');
-      }
-    };
-
-    cancelBtn.addEventListener('click', onCancelClick);
-    dialog.addEventListener('cancel', onDialogCancel);
-    dialog.addEventListener('close', onDialogClose);
-    form.addEventListener('submit', onSubmit);
+    window.dispatchEvent(new CustomEvent('user-dropdown:open-login'));
   });
 }
 
@@ -152,30 +109,30 @@ export function withAuthentication(
 }
 
 function showAdminDenied(message: string): void {
-  const container = document.querySelector('.container');
+  const container = document.getElementById('app-content') ?? document.querySelector('.container');
   if (container) {
     container.innerHTML = `
       <div style="text-align: center; padding: 3rem 1rem;">
         <div style="font-size: 4rem; margin-bottom: 1rem;">🚫</div>
-        <h2 style="color: #d32f2f; margin-bottom: 1rem;">Accesso Negato</h2>
-        <p style="color: #6e6e73; margin-bottom: 2rem; font-size: 1.1rem;">${message}</p>
-        <a href="./index.html" style="
+        <h2 style="color: var(--color-loss, #d32f2f); margin-bottom: 1rem;">Accesso Negato</h2>
+        <p style="color: rgba(255,255,255,0.5); margin-bottom: 2rem; font-size: 1.1rem;">${message}</p>
+        <a href="#/" style="
           display: inline-block;
           padding: 0.75rem 2rem;
-          background: linear-gradient(135deg, #062c7d 0%, #1a4aad 100%);
-          color: white;
+          background: linear-gradient(135deg, #FFD700, #F0A500);
+          color: #0F2A20;
           text-decoration: none;
           border-radius: 12px;
           font-weight: 600;
-          box-shadow: 0 4px 12px rgba(6, 44, 125, 0.3);
+          box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
           transition: transform 0.2s, box-shadow 0.2s;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(6, 44, 125, 0.4)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(6, 44, 125, 0.3)';">← Torna alla Home</a>
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(255, 215, 0, 0.4)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(255, 215, 0, 0.3)';">← Torna alla Home</a>
       </div>
     `;
   }
 
   // Redirect automatico dopo 5 secondi
   setTimeout(() => {
-    window.location.href = './index.html';
+    window.location.hash = '#/';
   }, 5000);
 }
