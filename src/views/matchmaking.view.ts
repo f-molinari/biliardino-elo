@@ -532,9 +532,13 @@ export class MatchmakingView {
             <span class="heuristic-label">⭐ Priorità</span>
             <span class="heuristic-value">${match.heuristicData.priority.score.toFixed(2)} / ${match.heuristicData.priority.max.toFixed(2)}</span>
           </div>
-          <div class="heuristic-item" title="Varietà nelle combinazioni di giocatori">
-            <span class="heuristic-label">🎲 Diversità</span>
-            <span class="heuristic-value">${match.heuristicData.diversity.score.toFixed(2)} / ${match.heuristicData.diversity.max.toFixed(2)}</span>
+          <div class="heuristic-item" title="Varietà nelle coppie dei team">
+            <span class="heuristic-label">🎲 Diversita team</span>
+            <span class="heuristic-value">${match.heuristicData.diversityTeam.score.toFixed(2)} / ${match.heuristicData.diversityTeam.max.toFixed(2)}</span>
+          </div>
+          <div class="heuristic-item" title="Varieta negli avversari">
+            <span class="heuristic-label">🤝 Diversita avversari</span>
+            <span class="heuristic-value">${match.heuristicData.diversityOpponent.score.toFixed(2)} / ${match.heuristicData.diversityOpponent.max.toFixed(2)}</span>
           </div>
           <div class="heuristic-item" title="Fattore di casualità">
             <span class="heuristic-label">🎰 Casualità</span>
