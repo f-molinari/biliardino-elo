@@ -275,8 +275,8 @@ export function renderMatchmakingHeuristicData(match: IMatchProposal): string {
       </div>
       <div class="px-4 md:px-5 py-3 space-y-2">
         ${items.map((item) => {
-    const pct = item.max > 0 ? (item.score / item.max) * 100 : 0;
-    return `
+          const pct = item.max > 0 ? (item.score / item.max) * 100 : 0;
+          return `
             <div class="flex items-center gap-2">
               <i data-lucide="${item.icon}" class="size-3 shrink-0" style="color:${item.color}"></i>
               <span class="font-body shrink-0 text-[10px] text-white/50 w-20">${item.label}</span>
@@ -286,7 +286,7 @@ export function renderMatchmakingHeuristicData(match: IMatchProposal): string {
               <span class="font-ui shrink-0 text-[10px] text-white/40 w-[70px] text-right">${item.score.toFixed(2)} / ${item.max.toFixed(2)}</span>
             </div>
           `;
-  }).join('')}
+        }).join('')}
 
         <div class="flex items-center gap-2 pt-1 border-t border-white/10">
           <i data-lucide="trophy" class="size-3 text-[#FFD700] shrink-0"></i>
@@ -371,11 +371,6 @@ export function renderMatchmakingPanel(match: IMatchProposal | null, minPlayers:
                 class="w-full py-3.5 md:py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 bg-[linear-gradient(135deg,#FFD700,#F0A500)] border border-[rgba(255,215,0,0.4)] font-display text-lg tracking-[0.15em] text-[#0F2A20] shadow-[0_0_30px_rgba(255,215,0,0.25)]">
           <i data-lucide="trophy" class="size-[18px]"></i>
           SALVA PARTITA
-        </button>
-        <button id="save-and-lobby-btn"
-                class="w-full py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 bg-[rgba(74,222,128,0.12)] border border-[rgba(74,222,128,0.35)] font-display text-base tracking-[0.12em] text-[#4ADE80]">
-          <i data-lucide="chevron-right" class="size-4"></i>
-          SAVE & GO TO LOBBY
         </button>
         ${renderMatchmakingGenerateButton(enabled)}
       </div>

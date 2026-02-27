@@ -12,7 +12,7 @@ export function mockRequest(overrides: {
     headers: overrides.headers ?? {},
     body: overrides.body ?? undefined,
     query: overrides.query ?? {},
-    url: overrides.url ?? '/api/test',
+    url: overrides.url ?? '/api/test'
   } as unknown as VercelRequest;
 }
 
@@ -26,7 +26,7 @@ export function mockResponse() {
     json(data: any) { res._json = data; res._ended = true; return res; },
     end() { res._ended = true; return res; },
     setHeader(name: string, value: string) { res._headers[name] = value; return res; },
-    getHeader(name: string) { return res._headers[name]; },
+    getHeader(name: string) { return res._headers[name]; }
   };
   return res as typeof res & VercelResponse;
 }

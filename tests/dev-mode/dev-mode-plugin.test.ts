@@ -98,7 +98,7 @@ describe('devModePlugin — logica di attivazione', () => {
       { input: 'TRUE', expected: false },
       { input: 'True', expected: false },
       { input: '', expected: false },
-      { input: undefined, expected: false },
+      { input: undefined, expected: false }
     ];
 
     // Replica la logica esatta del plugin: env.VITE_DEV_MODE === 'true'
@@ -125,7 +125,7 @@ describe('__DEV_MODE__ guards nei file sorgente', () => {
   it('vite.config.ts definisce il plugin con __DEV_MODE__', () => {
     const content = fs.readFileSync(path.join(ROOT, 'vite.config.ts'), 'utf-8');
     expect(content).toContain('__DEV_MODE__');
-    expect(content).toContain("VITE_DEV_MODE === 'true'");
+    expect(content).toContain('VITE_DEV_MODE === \'true\'');
   });
 
   it('auth.util.ts usa __DEV_MODE__ per bypassare autenticazione in dev', () => {

@@ -71,7 +71,6 @@ afterAll(async () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Core Lobby Flow — Integration con Redis reale', () => {
-
   // ─── Prerequisites ──────────────────────────────────────────────────────
 
   describe('Prerequisites', () => {
@@ -91,7 +90,6 @@ describe('Core Lobby Flow — Integration con Redis reale', () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   describe('confirm-availability', () => {
-
     it('crea una conferma con playerId valido', async () => {
       const res = mockResponse();
       await confirmHandler(mockRequest({ method: 'POST', body: { playerId: PLAYER_1 } }), res);
@@ -211,7 +209,6 @@ describe('Core Lobby Flow — Integration con Redis reale', () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   describe('lobby-state', () => {
-
     it('restituisce stato vuoto senza conferme', async () => {
       const res = mockResponse();
       await lobbyStateHandler(mockRequest({ method: 'GET' }), res);
@@ -277,7 +274,6 @@ describe('Core Lobby Flow — Integration con Redis reale', () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   describe('send-message', () => {
-
     it('salva un messaggio valido (201)', async () => {
       const res = mockResponse();
       await sendMessageHandler(mockRequest({ method: 'POST', body: validMessageBody() }), res);
@@ -343,7 +339,6 @@ describe('Core Lobby Flow — Integration con Redis reale', () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   describe('admin-cleanup', () => {
-
     it('cancella conferme e messaggi con token admin valido', async () => {
       // Setup
       await confirmHandler(mockRequest({ method: 'POST', body: { playerId: PLAYER_1 } }), mockResponse());
@@ -426,7 +421,6 @@ describe('Core Lobby Flow — Integration con Redis reale', () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   describe('E2E: Broadcast → Confirm → Lobby → Chat → Matchmaking → Cleanup', () => {
-
     it('ciclo lobby completo: broadcast → 4 player confermano → chat → stato corretto → cleanup', async () => {
       // 1. Simula broadcast (crea lobby key come farebbe send-broadcast)
       await redis.set('lobby', JSON.stringify({
@@ -463,7 +457,7 @@ describe('Core Lobby Flow — Integration con Redis reale', () => {
       const chatMessages = [
         { playerId: PLAYER_1, text: 'Arrivo presto!' },
         { playerId: PLAYER_2, text: 'Presente!' },
-        { playerId: PLAYER_3, text: 'Oggi vinco io' },
+        { playerId: PLAYER_3, text: 'Oggi vinco io' }
       ];
       for (const { playerId, text } of chatMessages) {
         await sendMessageHandler(
@@ -555,7 +549,7 @@ describe('Core Lobby Flow — Integration con Redis reale', () => {
       const messages = [
         { playerId: PLAYER_1, text: 'Primo msg' },
         { playerId: PLAYER_2, text: 'Secondo msg' },
-        { playerId: PLAYER_3, text: 'Terzo msg' },
+        { playerId: PLAYER_3, text: 'Terzo msg' }
       ];
 
       for (const msg of messages) {

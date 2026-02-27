@@ -278,7 +278,7 @@ class StatsPage extends Component {
             ${renderPlayerAvatar({ initials: getInitials(pr.p2.name), color: CLASS_COLORS[pr.p2.class] ?? '#8B7D6B', size: 'xs' })}
             <span class="font-ui text-xs text-white truncate">${pr.p2.name}</span>
           </div>
-          <span class="font-display text-sm flex-shrink-0" style="color:${dColor}; letter-spacing:0.05em">
+          <span class="font-display text-sm shrink-0" style="color:${dColor}; letter-spacing:0.05em">
             ${sign}${Math.round(pr.delta)}
           </span>
         </div>
@@ -337,12 +337,12 @@ class StatsPage extends Component {
       const topPlayer = [...entry.players].sort((a, b) => b.elo - a.elo)[0];
       return `
         <div class="class-bar-wrap flex items-center gap-3 py-2">
-          <div class="flex-shrink-0 w-24 font-ui text-xs truncate" style="color:rgba(255,255,255,0.7)">${getClassName(cls)}</div>
+          <div class="shrink-0 w-24 font-ui text-xs truncate" style="color:rgba(255,255,255,0.7)">${getClassName(cls)}</div>
           <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.08)">
             <div class="h-full rounded-full transition-all" style="width:${pct}%; background:${color}"></div>
           </div>
-          <div class="flex-shrink-0 font-display text-sm w-6 text-right" style="color:${color}">${entry.count}</div>
-          <div class="flex-shrink-0 font-body text-xs w-28 truncate" style="color:rgba(255,255,255,0.4)">
+          <div class="shrink-0 font-display text-sm w-6 text-right" style="color:${color}">${entry.count}</div>
+          <div class="shrink-0 font-body text-xs w-28 truncate" style="color:rgba(255,255,255,0.4)">
             top: ${topPlayer?.name ?? '—'}
           </div>
         </div>

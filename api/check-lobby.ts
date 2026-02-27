@@ -23,10 +23,17 @@ export default async function handler(
       ttl = await redis.ttl(lobbyKey);
     }
 
+    // Estrai match data (se presente nella lobby registry)
+    const parsed = lobbyData as Record<string, unknown> | null;
+    const match = (parsed && typeof parsed === 'object' && 'match' in parsed)
+      ? parsed.match
+      : null;
+
     return res.status(200).json({
       exists,
       ttl, // Secondi rimanenti
-      data: lobbyData
+      data: lobbyData,
+      match // Team data per il frontend
     });
   } catch (err) {
     console.error('❌ Errore check lobby:', err);

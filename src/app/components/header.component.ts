@@ -64,9 +64,9 @@ export class HeaderComponent extends Component {
           href="${item.path}"
           ${hiddenClass}
           class="nav-link flex items-center gap-1.5 px-3 py-2 rounded-md transition-all duration-200 ${isActive
-          ? 'text-(--color-gold) bg-[rgba(255,215,0,0.12)]'
-          : 'text-white/90 hover:text-white hover:bg-white/8'
-        }"
+              ? 'text-(--color-gold) bg-[rgba(255,215,0,0.12)]'
+              : 'text-white/90 hover:text-white hover:bg-white/8'
+          }"
           style="font-family: var(--font-ui); font-size: 13px; letter-spacing: 0.08em"
         >
           <i data-lucide="${item.icon}" style="width:15px;height:15px"></i>
@@ -85,9 +85,9 @@ export class HeaderComponent extends Component {
           href="${item.path}"
           ${hiddenAttr}
           class="mobile-nav-link flex items-center gap-3 px-4 py-3.5 rounded-lg transition-all duration-200 ${isActive
-          ? 'text-(--color-gold) bg-[rgba(255,215,0,0.12)]'
-          : 'text-white/70 hover:text-white hover:bg-white/6'
-        }"
+              ? 'text-(--color-gold) bg-[rgba(255,215,0,0.12)]'
+              : 'text-white/70 hover:text-white hover:bg-white/6'
+          }"
           style="font-family: var(--font-ui); font-size: 15px; letter-spacing: 0.08em"
         >
           <i data-lucide="${item.icon}" style="width:18px;height:18px"></i>
@@ -164,7 +164,7 @@ export class HeaderComponent extends Component {
     this.lobbyPollInterval = setInterval(() => this.pollLobbyStatus(), LOBBY_POLL_MS);
   }
 
-  override  destroy(): void {
+  override destroy(): void {
     if (this.handleRouteChange) {
       window.removeEventListener('popstate', this.handleRouteChange);
       appState.off('route-change', this.handleRouteChange);
@@ -223,7 +223,7 @@ export class HeaderComponent extends Component {
       if (!res.ok) return;
       const data = await res.json();
       const wasActive = appState.lobbyActive;
-      appState.lobbyActive = !!(data.exists && data.match);
+      appState.lobbyActive = !!data.exists;
       if (appState.lobbyActive !== wasActive) {
         appState.emit('lobby-change');
       }

@@ -211,7 +211,7 @@ class AddPlayerPage extends Component {
             </div>
           </div>
         </div>
-        <div class="text-right flex-shrink-0 ml-2">
+        <div class="text-right shrink-0 ml-2">
           <div class="font-display text-lg" style="color:var(--color-gold); line-height:1">${elo}</div>
           <div class="font-ui" style="font-size:10px; color:rgba(255,255,255,0.35)">ELO</div>
         </div>

@@ -57,12 +57,28 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     const {
       title: rawTitle,
       subtitle: rawSubtitle,
-      body: rawBody
+      body: rawBody,
+      match: rawMatch
     } = req.body;
 
     // Valida e sanitizza input (se mancante, sarà usata la chiave 'default')
     const customTitle = rawTitle ? validateString(rawTitle, 'title', 100) : undefined;
     const customBody = rawBody ? validateString(rawBody, 'body', 500) : undefined;
+
+    // Valida match data (opzionale — team IDs per la lobby)
+    let matchData: { teamA: { defence: number; attack: number }; teamB: { defence: number; attack: number } } | null = null;
+    if (rawMatch && typeof rawMatch === 'object') {
+      const { teamA, teamB } = rawMatch;
+      if (
+        teamA && typeof teamA.defence === 'number' && typeof teamA.attack === 'number'
+        && teamB && typeof teamB.defence === 'number' && typeof teamB.attack === 'number'
+      ) {
+        matchData = {
+          teamA: { defence: teamA.defence, attack: teamA.attack },
+          teamB: { defence: teamB.defence, attack: teamB.attack }
+        };
+      }
+    }
 
     // Verifica configurazione
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -172,7 +188,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
         {
           createdAt: new Date().toISOString(),
           notificationsSent: sent,
-          active: true
+          active: true,
+          ...(matchData ? { match: matchData } : {})
         },
         {
           ex: 5400 // TTL 90 minuti (5400 secondi)

@@ -337,3 +337,16 @@ dialog#loginDialog button#loginBtn:hover {
   filter: brightness(110%);
   transform: translateY(-1px);
 }
+
+/* ── Broadcast Ball (Lobby admin button) ─────────────────── */
+#broadcast-btn {
+  transition: filter 0.2s;
+}
+
+#broadcast-btn:hover {
+  filter: brightness(1.1) drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+}
+
+#broadcast-btn:active {
+  filter: brightness(0.95);
+}

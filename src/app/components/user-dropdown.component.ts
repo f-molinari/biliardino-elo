@@ -584,7 +584,7 @@ class UserDropdownComponent {
 
       return `
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-2"
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 ring-2"
                style="background:${color}22;color:${color};ring-color:${color}44;font-family:var(--font-ui);font-size:14px;font-weight:600;border:2px solid ${color}44">
             ${initials}
           </div>
@@ -624,14 +624,14 @@ class UserDropdownComponent {
       return `
         <button class="dd-player-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 hover:bg-white/[0.07] active:scale-[0.98]"
                 data-action="select-player" data-id="${p.id}">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+          <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                style="background:${color}22;color:${color};font-family:var(--font-ui);font-size:12px;font-weight:600;border:1.5px solid ${color}44">
             ${initials}
           </div>
           <div class="flex-1 text-left min-w-0">
             <div class="font-ui text-xs text-white truncate">${p.name}</div>
           </div>
-          <div class="font-display text-sm flex-shrink-0" style="color:var(--color-gold)">${elo}</div>
+          <div class="font-display text-sm shrink-0" style="color:var(--color-gold)">${elo}</div>
         </button>
       `;
     }).join('');

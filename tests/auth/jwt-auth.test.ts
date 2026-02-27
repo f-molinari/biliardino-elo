@@ -112,7 +112,7 @@ describe('verifyAuth', () => {
       expect.fail('Should have thrown');
     } catch (err: any) {
       expect(err.statusCode).toBe(403);
-      expect(err.message).toContain("required role 'admin'");
+      expect(err.message).toContain('required role \'admin\'');
     }
   });
 
@@ -153,7 +153,7 @@ describe('withAuth middleware', () => {
     const token = await signToken({ role: 'admin' });
     const req = mockRequest({
       method: 'POST',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` }
     });
     const res = mockResponse();
 
@@ -174,7 +174,7 @@ describe('withAuth middleware', () => {
     const token = await signToken({ role: 'admin', sub: 'user-1' });
     const req = mockRequest({
       method: 'POST',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` }
     });
     const res = mockResponse();
 
@@ -216,7 +216,7 @@ describe('withAuth middleware', () => {
 
     const req = mockRequest({
       method: 'POST',
-      headers: { authorization: 'Bearer fake-token-here' },
+      headers: { authorization: 'Bearer fake-token-here' }
     });
     const res = mockResponse();
 
@@ -233,7 +233,7 @@ describe('withAuth middleware', () => {
     const token = await signToken({ role: 'notify' });
     const req = mockRequest({
       method: 'POST',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` }
     });
     const res = mockResponse();
 
@@ -250,7 +250,7 @@ describe('withAuth middleware', () => {
     const token = await signToken({ role: 'cron' });
     const req = mockRequest({
       method: 'POST',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` }
     });
     const res = mockResponse();
 
@@ -267,7 +267,7 @@ describe('withAuth middleware', () => {
     const token = await signToken({ role: 'admin' }, { expiresIn: '-1s' });
     const req = mockRequest({
       method: 'POST',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` }
     });
     const res = mockResponse();
 
@@ -294,15 +294,15 @@ describe('combineMiddlewares (auth + security)', () => {
 
     const combined = combineMiddlewares(
       handler,
-      (h) => withAuth(h, 'admin'),
-      (h) => withSecurityMiddleware(h, { timeout: 5000 }),
+      h => withAuth(h, 'admin'),
+      h => withSecurityMiddleware(h, { timeout: 5000 })
     );
 
     const token = await signToken({ role: 'admin' });
     const req = mockRequest({
       method: 'POST',
       headers: { authorization: `Bearer ${token}` },
-      body: { data: 'test' },
+      body: { data: 'test' }
     });
     const res = mockResponse();
 
@@ -319,13 +319,13 @@ describe('combineMiddlewares (auth + security)', () => {
 
     const combined = combineMiddlewares(
       handler,
-      (h) => withAuth(h, 'admin'),
-      (h) => withSecurityMiddleware(h),
+      h => withAuth(h, 'admin'),
+      h => withSecurityMiddleware(h)
     );
 
     const req = mockRequest({
       method: 'POST',
-      body: { data: 'test' },
+      body: { data: 'test' }
     });
     const res = mockResponse();
 

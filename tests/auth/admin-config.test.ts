@@ -6,10 +6,10 @@ import { isPlayerAdmin } from '../../src/config/admin.config';
 
 describe('isPlayerAdmin', () => {
   it('riconosce gli admin configurati', () => {
-    expect(isPlayerAdmin(25)).toBe(true);  // Andrea Gargaro
-    expect(isPlayerAdmin(18)).toBe(true);  // Francesco Molinari
-    expect(isPlayerAdmin(22)).toBe(true);  // Michele Sette
-    expect(isPlayerAdmin(13)).toBe(true);  // Michele Lillo
+    expect(isPlayerAdmin(25)).toBe(true); // Andrea Gargaro
+    expect(isPlayerAdmin(18)).toBe(true); // Francesco Molinari
+    expect(isPlayerAdmin(22)).toBe(true); // Michele Sette
+    expect(isPlayerAdmin(13)).toBe(true); // Michele Lillo
   });
 
   it('rifiuta ID non admin', () => {

@@ -14,9 +14,9 @@ import { getAllMatches } from '@/services/match.service';
 import { getAllPlayers, getBonusK, getPlayerById, getRank } from '@/services/player.service';
 import { fetchRunningMatch } from '@/services/repository.service';
 import { formatDate } from '@/utils/format-date.util';
+import { fuzzyMatch, highlightChars } from '@/utils/fuzzy-search.util';
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
-import { fuzzyMatch, highlightChars } from '@/utils/fuzzy-search.util';
 import gsap from 'gsap';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
@@ -78,7 +78,7 @@ class LeaderboardPage extends Component {
     `;
   }
 
-  mount(): void {
+  override mount(): void {
     refreshIcons();
 
     // Identity banner CTA
@@ -118,7 +118,7 @@ class LeaderboardPage extends Component {
     gsap.from('.match-row', { x: -10, stagger: 0.03, duration: 0.25, ease: 'power2.out', delay: 0.4 });
   }
 
-  destroy(): void { }
+  override destroy(): void { }
 
   // ── Helpers ───────────────────────────────────────────────
 
@@ -129,18 +129,35 @@ class LeaderboardPage extends Component {
   private getSortedPlayers(): IPlayer[] {
     const players = [...this.getAllRankedPlayers()];
 
-    const filtered = this.searchQuery
-      ? players.filter(p => p.name.toLowerCase().includes(this.searchQuery))
-      : players;
+    this.matchIndices.clear();
+    let filtered: IPlayer[];
+
+    if (this.searchQuery) {
+      filtered = [];
+      for (const p of players) {
+        const indices = fuzzyMatch(this.searchQuery, p.name.toLowerCase());
+        if (indices) {
+          this.matchIndices.set(p.id, indices);
+          filtered.push(p);
+        }
+      }
+    } else {
+      filtered = players;
+    }
 
     const { sortKey, sortAsc } = this;
     filtered.sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
-        case 'rank': cmp = getRank(a.id) - getRank(b.id); break;
-        case 'name': cmp = a.name.localeCompare(b.name); break;
-        case 'elo': cmp = b.elo - a.elo; break;
-        case 'matches': cmp = b.matches - a.matches; break;
+        case 'rank':
+          cmp = getRank(a.id) - getRank(b.id);
+          break;
+        case 'name': cmp = a.name.localeCompare(b.name);
+          break;
+        case 'elo': cmp = b.elo - a.elo;
+          break;
+        case 'matches': cmp = b.matches - a.matches;
+          break;
         case 'winrate': {
           const aR = a.matches > 0 ? (a.wins || 0) / a.matches : 0;
           const bR = b.matches > 0 ? (b.wins || 0) / b.matches : 0;
@@ -219,7 +236,7 @@ class LeaderboardPage extends Component {
     return `
       <div class="rounded-xl px-4 py-3 flex items-center gap-3"
            style="background:rgba(255,215,0,0.07); border:1px solid rgba(255,215,0,0.25)">
-        <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+        <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
              style="background:rgba(255,215,0,0.12)">
           <i data-lucide="user-circle" style="width:18px;height:18px;color:#FFD700"></i>
         </div>
@@ -230,7 +247,7 @@ class LeaderboardPage extends Component {
           </div>
         </div>
         <button id="identity-banner-btn"
-                class="flex-shrink-0 px-3 py-1.5 rounded-lg font-ui text-xs whitespace-nowrap transition-all hover:brightness-110 active:scale-[0.98]"
+                class="shrink-0 px-3 py-1.5 rounded-lg font-ui text-xs whitespace-nowrap transition-all hover:brightness-110 active:scale-[0.98]"
                 style="background:linear-gradient(135deg,#FFD700,#F0A500); color:#0F2A20; letter-spacing:0.06em">
           SCEGLI
         </button>
@@ -242,7 +259,7 @@ class LeaderboardPage extends Component {
     return `
       <div class="rounded-xl px-4 py-3 flex items-center gap-3"
            style="background:rgba(255,215,0,0.07); border:1px solid rgba(255,215,0,0.25)">
-        <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+        <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
              style="background:rgba(255,215,0,0.12)">
         <i data-lucide="shield" style="width:18px;height:18px;color:#FFD700;flex-shrink:0;margin-top:1px"></i>
         </div>
@@ -274,7 +291,7 @@ class LeaderboardPage extends Component {
       const winProbB = 1 - winProbA;
       const isLive = this.isLiveNow();
 
-      const renderLivePlayer = (p: IPlayer, role: string) => {
+      const renderLivePlayer = (p: IPlayer, role: string): string => {
         const color = CLASS_COLORS[p.class] ?? '#8B7D6B';
         return `
           <a href="/profile/${p.id}" class="flex items-center gap-2 hover:bg-white/5 rounded-lg p-1.5 transition-colors">
@@ -308,7 +325,7 @@ class LeaderboardPage extends Component {
                   ELO: <span style="color:var(--color-team-red)">${avgEloA}</span>
                 </div>
               </div>
-              <div class="text-center flex-shrink-0">
+              <div class="text-center shrink-0">
                 <div class="font-display text-xl mb-2" style="color:var(--color-gold)">VS</div>
                 <div class="space-y-1">
                   <div class="font-display text-sm" style="color:var(--color-team-red)">${(winProbA * 100).toFixed(1)}%</div>
@@ -363,7 +380,7 @@ class LeaderboardPage extends Component {
     const second = top3.find(p => getRank(p.id) === 2)!;
     const third = top3.find(p => getRank(p.id) === 3)!;
 
-    const card = (p: IPlayer, rank: number, elevated = false) => {
+    const card = (p: IPlayer, rank: number, elevated = false): string => {
       const elo = getDisplayElo(p);
       const wins = p.wins || 0;
       const winRate = p.matches > 0 ? Math.round((wins / p.matches) * 100) : 0;
@@ -517,20 +534,20 @@ class LeaderboardPage extends Component {
                background: rgba(10,25,18,0.8);
                border-bottom: 1px solid rgba(255,215,0,0.2);
              ">
-          <div class="sort-header cursor-pointer hover:text-[var(--color-gold)] transition-colors"
+          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
                data-sort-key="rank"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">#</div>
-          <div class="sort-header cursor-pointer hover:text-[var(--color-gold)] transition-colors"
+          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
                data-sort-key="name"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">GIOCATORE</div>
-          <div class="sort-header cursor-pointer hover:text-[var(--color-gold)] transition-colors"
+          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
                data-sort-key="elo"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">ELO</div>
-          <div class="sort-header cursor-pointer hover:text-[var(--color-gold)] transition-colors"
+          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
                data-sort-key="matches"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">MATCH</div>
           <div style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">V / S</div>
-          <div class="sort-header cursor-pointer hover:text-[var(--color-gold)] transition-colors"
+          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
                data-sort-key="winrate"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">WIN RATE</div>
         </div>
@@ -594,13 +611,16 @@ class LeaderboardPage extends Component {
     const borderBottom = idx < total - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.05)' : '';
     const eloColor = rank <= 3 ? '#FFD700' : 'white';
 
+    const indices = this.matchIndices.get(player.id);
+    const displayName = indices ? highlightChars(player.name, indices) : player.name;
+
     const avatarAndName = `
       <div class="flex items-center gap-2 md:gap-3">
         ${renderPlayerAvatar({ initials: getInitials(player.name), color, size: 'sm' })}
         <div class="min-w-0">
-          <div class="text-white group-hover:text-[var(--color-gold)] transition-colors truncate"
+          <div class="text-white group-hover:text-(--color-gold) transition-colors truncate"
                style="font-family:var(--font-ui); font-size:14px; font-weight:600">
-            ${player.name}
+            ${displayName}
           </div>
           <div style="font-family:var(--font-body); font-size:11px; color:rgba(255,255,255,0.35)">
             ${getClassName(player.class)}
@@ -715,9 +735,9 @@ class LeaderboardPage extends Component {
              style="background:rgba(255,255,255,0.03); border:1px solid ${ratingBorder}">
           <div class="flex items-center gap-2 min-w-0 flex-1">
             ${isToday
-          ? '<div class="w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-team-blue); box-shadow:0 0 4px var(--color-team-blue)"></div>'
-          : '<div class="w-2"></div>'
-        }
+                ? '<div class="w-2 h-2 rounded-full shrink-0" style="background:var(--color-team-blue); box-shadow:0 0 4px var(--color-team-blue)"></div>'
+                : '<div class="w-2"></div>'
+            }
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="font-ui text-xs" style="color:var(--color-win)">${tA}</span>
@@ -732,7 +752,7 @@ class LeaderboardPage extends Component {
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-3 flex-shrink-0 ml-2">
+          <div class="flex items-center gap-3 shrink-0 ml-2">
             <div class="text-right">
               <div class="font-display text-sm" style="color:rgba(255,255,255,0.5)">${Math.round(avgRating)}</div>
               <div class="font-body" style="font-size:10px; color:rgba(255,255,255,0.25)">avg</div>

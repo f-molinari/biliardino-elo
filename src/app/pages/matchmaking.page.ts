@@ -22,15 +22,14 @@ import gsap from 'gsap';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
 import { refreshIcons } from '../icons';
-import { router } from '../router';
 import { appState } from '../state';
 
 import type { IConfirmationsResponse } from '@/models/confirmation.interface';
 import type { IRunningMatchDTO } from '@/models/match.interface';
 import type { IPlayer } from '@/models/player.interface';
 import type { IMatchProposal } from '@/services/matchmaking.service';
-import { renderMatchmakingPageHeader, renderMatchmakingPlayerList } from '../components/ui/matchmaking.ui';
 import { fuzzyMatch, highlightChars } from '@/utils/fuzzy-search.util';
+import { renderMatchmakingPageHeader, renderMatchmakingPlayerList } from '../components/ui/matchmaking.ui';
 
 // ── Constants ────────────────────────────────────────────────────
 
@@ -213,8 +212,8 @@ class MatchmakingPage extends Component {
               class="w-full py-3.5 md:py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300
                      ${enabled ? '' : 'opacity-40 cursor-not-allowed'}"
               style="background:${enabled
-        ? 'linear-gradient(135deg, #FFD700, #F0A500)'
-        : 'rgba(255,215,0,0.1)'};
+                ? 'linear-gradient(135deg, #FFD700, #F0A500)'
+                : 'rgba(255,215,0,0.1)'};
                      border:1px solid rgba(255,215,0,0.4);
                      font-family:'Bebas Neue',sans-serif;
                      font-size:18px;
@@ -339,18 +338,6 @@ class MatchmakingPage extends Component {
           SALVA PARTITA
         </button>
 
-        <button id="save-and-lobby-btn"
-                class="w-full py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
-                style="background:rgba(74,222,128,0.12);
-                       border:1px solid rgba(74,222,128,0.35);
-                       font-family:'Bebas Neue',sans-serif;
-                       font-size:16px;
-                       letter-spacing:0.12em;
-                       color:#4ADE80">
-          <i data-lucide="chevron-right" style="width:16px;height:16px"></i>
-          SAVE & GO TO LOBBY
-        </button>
-
         ${this.renderGenerateButton()}
       </div>
     `;
@@ -467,27 +454,27 @@ class MatchmakingPage extends Component {
         </div>
         <div class="px-4 md:px-5 py-3 space-y-2">
           ${items.map((item) => {
-      const pct = item.max > 0 ? (item.score / item.max) * 100 : 0;
-      return `
+            const pct = item.max > 0 ? (item.score / item.max) * 100 : 0;
+            return `
               <div class="flex items-center gap-2">
                 <i data-lucide="${item.icon}" style="width:12px;height:12px;color:${item.color};flex-shrink:0"></i>
-                <span class="font-body flex-shrink-0" style="font-size:10px; color:rgba(255,255,255,0.5); width:80px">
+                <span class="font-body shrink-0" style="font-size:10px; color:rgba(255,255,255,0.5); width:80px">
                   ${item.label}
                 </span>
                 <div class="flex-1 h-1 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.08)">
                   <div class="h-full rounded-full" style="width:${pct}%; background:${item.color}"></div>
                 </div>
-                <span class="font-ui flex-shrink-0" style="font-size:10px; color:rgba(255,255,255,0.4); width:70px; text-align:right">
+                <span class="font-ui shrink-0" style="font-size:10px; color:rgba(255,255,255,0.4); width:70px; text-align:right">
                   ${item.score.toFixed(2)} / ${item.max.toFixed(2)}
                 </span>
               </div>
             `;
-    }).join('')}
+          }).join('')}
 
           <!-- Total -->
           <div class="flex items-center gap-2 pt-1" style="border-top:1px solid rgba(255,255,255,0.06)">
             <i data-lucide="trophy" style="width:12px;height:12px;color:#FFD700;flex-shrink:0"></i>
-            <span class="font-ui flex-shrink-0" style="font-size:10px; color:#FFD700; width:80px; letter-spacing:0.06em; font-weight:600">
+            <span class="font-ui shrink-0" style="font-size:10px; color:#FFD700; width:80px; letter-spacing:0.06em; font-weight:600">
               TOTALE
             </span>
             <div class="flex-1 h-1.5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.08)">
@@ -495,7 +482,7 @@ class MatchmakingPage extends Component {
                    style="width:${h.total.max > 0 ? (h.total.score / h.total.max) * 100 : 0}%;
                           background:linear-gradient(90deg,#FFD700,#F0A500)"></div>
             </div>
-            <span class="font-ui flex-shrink-0" style="font-size:10px; color:#FFD700; width:70px; text-align:right">
+            <span class="font-ui shrink-0" style="font-size:10px; color:#FFD700; width:70px; text-align:right">
               ${h.total.score.toFixed(2)} / ${h.total.max.toFixed(2)}
             </span>
           </div>
@@ -617,10 +604,6 @@ class MatchmakingPage extends Component {
 
     for (const btn of this.$$('#save-match-btn')) {
       btn.addEventListener('click', () => this.handleSaveMatch());
-    }
-
-    for (const btn of this.$$('#save-and-lobby-btn')) {
-      btn.addEventListener('click', () => this.handleSaveAndLobby());
     }
 
     // Select all / Deselect all (single instance in player list)
@@ -810,21 +793,6 @@ class MatchmakingPage extends Component {
     } finally {
       this.isSaving = false;
     }
-  }
-
-  private async handleSaveAndLobby(): Promise<void> {
-    if (!this.generatedMatch) return;
-
-    // Save running match & navigate to lobby
-    try {
-      await this.persistCurrentMatch();
-      appState.lobbyActive = true;
-      appState.emit('lobby-change');
-    } catch (error) {
-      console.error('Error persisting match for lobby:', error);
-    }
-
-    router.navigate('/lobby');
   }
 
   private async executeMatchSave(scoreA: number, scoreB: number): Promise<void> {

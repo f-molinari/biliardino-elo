@@ -9,15 +9,18 @@
  * architecture (vanilla TS, no React).
  */
 
+import { isPlayerAdmin } from '@/config/admin.config';
 import { API_BASE_URL } from '@/config/env.config';
 import { MessageService } from '@/services/message.service';
 import { getPlayerById } from '@/services/player.service';
+import { fetchRunningMatch } from '@/services/repository.service';
 import { FISH_SPRITES } from '@/utils/fish-sprites.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import gsap from 'gsap';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
 import { refreshIcons } from '../icons';
+import { appState } from '../state';
 
 import type { IRunningMatchDTO } from '@/models/match.interface';
 import type { IMessage } from '@/models/message.interface';
@@ -25,7 +28,7 @@ import type { IPlayer } from '@/models/player.interface';
 
 // ── Constants ────────────────────────────────────────────────────
 
-const COUNTDOWN_TOTAL = 60;
+const LOBBY_TTL_DEFAULT = 5400; // 90 min
 const POLL_INTERVAL_MS = 3000;
 const MSG_POLL_INTERVAL_MS = 4000;
 const CHAT_MAX_LENGTH = 50;
@@ -75,7 +78,8 @@ class LobbyPage extends Component {
   private players: Map<number, IPlayer> = new Map();
   private messages: IMessage[] = [];
   private confirmed: Set<number> = new Set();
-  private countdownSeconds = COUNTDOWN_TOTAL;
+  private countdownTotal = LOBBY_TTL_DEFAULT;
+  private countdownSeconds = LOBBY_TTL_DEFAULT;
 
   // Intervals / animation
   private pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -91,10 +95,15 @@ class LobbyPage extends Component {
   // Current player
   private myPlayerId: number | null = null;
 
+  // Admin broadcast
+  private isAdmin = false;
+  private isBroadcasting = false;
+
   // ── Render ───────────────────────────────────────────────────
 
   override async render(): Promise<string> {
     this.myPlayerId = Number(localStorage.getItem('biliardino_player_id')) || null;
+    this.isAdmin = isPlayerAdmin(this.myPlayerId);
 
     // Attempt to load lobby data on render
     try {
@@ -103,6 +112,11 @@ class LobbyPage extends Component {
         const data = await res.json();
         if (data.exists && data.match) {
           this.lobbyData = data.match as IRunningMatchDTO;
+        }
+        // Sync countdown from server TTL
+        if (data.exists && typeof data.ttl === 'number' && data.ttl > 0) {
+          this.countdownTotal = data.ttl;
+          this.countdownSeconds = data.ttl;
         }
       }
     } catch {
@@ -131,7 +145,9 @@ class LobbyPage extends Component {
         <div class="flex flex-col lg:grid lg:grid-cols-[1fr_320px] gap-4 md:gap-5">
 
           <div class="space-y-4">
-            ${this.renderTeams()}
+            <div id="teams-section">
+              ${this.renderTeams()}
+            </div>
             ${this.renderAquarium()}
           </div>
 
@@ -169,6 +185,7 @@ class LobbyPage extends Component {
     // Bind events
     this.bindChatEvents();
     this.bindConfirmButton();
+    this.bindBroadcastButton();
 
     // GSAP entrance animations
     gsap.from('#lobby-header', {
@@ -214,7 +231,9 @@ class LobbyPage extends Component {
   // ── Section renderers ────────────────────────────────────────
 
   private renderHeader(): string {
-    const pct = (this.countdownSeconds / COUNTDOWN_TOTAL) * 100;
+    const pct = this.countdownTotal > 0
+      ? (this.countdownSeconds / this.countdownTotal) * 100
+      : 0;
     const color = this.getCountdownColor();
     const circumference = 2 * Math.PI * 28;
     const offset = circumference * (1 - pct / 100);
@@ -222,7 +241,7 @@ class LobbyPage extends Component {
     return `
       <div id="lobby-header" class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2 md:gap-3 min-w-0">
-          <i data-lucide="users" class="text-[var(--color-gold)] flex-shrink-0"
+          <i data-lucide="users" class="text-[var(--color-gold)] shrink-0"
              style="width:26px;height:26px"></i>
           <div class="min-w-0">
             <h1 class="text-white font-display"
@@ -237,8 +256,8 @@ class LobbyPage extends Component {
         </div>
 
         <!-- Countdown circle -->
-        <div class="flex flex-col items-center gap-1 flex-shrink-0">
-          <div class="relative w-12 h-12 md:w-16 md:h-16" id="countdown-container">
+        <div class="flex flex-col items-center gap-1 shrink-0">
+          <div class="relative w-14 h-14 md:w-18 md:h-18" id="countdown-container">
             <svg viewBox="0 0 64 64" class="absolute inset-0 w-full h-full -rotate-90">
               <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.1)"
                       stroke-width="3" fill="none" />
@@ -251,14 +270,10 @@ class LobbyPage extends Component {
             </svg>
             <div class="absolute inset-0 flex items-center justify-center">
               <span id="countdown-text" class="font-display"
-                    style="font-size:18px; color:${color}; transition:color 0.5s">
-                ${this.countdownSeconds}
+                    style="font-size:14px; color:${color}; transition:color 0.5s">
+                ${this.formatCountdown(this.countdownSeconds)}
               </span>
             </div>
-          </div>
-          <div class="font-ui"
-               style="font-size:9px; color:rgba(255,255,255,0.4); letter-spacing:0.1em">
-            SECS
           </div>
         </div>
       </div>
@@ -267,6 +282,9 @@ class LobbyPage extends Component {
 
   private renderTeams(): string {
     if (!this.lobbyData) {
+      if (this.isAdmin) {
+        return this.renderAdminBroadcastCard();
+      }
       return `
         <div class="team-card glass-card rounded-xl p-6 text-center">
           <i data-lucide="users" class="mx-auto mb-3"
@@ -360,7 +378,7 @@ class LobbyPage extends Component {
             </span>
           </div>
           <button id="confirm-btn"
-                  class="flex-shrink-0 px-4 py-1.5 rounded-lg font-ui transition-all duration-200 hover:brightness-110"
+                  class="shrink-0 px-4 py-1.5 rounded-lg font-ui transition-all duration-200 hover:brightness-110"
                   style="background:linear-gradient(135deg, #FFD700, #F0A500); font-size:12px; letter-spacing:0.1em; color:#0F2A20; display:${this.shouldShowConfirmButton() ? 'block' : 'none'}">
             CONFERMA PRESENZA
           </button>
@@ -394,7 +412,7 @@ class LobbyPage extends Component {
                     style="font-size:13px; font-weight:600">
                 ${name.toUpperCase()}${isMe ? ' (TU)' : ''}
               </span>
-              <span class="px-1.5 py-0.5 rounded font-ui flex-shrink-0"
+              <span class="px-1.5 py-0.5 rounded font-ui shrink-0"
                     style="font-size:9px; letter-spacing:0.08em; color:${teamColor};
                            background:${teamColor}22; border:1px solid ${teamColor}44">
                 ${role}
@@ -405,7 +423,7 @@ class LobbyPage extends Component {
             </div>
           </div>
         </div>
-        <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+        <div class="flex items-center gap-2 shrink-0 ml-2">
           <span class="ready-dot w-2.5 h-2.5 rounded-full"
                 data-player-id="${playerId}"
                 style="background:${isConfirmed ? '#4ADE80' : '#6B7280'}; transition:background 0.3s"></span>
@@ -426,7 +444,7 @@ class LobbyPage extends Component {
                   backdrop-filter:blur(8px)">
 
         <!-- Chat header -->
-        <div class="px-4 py-3 flex items-center gap-2 flex-shrink-0"
+        <div class="px-4 py-3 flex items-center gap-2 shrink-0"
              style="background:rgba(10,25,18,0.8); border-bottom:1px solid rgba(255,215,0,0.2)">
           <i data-lucide="message-circle" style="width:14px;height:14px;color:var(--color-gold)"></i>
           <span class="font-ui"
@@ -452,7 +470,7 @@ class LobbyPage extends Component {
         </div>
 
         <!-- Input -->
-        <div class="p-3 flex-shrink-0" style="border-top:1px solid rgba(255,255,255,0.06)">
+        <div class="p-3 shrink-0" style="border-top:1px solid rgba(255,255,255,0.06)">
           <div id="chat-error" class="font-ui mb-1"
                style="font-size:10px; color:#ff4444; display:none; letter-spacing:0.05em"></div>
           <form id="chat-form" class="flex gap-2">
@@ -463,7 +481,7 @@ class LobbyPage extends Component {
                           font-size:12px; min-width:0"
                    autocomplete="off" />
             <button type="submit"
-                    class="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:brightness-110 flex-shrink-0"
+                    class="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:brightness-110 shrink-0"
                     style="background:linear-gradient(135deg, #FFD700, #F0A500)">
               <i data-lucide="send" style="width:14px;height:14px;color:#0F2A20"></i>
             </button>
@@ -506,13 +524,21 @@ class LobbyPage extends Component {
 
   // ── Countdown ────────────────────────────────────────────────
 
+  private formatCountdown(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
   private tickCountdown(): void {
     if (this.countdownSeconds <= 0) return;
 
     this.countdownSeconds--;
     const color = this.getCountdownColor();
     const circumference = 2 * Math.PI * 28;
-    const pct = (this.countdownSeconds / COUNTDOWN_TOTAL) * 100;
+    const pct = this.countdownTotal > 0
+      ? (this.countdownSeconds / this.countdownTotal) * 100
+      : 0;
     const offset = circumference * (1 - pct / 100);
 
     const circle = this.$id('countdown-circle');
@@ -522,7 +548,7 @@ class LobbyPage extends Component {
       circle.setAttribute('stroke-dashoffset', String(offset));
     }
     if (text) {
-      text.textContent = String(this.countdownSeconds);
+      text.textContent = this.formatCountdown(this.countdownSeconds);
       text.style.color = color;
     }
 
@@ -532,8 +558,10 @@ class LobbyPage extends Component {
   }
 
   private getCountdownColor(): string {
-    if (this.countdownSeconds > 30) return '#4ADE80';
-    if (this.countdownSeconds > 15) return '#FFD700';
+    if (this.countdownTotal <= 0) return '#F87171';
+    const pct = (this.countdownSeconds / this.countdownTotal) * 100;
+    if (pct > 50) return '#4ADE80';
+    if (pct > 25) return '#FFD700';
     return '#F87171';
   }
 
@@ -554,6 +582,8 @@ class LobbyPage extends Component {
 
       if (lobbyRes.ok) {
         const lobbyData = await lobbyRes.json();
+        const hadLobby = !!this.lobbyData;
+
         if (lobbyData.exists && lobbyData.match) {
           this.lobbyData = lobbyData.match as IRunningMatchDTO;
           // Resolve players
@@ -568,6 +598,35 @@ class LobbyPage extends Component {
               const p = getPlayerById(id);
               if (p) this.players.set(id, p);
             }
+          }
+        }
+
+        // Sync countdown from server TTL (with drift threshold)
+        if (lobbyData.exists && typeof lobbyData.ttl === 'number' && lobbyData.ttl > 0) {
+          const serverTtl = lobbyData.ttl;
+          if (Math.abs(this.countdownSeconds - serverTtl) > 5) {
+            this.countdownSeconds = serverTtl;
+          }
+          // Keep total in sync for percentage calculations
+          if (this.countdownTotal < serverTtl) {
+            this.countdownTotal = serverTtl;
+          }
+        }
+
+        // Re-render teams section when lobby activates
+        if (!hadLobby && this.lobbyData) {
+          const teamsSection = this.$id('teams-section');
+          if (teamsSection) {
+            teamsSection.innerHTML = this.renderTeams();
+            refreshIcons();
+            this.bindConfirmButton();
+            gsap.from('.team-card', {
+              opacity: 0,
+              y: 20,
+              stagger: 0.1,
+              duration: 0.4,
+              ease: 'power2.out'
+            });
           }
         }
       }
@@ -683,6 +742,241 @@ class LobbyPage extends Component {
       this.lobbyData.teamB.attack
     ];
     return ids.includes(this.myPlayerId);
+  }
+
+  // ── Admin Broadcast ─────────────────────────────────────────
+
+  private renderAdminBroadcastCard(): string {
+    return `
+      <div class="team-card glass-card rounded-xl p-6 text-center">
+        <p class="font-display text-xl text-[var(--color-gold)] mb-2"
+           style="letter-spacing:0.12em">
+          NESSUNA LOBBY ATTIVA
+        </p>
+        <p class="font-body text-sm mb-6" style="color:rgba(255,255,255,0.4)">
+          Invia la notifica per iniziare una partita
+        </p>
+
+        <!-- Animation container -->
+        <div class="relative mx-auto" style="width:220px; height:80px">
+          <!-- Cue stick (starts off-screen right) -->
+          <div id="cue-stick" class="absolute" style="top:24px; left:220px; opacity:0">
+            <svg width="120" height="12" viewBox="0 0 120 12">
+              <defs>
+                <linearGradient id="cue-grad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#2D5A27"/>
+                  <stop offset="8%" stop-color="#8B6914"/>
+                  <stop offset="15%" stop-color="#F5DEB3"/>
+                  <stop offset="100%" stop-color="#4A3728"/>
+                </linearGradient>
+              </defs>
+              <rect x="0" y="3" width="120" height="6" rx="3" fill="url(#cue-grad)"/>
+              <rect x="0" y="4" width="4" height="4" rx="1" fill="#2D5A27"/>
+            </svg>
+          </div>
+
+          <!-- Billiard ball -->
+          <button id="broadcast-btn" class="absolute cursor-pointer border-0 bg-transparent p-0"
+                  style="top:12px; left:50%; transform:translateX(-50%)">
+            <svg width="56" height="56" viewBox="0 0 56 56">
+              <defs>
+                <radialGradient id="ball-grad" cx="0.35" cy="0.3" r="0.65">
+                  <stop offset="0%" stop-color="#ffffff"/>
+                  <stop offset="40%" stop-color="#f0f0f0"/>
+                  <stop offset="100%" stop-color="#c0c0c0"/>
+                </radialGradient>
+                <radialGradient id="ball-shine" cx="0.3" cy="0.25" r="0.25">
+                  <stop offset="0%" stop-color="rgba(255,255,255,0.9)"/>
+                  <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+                </radialGradient>
+                <filter id="ball-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.4)"/>
+                </filter>
+              </defs>
+              <circle cx="28" cy="28" r="24" fill="url(#ball-grad)" filter="url(#ball-shadow)"/>
+              <circle cx="28" cy="28" r="24" fill="url(#ball-shine)"/>
+              <circle cx="28" cy="24" r="10" fill="rgba(255,215,0,0.15)"/>
+              <text x="28" y="28" text-anchor="middle" dominant-baseline="central"
+                    font-family="var(--font-display)" font-size="14" fill="rgba(0,0,0,0.6)"
+                    letter-spacing="0.05em">8</text>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Feedback area -->
+        <div id="broadcast-feedback" class="font-ui mt-4"
+             style="font-size:12px; letter-spacing:0.08em; min-height:20px; display:none">
+        </div>
+
+        <p class="font-ui mt-4" style="font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
+          PREMI LA PALLA PER INVIARE LE NOTIFICHE
+        </p>
+      </div>
+    `;
+  }
+
+  private bindBroadcastButton(): void {
+    const btn = this.$id('broadcast-btn');
+    if (!btn) return;
+
+    // Idle pulse animation
+    gsap.to(btn, {
+      scale: 1.03,
+      duration: 1.2,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1
+    });
+
+    btn.addEventListener('click', () => this.handleBroadcast());
+  }
+
+  private async handleBroadcast(): Promise<void> {
+    if (this.isBroadcasting) return;
+    this.isBroadcasting = true;
+
+    const ball = this.$id('broadcast-btn');
+    const cue = this.$id('cue-stick');
+    if (!ball || !cue) {
+      this.isBroadcasting = false;
+      return;
+    }
+
+    // Kill idle pulse
+    gsap.killTweensOf(ball);
+    gsap.set(ball, { scale: 1 });
+
+    // ── Strike animation timeline ──
+    const tl = gsap.timeline();
+
+    // 1. Cue appears and slides toward ball
+    tl.to(cue, {
+      left: 140,
+      opacity: 1,
+      duration: 0.5,
+      ease: 'power2.out'
+    });
+
+    // 2. Strike — cue jolts into ball
+    tl.to(cue, {
+      left: 125,
+      duration: 0.08,
+      ease: 'power4.in'
+    });
+
+    // 3. Ball squash-stretch reaction + bounce
+    tl.to(ball, {
+      scaleX: 0.85,
+      scaleY: 1.15,
+      x: -15,
+      duration: 0.1,
+      ease: 'power2.out'
+    }, '<');
+    tl.to(ball, {
+      scaleX: 1.05,
+      scaleY: 0.95,
+      x: -30,
+      duration: 0.15,
+      ease: 'power2.out'
+    });
+    tl.to(ball, {
+      scaleX: 1,
+      scaleY: 1,
+      x: 0,
+      duration: 0.4,
+      ease: 'elastic.out(1, 0.4)'
+    });
+
+    // 4. Cue retracts off-screen
+    tl.to(cue, {
+      left: 220,
+      opacity: 0,
+      duration: 0.4,
+      ease: 'power2.in'
+    }, '-=0.3');
+
+    // 5. Ball fades to loading state
+    tl.to(ball, {
+      opacity: 0.5,
+      duration: 0.3
+    });
+
+    // Wait for animation
+    await tl.then();
+
+    // ── API flow ──
+    try {
+      // 1. Get running match from Firestore
+      const runningMatch = await fetchRunningMatch();
+      if (!runningMatch) {
+        this.showBroadcastFeedback('NESSUN MATCH GENERATO — VAI AL MATCHMAKING', '#F87171');
+        this.resetBroadcastButton();
+        return;
+      }
+
+      // 2. Send broadcast
+      const token = localStorage.getItem('biliardino_admin_token');
+      const res = await fetch(`${API_BASE_URL}/send-broadcast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ match: runningMatch })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Errore ${res.status}`);
+      }
+
+      const result = await res.json();
+
+      // 3. Show success feedback
+      this.showBroadcastFeedback(
+        `${result.sent}/${result.total} NOTIFICHE INVIATE`,
+        '#4ADE80'
+      );
+
+      // 4. Activate lobby state
+      appState.lobbyActive = true;
+      appState.emit('lobby-change');
+
+      // 5. Poll lobby after a short delay to load teams
+      setTimeout(() => this.pollLobby(), 1500);
+    } catch (err: any) {
+      console.error('[LobbyPage] Broadcast error:', err);
+      this.showBroadcastFeedback(
+        err.message || 'ERRORE INVIO NOTIFICHE',
+        '#F87171'
+      );
+      this.resetBroadcastButton();
+    }
+  }
+
+  private showBroadcastFeedback(message: string, color: string): void {
+    const feedback = this.$id('broadcast-feedback');
+    if (!feedback) return;
+    feedback.style.display = 'block';
+    feedback.style.color = color;
+    feedback.textContent = message;
+  }
+
+  private resetBroadcastButton(): void {
+    this.isBroadcasting = false;
+    const ball = this.$id('broadcast-btn');
+    if (ball) {
+      gsap.to(ball, { opacity: 1, scale: 1, duration: 0.3 });
+      // Restart idle pulse
+      gsap.to(ball, {
+        scale: 1.03,
+        duration: 1.2,
+        ease: 'sine.inOut',
+        yoyo: true,
+        repeat: -1,
+        delay: 0.5
+      });
+    }
   }
 
   // ── Chat ─────────────────────────────────────────────────────
