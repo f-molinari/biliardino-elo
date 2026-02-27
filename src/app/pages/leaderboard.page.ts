@@ -16,6 +16,7 @@ import { fetchRunningMatch } from '@/services/repository.service';
 import { formatDate } from '@/utils/format-date.util';
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
+import { fuzzyMatch, highlightChars } from '@/utils/fuzzy-search.util';
 import gsap from 'gsap';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
@@ -60,6 +61,7 @@ class LeaderboardPage extends Component {
   private sortKey: SortKey = 'rank';
   private sortAsc = false;
   private searchQuery = '';
+  private matchIndices: Map<number, number[]> = new Map();
 
   async render(): Promise<string> {
     return `

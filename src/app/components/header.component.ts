@@ -6,11 +6,13 @@
  * che gestisce identità, notifiche e login admin.
  */
 
+import { API_BASE_URL } from '@/config/env.config';
 import gsap from 'gsap';
 import { refreshIcons } from '../icons';
 import { router } from '../router';
 import { appState } from '../state';
 import { bindHtml, rawHtml } from '../utils/html-template.util';
+import { Component } from './component.base';
 import { renderFoosballLogo } from './foosball-logo.component';
 import template from './header.component.html?raw';
 import { userDropdown } from './user-dropdown.component';
@@ -31,11 +33,15 @@ const navItems: NavItem[] = [
   { path: '/add-player', label: 'Giocatore', icon: 'user-plus', adminOnly: true }
 ];
 
-export class HeaderComponent {
+const LOBBY_POLL_MS = 10_000;
+
+export class HeaderComponent extends Component {
   private menuOpen = false;
   private handleRouteChange: (() => void) | null = null;
+  private lobbyPollInterval: ReturnType<typeof setInterval> | null = null;
+  private handleLobbyChange: (() => void) | null = null;
 
-  render(): string {
+  override render(): string {
     const currentPath = router.getCurrentPath();
     const playerName = appState.currentPlayerName ?? 'Guest';
     const playerInitials = playerName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'G';
@@ -58,9 +64,9 @@ export class HeaderComponent {
           href="${item.path}"
           ${hiddenClass}
           class="nav-link flex items-center gap-1.5 px-3 py-2 rounded-md transition-all duration-200 ${isActive
-              ? 'text-(--color-gold) bg-[rgba(255,215,0,0.12)]'
-              : 'text-white/90 hover:text-white hover:bg-white/8'
-          }"
+          ? 'text-(--color-gold) bg-[rgba(255,215,0,0.12)]'
+          : 'text-white/90 hover:text-white hover:bg-white/8'
+        }"
           style="font-family: var(--font-ui); font-size: 13px; letter-spacing: 0.08em"
         >
           <i data-lucide="${item.icon}" style="width:15px;height:15px"></i>
@@ -79,9 +85,9 @@ export class HeaderComponent {
           href="${item.path}"
           ${hiddenAttr}
           class="mobile-nav-link flex items-center gap-3 px-4 py-3.5 rounded-lg transition-all duration-200 ${isActive
-              ? 'text-(--color-gold) bg-[rgba(255,215,0,0.12)]'
-              : 'text-white/70 hover:text-white hover:bg-white/6'
-          }"
+          ? 'text-(--color-gold) bg-[rgba(255,215,0,0.12)]'
+          : 'text-white/70 hover:text-white hover:bg-white/6'
+        }"
           style="font-family: var(--font-ui); font-size: 15px; letter-spacing: 0.08em"
         >
           <i data-lucide="${item.icon}" style="width:18px;height:18px"></i>
@@ -92,7 +98,7 @@ export class HeaderComponent {
     }).join('');
   }
 
-  mount(): void {
+  override mount(): void {
     refreshIcons();
 
     /* ── User pill / avatar → open dropdown ─── */
@@ -150,12 +156,25 @@ export class HeaderComponent {
     this.handleRouteChange = () => this.updateActiveStates();
     window.addEventListener('popstate', this.handleRouteChange);
     appState.on('route-change', this.handleRouteChange);
+
+    /* ── Lobby active indicator ─── */
+    this.handleLobbyChange = () => this.updateLobbyIndicator();
+    appState.on('lobby-change', this.handleLobbyChange);
+    this.pollLobbyStatus();
+    this.lobbyPollInterval = setInterval(() => this.pollLobbyStatus(), LOBBY_POLL_MS);
   }
 
-  destroy(): void {
+  override  destroy(): void {
     if (this.handleRouteChange) {
       window.removeEventListener('popstate', this.handleRouteChange);
       appState.off('route-change', this.handleRouteChange);
+    }
+    if (this.handleLobbyChange) {
+      appState.off('lobby-change', this.handleLobbyChange);
+    }
+    if (this.lobbyPollInterval) {
+      clearInterval(this.lobbyPollInterval);
+      this.lobbyPollInterval = null;
     }
   }
 
@@ -194,5 +213,46 @@ export class HeaderComponent {
   private isActive(itemPath: string, currentPath: string): boolean {
     if (itemPath === '/') return currentPath === '/';
     return currentPath.startsWith(itemPath);
+  }
+
+  // ── Lobby active indicator ──────────────────────────────────
+
+  private async pollLobbyStatus(): Promise<void> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/check-lobby`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const wasActive = appState.lobbyActive;
+      appState.lobbyActive = !!(data.exists && data.match);
+      if (appState.lobbyActive !== wasActive) {
+        appState.emit('lobby-change');
+      }
+    } catch {
+      // network error — keep current state
+    }
+  }
+
+  private updateLobbyIndicator(): void {
+    const header = document.getElementById('app-header-inner');
+    const goldLine = header?.querySelector('.gold-line');
+
+    // Toggle header glow
+    header?.classList.toggle('lobby-active', appState.lobbyActive);
+    goldLine?.classList.toggle('lobby-active-line', appState.lobbyActive);
+
+    // Toggle pulsing dots on lobby nav links
+    document.querySelectorAll('.nav-link, .mobile-nav-link').forEach((link) => {
+      const href = link.getAttribute('href');
+      if (href !== '/lobby') return;
+
+      const existing = link.querySelector('.lobby-live-dot');
+      if (appState.lobbyActive && !existing) {
+        const dot = document.createElement('span');
+        dot.className = 'lobby-live-dot';
+        link.appendChild(dot);
+      } else if (!appState.lobbyActive && existing) {
+        existing.remove();
+      }
+    });
   }
 }

@@ -23,12 +23,14 @@ import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
 import { refreshIcons } from '../icons';
 import { router } from '../router';
+import { appState } from '../state';
 
 import type { IConfirmationsResponse } from '@/models/confirmation.interface';
 import type { IRunningMatchDTO } from '@/models/match.interface';
 import type { IPlayer } from '@/models/player.interface';
 import type { IMatchProposal } from '@/services/matchmaking.service';
 import { renderMatchmakingPageHeader, renderMatchmakingPlayerList } from '../components/ui/matchmaking.ui';
+import { fuzzyMatch, highlightChars } from '@/utils/fuzzy-search.util';
 
 // ── Constants ────────────────────────────────────────────────────
 
@@ -46,47 +48,6 @@ const CLASS_COLORS: Record<number, string> = {
 
 function getClassColor(playerClass: number): string {
   return CLASS_COLORS[playerClass] ?? '#8B7D6B';
-}
-
-/**
- * VS Code-style fuzzy match: each query char must appear in order in the target.
- * Returns matched indices or null if no match.
- */
-function fuzzyMatch(query: string, target: string): number[] | null {
-  const indices: number[] = [];
-  let ti = 0;
-
-  for (let qi = 0; qi < query.length; qi++) {
-    const qc = query[qi];
-    let found = false;
-    while (ti < target.length) {
-      if (target[ti] === qc) {
-        indices.push(ti);
-        ti++;
-        found = true;
-        break;
-      }
-      ti++;
-    }
-    if (!found) return null;
-  }
-
-  return indices;
-}
-
-/** Wrap matched character positions in a highlight span. */
-function highlightChars(name: string, indices: number[]): string {
-  const set = new Set(indices);
-  let out = '';
-  for (let i = 0; i < name.length; i++) {
-    const ch = name[i].replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    if (set.has(i)) {
-      out += `<span style="color:#FFD700;font-weight:700">${ch}</span>`;
-    } else {
-      out += ch;
-    }
-  }
-  return out;
 }
 
 // ── Page Component ───────────────────────────────────────────────
@@ -642,31 +603,27 @@ class MatchmakingPage extends Component {
   }
 
   private bindActionButtons(): void {
-    // Generate match
-    const generateBtn = this.$id('generate-match-btn');
-    if (generateBtn) {
-      generateBtn.addEventListener('click', () => this.handleGenerateMatch());
+    // Note: match panel is rendered in both mobile (#match-panel-mobile) and
+    // desktop (#match-panel-desktop) containers, so buttons share the same IDs.
+    // We use querySelectorAll to bind handlers on ALL instances.
+
+    for (const btn of this.$$('#generate-match-btn')) {
+      btn.addEventListener('click', () => this.handleGenerateMatch());
     }
 
-    // Delete match
-    const deleteBtn = this.$id('delete-match-btn');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => this.handleDeleteMatch());
+    for (const btn of this.$$('#delete-match-btn')) {
+      btn.addEventListener('click', () => this.handleDeleteMatch());
     }
 
-    // Save match (score entry)
-    const saveBtn = this.$id('save-match-btn');
-    if (saveBtn) {
-      saveBtn.addEventListener('click', () => this.handleSaveMatch());
+    for (const btn of this.$$('#save-match-btn')) {
+      btn.addEventListener('click', () => this.handleSaveMatch());
     }
 
-    // Save & go to lobby
-    const saveLobbyBtn = this.$id('save-and-lobby-btn');
-    if (saveLobbyBtn) {
-      saveLobbyBtn.addEventListener('click', () => this.handleSaveAndLobby());
+    for (const btn of this.$$('#save-and-lobby-btn')) {
+      btn.addEventListener('click', () => this.handleSaveAndLobby());
     }
 
-    // Select all / Deselect all
+    // Select all / Deselect all (single instance in player list)
     const selectAllBtn = this.$id('select-all-btn');
     if (selectAllBtn) {
       selectAllBtn.addEventListener('click', () => this.handleSelectAll());
@@ -677,17 +634,14 @@ class MatchmakingPage extends Component {
       deselectAllBtn.addEventListener('click', () => this.handleDeselectAll());
     }
 
-    // Score input blur validation
-    const scoreA = this.$id('score-team-a') as HTMLInputElement | null;
-    const scoreB = this.$id('score-team-b') as HTMLInputElement | null;
-    [scoreA, scoreB].forEach((input) => {
-      if (!input) return;
+    // Score input blur validation (both panels)
+    for (const input of this.$$('#score-team-a, #score-team-b') as HTMLInputElement[]) {
       input.addEventListener('blur', () => {
         const val = Number.parseInt(input.value, 10);
         if (val > 8) input.value = '8';
         if (val < 0) input.value = '0';
       });
-    });
+    }
   }
 
   private bindSearchFilter(): void {
@@ -768,18 +722,19 @@ class MatchmakingPage extends Component {
   }
 
   private updateGenerateButton(): void {
-    const btn = this.$id('generate-match-btn') as HTMLButtonElement | null;
-    if (!btn) return;
-
     const enabled = this.getSelectedCount() >= MIN_PLAYERS;
-    btn.disabled = !enabled;
-    btn.classList.toggle('opacity-40', !enabled);
-    btn.classList.toggle('cursor-not-allowed', !enabled);
-    btn.style.background = enabled
-      ? 'linear-gradient(135deg, #FFD700, #F0A500)'
-      : 'rgba(255,215,0,0.1)';
-    btn.style.color = enabled ? '#0F2A20' : 'rgba(255,215,0,0.5)';
-    btn.style.boxShadow = enabled ? '0 0 30px rgba(255,215,0,0.25)' : 'none';
+
+    // Update ALL instances (mobile + desktop panels have duplicate IDs)
+    for (const btn of this.$$('#generate-match-btn') as HTMLButtonElement[]) {
+      btn.disabled = !enabled;
+      btn.classList.toggle('opacity-40', !enabled);
+      btn.classList.toggle('cursor-not-allowed', !enabled);
+      btn.style.background = enabled
+        ? 'linear-gradient(135deg, #FFD700, #F0A500)'
+        : 'rgba(255,215,0,0.1)';
+      btn.style.color = enabled ? '#0F2A20' : 'rgba(255,215,0,0.5)';
+      btn.style.boxShadow = enabled ? '0 0 30px rgba(255,215,0,0.25)' : 'none';
+    }
   }
 
   // ── Actions ───────────────────────────────────────────────────
@@ -825,6 +780,8 @@ class MatchmakingPage extends Component {
 
     try {
       await clearRunningMatch();
+      appState.lobbyActive = false;
+      appState.emit('lobby-change');
     } catch (error) {
       console.error('Failed to clear running match:', error);
     }
@@ -861,6 +818,8 @@ class MatchmakingPage extends Component {
     // Save running match & navigate to lobby
     try {
       await this.persistCurrentMatch();
+      appState.lobbyActive = true;
+      appState.emit('lobby-change');
     } catch (error) {
       console.error('Error persisting match for lobby:', error);
     }
@@ -901,6 +860,8 @@ class MatchmakingPage extends Component {
     // Reset state
     this.generatedMatch = null;
     this.confirmedPlayerIds.clear();
+    appState.lobbyActive = false;
+    appState.emit('lobby-change');
     this.refreshMatchPanels();
     this.updateProgressBar();
   }
@@ -926,10 +887,14 @@ class MatchmakingPage extends Component {
   // ── Score Validation ──────────────────────────────────────────
 
   private getScoreValue(elementId: string): number | null {
-    const input = this.$id(elementId) as HTMLInputElement | null;
-    if (!input) return null;
-    const val = Number.parseInt(input.value, 10);
-    return Number.isNaN(val) ? null : val;
+    // Check all instances (mobile + desktop) and return the first non-empty value
+    for (const input of this.$$(`#${elementId}`) as HTMLInputElement[]) {
+      if (input.value !== '') {
+        const val = Number.parseInt(input.value, 10);
+        if (!Number.isNaN(val)) return val;
+      }
+    }
+    return null;
   }
 
   private validateScores(scoreA: number | null, scoreB: number | null): boolean {

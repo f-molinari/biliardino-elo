@@ -88,7 +88,7 @@ export function renderMatchmakingPlayerList({
                     style="color:${classColor}; background:${classColor}22; border:1px solid ${classColor}33">
                 ${className.toUpperCase()}
               </span>
-              ${isConfirmed ? '<span class="text-[10px]" title="Confermato tramite app">&#128241;</span>' : ''}
+              ${isConfirmed ? '<span class="confirmed-badge" title="Confermato dalla lobby"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>LIVE</span>' : ''}
             </div>
             <div class="flex items-center gap-2 mt-0.5 flex-wrap">
               <div class="flex items-center gap-1">
@@ -275,8 +275,8 @@ export function renderMatchmakingHeuristicData(match: IMatchProposal): string {
       </div>
       <div class="px-4 md:px-5 py-3 space-y-2">
         ${items.map((item) => {
-      const pct = item.max > 0 ? (item.score / item.max) * 100 : 0;
-      return `
+    const pct = item.max > 0 ? (item.score / item.max) * 100 : 0;
+    return `
             <div class="flex items-center gap-2">
               <i data-lucide="${item.icon}" class="size-3 shrink-0" style="color:${item.color}"></i>
               <span class="font-body shrink-0 text-[10px] text-white/50 w-20">${item.label}</span>
@@ -286,7 +286,7 @@ export function renderMatchmakingHeuristicData(match: IMatchProposal): string {
               <span class="font-ui shrink-0 text-[10px] text-white/40 w-[70px] text-right">${item.score.toFixed(2)} / ${item.max.toFixed(2)}</span>
             </div>
           `;
-    }).join('')}
+  }).join('')}
 
         <div class="flex items-center gap-2 pt-1 border-t border-white/10">
           <i data-lucide="trophy" class="size-3 text-[#FFD700] shrink-0"></i>

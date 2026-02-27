@@ -20,6 +20,9 @@ class AppState {
   playersLoaded = false;
   matchesLoaded = false;
 
+  // ── Lobby ───────────────────────────────────────────────
+  lobbyActive = false;
+
   // ── Event emitter ────────────────────────────────────────
 
   on(event: string, cb: Listener): void {
