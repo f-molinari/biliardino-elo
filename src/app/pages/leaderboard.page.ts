@@ -366,7 +366,7 @@ class LeaderboardPage extends Component {
       const medal = MEDALS[rank];
       const color = CLASS_COLORS[p.class] ?? '#8B7D6B';
       const initials = getInitials(p.name);
-      const elevatedClass = elevated ? '-mt-4' : '';
+      const elevatedStyle = elevated ? 'min-height:340px' : '';
       // Card bg: 15% white base gives ~50 RGB unit contrast over the dark field
       // (#0F2A20 → #1F5C3A); previous 8% was below perceptible threshold.
       // Medal gradient on top adds gold/silver/bronze identity.
@@ -378,8 +378,9 @@ class LeaderboardPage extends Component {
 
       return `
         <a href="/profile/${p.id}"
-           class="podium-card group flex flex-col items-center p-4 md:p-5 gap-2 md:gap-3 rounded-xl h-full ${elevatedClass}"
+           class="podium-card group flex flex-col items-center p-4 md:p-5 gap-2 md:gap-3 rounded-xl"
            style="
+             ${elevatedStyle};
              background: ${bg};
              border: 1px solid ${border};
              box-shadow: ${shadow};
@@ -439,7 +440,7 @@ class LeaderboardPage extends Component {
       </div>
 
       <!-- Desktop: #2 | #1 (elevato) | #3 -->
-      <div class="hidden sm:grid grid-cols-3 gap-4">
+      <div class="hidden sm:grid grid-cols-3 gap-4 items-end">
         ${card(second, 2)}
         ${card(first, 1, true)}
         ${card(third, 3)}

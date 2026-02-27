@@ -17,6 +17,7 @@ import { fetchRunningMatch } from '@/services/repository.service';
 import { FISH_SPRITES } from '@/utils/fish-sprites.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import gsap from 'gsap';
+import { BroadcastKickComponent } from '../components/broadcast-kick.component';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
 import { refreshIcons } from '../icons';
@@ -97,7 +98,7 @@ class LobbyPage extends Component {
 
   // Admin broadcast
   private isAdmin = false;
-  private isBroadcasting = false;
+  private broadcastKick: BroadcastKickComponent | null = null;
 
   // ── Render ───────────────────────────────────────────────────
 
@@ -226,6 +227,7 @@ class LobbyPage extends Component {
     if (this.msgPollInterval) { clearInterval(this.msgPollInterval); this.msgPollInterval = null; }
     if (this.countdownInterval) { clearInterval(this.countdownInterval); this.countdownInterval = null; }
     if (this.animFrameId !== null) { cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
+    this.broadcastKick?.destroy();
   }
 
   // ── Section renderers ────────────────────────────────────────
@@ -747,8 +749,9 @@ class LobbyPage extends Component {
   // ── Admin Broadcast ─────────────────────────────────────────
 
   private renderAdminBroadcastCard(): string {
+    this.broadcastKick = new BroadcastKickComponent();
     return `
-      <div class="team-card glass-card rounded-xl p-6 text-center">
+      <div class="team-card glass-card rounded-xl p-6 text-center overflow-visible">
         <p class="font-display text-xl text-[var(--color-gold)] mb-2"
            style="letter-spacing:0.12em">
           NESSUNA LOBBY ATTIVA
@@ -756,58 +759,7 @@ class LobbyPage extends Component {
         <p class="font-body text-sm mb-6" style="color:rgba(255,255,255,0.4)">
           Invia la notifica per iniziare una partita
         </p>
-
-        <!-- Animation container -->
-        <div class="relative mx-auto" style="width:220px; height:80px">
-          <!-- Cue stick (starts off-screen right) -->
-          <div id="cue-stick" class="absolute" style="top:24px; left:220px; opacity:0">
-            <svg width="120" height="12" viewBox="0 0 120 12">
-              <defs>
-                <linearGradient id="cue-grad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stop-color="#2D5A27"/>
-                  <stop offset="8%" stop-color="#8B6914"/>
-                  <stop offset="15%" stop-color="#F5DEB3"/>
-                  <stop offset="100%" stop-color="#4A3728"/>
-                </linearGradient>
-              </defs>
-              <rect x="0" y="3" width="120" height="6" rx="3" fill="url(#cue-grad)"/>
-              <rect x="0" y="4" width="4" height="4" rx="1" fill="#2D5A27"/>
-            </svg>
-          </div>
-
-          <!-- Billiard ball -->
-          <button id="broadcast-btn" class="absolute cursor-pointer border-0 bg-transparent p-0"
-                  style="top:12px; left:50%; transform:translateX(-50%)">
-            <svg width="56" height="56" viewBox="0 0 56 56">
-              <defs>
-                <radialGradient id="ball-grad" cx="0.35" cy="0.3" r="0.65">
-                  <stop offset="0%" stop-color="#ffffff"/>
-                  <stop offset="40%" stop-color="#f0f0f0"/>
-                  <stop offset="100%" stop-color="#c0c0c0"/>
-                </radialGradient>
-                <radialGradient id="ball-shine" cx="0.3" cy="0.25" r="0.25">
-                  <stop offset="0%" stop-color="rgba(255,255,255,0.9)"/>
-                  <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-                </radialGradient>
-                <filter id="ball-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.4)"/>
-                </filter>
-              </defs>
-              <circle cx="28" cy="28" r="24" fill="url(#ball-grad)" filter="url(#ball-shadow)"/>
-              <circle cx="28" cy="28" r="24" fill="url(#ball-shine)"/>
-              <circle cx="28" cy="24" r="10" fill="rgba(255,215,0,0.15)"/>
-              <text x="28" y="28" text-anchor="middle" dominant-baseline="central"
-                    font-family="var(--font-display)" font-size="14" fill="rgba(0,0,0,0.6)"
-                    letter-spacing="0.05em">8</text>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Feedback area -->
-        <div id="broadcast-feedback" class="font-ui mt-4"
-             style="font-size:12px; letter-spacing:0.08em; min-height:20px; display:none">
-        </div>
-
+        ${this.broadcastKick.render()}
         <p class="font-ui mt-4" style="font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
           PREMI LA PALLA PER INVIARE LE NOTIFICHE
         </p>
@@ -816,105 +768,23 @@ class LobbyPage extends Component {
   }
 
   private bindBroadcastButton(): void {
-    const btn = this.$id('broadcast-btn');
-    if (!btn) return;
-
-    // Idle pulse animation
-    gsap.to(btn, {
-      scale: 1.03,
-      duration: 1.2,
-      ease: 'sine.inOut',
-      yoyo: true,
-      repeat: -1
-    });
-
-    btn.addEventListener('click', () => this.handleBroadcast());
+    this.broadcastKick?.mount(() => this.handleBroadcast());
   }
 
   private async handleBroadcast(): Promise<void> {
-    if (this.isBroadcasting) return;
-    this.isBroadcasting = true;
+    if (!this.broadcastKick) return;
 
-    const ball = this.$id('broadcast-btn');
-    const cue = this.$id('cue-stick');
-    if (!ball || !cue) {
-      this.isBroadcasting = false;
-      return;
-    }
+    const kicked = await this.broadcastKick.playKick();
+    if (!kicked) return;
 
-    // Kill idle pulse
-    gsap.killTweensOf(ball);
-    gsap.set(ball, { scale: 1 });
-
-    // ── Strike animation timeline ──
-    const tl = gsap.timeline();
-
-    // 1. Cue appears and slides toward ball
-    tl.to(cue, {
-      left: 140,
-      opacity: 1,
-      duration: 0.5,
-      ease: 'power2.out'
-    });
-
-    // 2. Strike — cue jolts into ball
-    tl.to(cue, {
-      left: 125,
-      duration: 0.08,
-      ease: 'power4.in'
-    });
-
-    // 3. Ball squash-stretch reaction + bounce
-    tl.to(ball, {
-      scaleX: 0.85,
-      scaleY: 1.15,
-      x: -15,
-      duration: 0.1,
-      ease: 'power2.out'
-    }, '<');
-    tl.to(ball, {
-      scaleX: 1.05,
-      scaleY: 0.95,
-      x: -30,
-      duration: 0.15,
-      ease: 'power2.out'
-    });
-    tl.to(ball, {
-      scaleX: 1,
-      scaleY: 1,
-      x: 0,
-      duration: 0.4,
-      ease: 'elastic.out(1, 0.4)'
-    });
-
-    // 4. Cue retracts off-screen
-    tl.to(cue, {
-      left: 220,
-      opacity: 0,
-      duration: 0.4,
-      ease: 'power2.in'
-    }, '-=0.3');
-
-    // 5. Ball fades to loading state
-    tl.to(ball, {
-      opacity: 0.5,
-      duration: 0.3
-    });
-
-    // Wait for animation
-    await tl.then();
-
-    // ── API flow ──
     try {
-      // 1. Get running match from Firestore
       const runningMatch = await fetchRunningMatch();
       if (!runningMatch) {
-        this.showBroadcastFeedback('NESSUN MATCH GENERATO — VAI AL MATCHMAKING', '#F87171');
-        this.resetBroadcastButton();
+        this.broadcastKick.showFeedback('NESSUN MATCH GENERATO — VAI AL MATCHMAKING', '#F87171');
+        this.broadcastKick.reset();
         return;
       }
 
-      // 2. Send broadcast
       const token = localStorage.getItem('biliardino_admin_token');
       const res = await fetch(`${API_BASE_URL}/send-broadcast`, {
         method: 'POST',
@@ -932,50 +802,22 @@ class LobbyPage extends Component {
 
       const result = await res.json();
 
-      // 3. Show success feedback
-      this.showBroadcastFeedback(
+      this.broadcastKick.showFeedback(
         `${result.sent}/${result.total} NOTIFICHE INVIATE`,
         '#4ADE80'
       );
 
-      // 4. Activate lobby state
       appState.lobbyActive = true;
       appState.emit('lobby-change');
 
-      // 5. Poll lobby after a short delay to load teams
       setTimeout(() => this.pollLobby(), 1500);
     } catch (err: any) {
       console.error('[LobbyPage] Broadcast error:', err);
-      this.showBroadcastFeedback(
+      this.broadcastKick.showFeedback(
         err.message || 'ERRORE INVIO NOTIFICHE',
         '#F87171'
       );
-      this.resetBroadcastButton();
-    }
-  }
-
-  private showBroadcastFeedback(message: string, color: string): void {
-    const feedback = this.$id('broadcast-feedback');
-    if (!feedback) return;
-    feedback.style.display = 'block';
-    feedback.style.color = color;
-    feedback.textContent = message;
-  }
-
-  private resetBroadcastButton(): void {
-    this.isBroadcasting = false;
-    const ball = this.$id('broadcast-btn');
-    if (ball) {
-      gsap.to(ball, { opacity: 1, scale: 1, duration: 0.3 });
-      // Restart idle pulse
-      gsap.to(ball, {
-        scale: 1.03,
-        duration: 1.2,
-        ease: 'sine.inOut',
-        yoyo: true,
-        repeat: -1,
-        delay: 0.5
-      });
+      this.broadcastKick.reset();
     }
   }
 
