@@ -74,6 +74,7 @@ interface FishMovement {
 
 class LobbyPage extends Component {
   // State
+  private lobbyExists = false;
   private lobbyData: IRunningMatchDTO | null = null;
   private players: Map<number, IPlayer> = new Map();
   private messages: IMessage[] = [];
@@ -97,7 +98,7 @@ class LobbyPage extends Component {
 
   // Admin broadcast
   private isAdmin = false;
-  private broadcastKick: BroadcastKickComponent | null = null;
+  private confirmKick: BroadcastKickComponent | null = null;
 
   // ── Render ───────────────────────────────────────────────────
 
@@ -110,6 +111,9 @@ class LobbyPage extends Component {
       const res = await fetch(`${API_BASE_URL}/check-lobby`);
       if (res.ok) {
         const data = await res.json();
+        if (data.exists) {
+          this.lobbyExists = true;
+        }
         if (data.exists && data.match) {
           this.lobbyData = data.match as IRunningMatchDTO;
         }
@@ -188,6 +192,7 @@ class LobbyPage extends Component {
     this.bindChatEvents();
     this.bindConfirmButton();
     this.bindBroadcastButton();
+    this.bindConfirmKick();
 
     // GSAP entrance animations
     gsap.from('#lobby-header', {
@@ -228,7 +233,7 @@ class LobbyPage extends Component {
     if (this.msgPollInterval) { clearInterval(this.msgPollInterval); this.msgPollInterval = null; }
     if (this.countdownInterval) { clearInterval(this.countdownInterval); this.countdownInterval = null; }
     if (this.animFrameId !== null) { cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
-    this.broadcastKick?.destroy();
+    this.confirmKick?.destroy();
   }
 
   // ── Section renderers ────────────────────────────────────────
@@ -286,7 +291,13 @@ class LobbyPage extends Component {
   private renderTeams(): string {
     if (!this.lobbyData) {
       if (this.isAdmin) {
+        if (this.lobbyExists) {
+          return this.renderConfirmKickCard();
+        }
         return this.renderAdminBroadcastCard();
+      }
+      if (this.lobbyExists) {
+        return this.renderConfirmKickCard();
       }
       return `
         <div class="team-card glass-card rounded-xl p-6 text-center">
@@ -473,22 +484,35 @@ class LobbyPage extends Component {
         </div>
 
         <!-- Input -->
-        <div class="p-3 shrink-0" style="border-top:1px solid rgba(255,255,255,0.06)">
-          <div id="chat-error" class="font-ui mb-1"
-               style="font-size:10px; color:#ff4444; display:none; letter-spacing:0.05em"></div>
-          <form id="chat-form" class="flex gap-2">
-            <input id="chat-input" type="text" maxlength="${CHAT_MAX_LENGTH}"
-                   placeholder="Scrivi un messaggio..."
-                   class="flex-1 px-3 py-2 rounded-lg text-white placeholder-white/25 outline-none font-body"
-                   style="background:rgba(10,25,18,0.8); border:1px solid rgba(255,255,255,0.1);
-                          font-size:12px; min-width:0"
-                   autocomplete="off" />
-            <button type="submit"
-                    class="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:brightness-110 shrink-0"
-                    style="background:linear-gradient(135deg, #FFD700, #F0A500)">
-              <i data-lucide="send" style="width:14px;height:14px;color:#0F2A20"></i>
-            </button>
-          </form>
+        <div id="chat-input-area" class="shrink-0"
+             style="border-top:1px solid rgba(255,255,255,0.06)">
+          ${this.isMyPresenceConfirmed ? `
+            <div class="p-3">
+              <div id="chat-error" class="font-ui mb-1"
+                   style="font-size:10px; color:#ff4444; display:none; letter-spacing:0.05em"></div>
+              <form id="chat-form" class="flex gap-2">
+                <input id="chat-input" type="text" maxlength="${CHAT_MAX_LENGTH}"
+                       placeholder="Scrivi un messaggio..."
+                       class="flex-1 px-3 py-2 rounded-lg text-white placeholder-white/25 outline-none font-body"
+                       style="background:rgba(10,25,18,0.8); border:1px solid rgba(255,255,255,0.1);
+                              font-size:12px; min-width:0"
+                       autocomplete="off" />
+                <button type="submit"
+                        class="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:brightness-110 shrink-0"
+                        style="background:linear-gradient(135deg, #FFD700, #F0A500)">
+                  <i data-lucide="send" style="width:14px;height:14px;color:#0F2A20"></i>
+                </button>
+              </form>
+            </div>
+          ` : `
+            <div class="px-4 py-4 flex items-center justify-center gap-2">
+              <i data-lucide="lock" style="width:13px;height:13px;color:rgba(255,255,255,0.3)"></i>
+              <span class="font-ui"
+                    style="font-size:11px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
+                CONFERMA LA PRESENZA PER CHATTARE
+              </span>
+            </div>
+          `}
         </div>
 
       </div>
@@ -519,6 +543,17 @@ class LobbyPage extends Component {
         <!-- Fish area -->
         <div id="aquarium" class="relative" style="height:180px; overflow:hidden">
           <div id="god-rays" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+          ${!this.isMyPresenceConfirmed ? `
+            <div id="aquarium-lock"
+                 class="absolute inset-0 flex flex-col items-center justify-center gap-2 z-20"
+                 style="background:rgba(0,10,25,0.6); backdrop-filter:blur(3px)">
+              <i data-lucide="lock" style="width:22px;height:22px;color:rgba(255,255,255,0.35)"></i>
+              <span class="font-ui"
+                    style="font-size:10px; color:rgba(255,255,255,0.35); letter-spacing:0.12em; text-align:center; line-height:1.8">
+                CONFERMA LA PRESENZA<br>PER SBLOCCARE IL MINIGIOCO
+              </span>
+            </div>
+          ` : ''}
         </div>
 
       </div>
@@ -590,6 +625,8 @@ class LobbyPage extends Component {
         const lobbyData = await lobbyRes.json();
         console.log('[LobbyPage] lobbyData:', lobbyData);
         const hadLobby = !!this.lobbyData;
+        const hadLobbyExists = this.lobbyExists;
+        this.lobbyExists = lobbyData.exists;
 
         if (lobbyData.exists && lobbyData.match) {
           this.lobbyData = lobbyData.match as IRunningMatchDTO;
@@ -620,13 +657,15 @@ class LobbyPage extends Component {
           }
         }
 
-        // Re-render teams section when lobby activates
-        if (!hadLobby && this.lobbyData) {
+        // Re-render teams section when lobby state changes
+        if ((!hadLobby && this.lobbyData) || (!hadLobbyExists && this.lobbyExists)) {
           const teamsSection = this.$id('teams-section');
           if (teamsSection) {
             teamsSection.innerHTML = this.renderTeams();
             refreshIcons();
             this.bindConfirmButton();
+            this.bindBroadcastButton();
+            this.bindConfirmKick();
             gsap.from('.team-card', {
               opacity: 0,
               y: 20,
@@ -654,7 +693,7 @@ class LobbyPage extends Component {
         // Sync fish in aquarium
         this.syncFish(confirmations);
 
-        // If current player is now confirmed, hide button
+        // If current player is now confirmed, hide button and unlock components
         if (this.myPlayerId && this.confirmed.has(this.myPlayerId)) {
           const btn = this.$id('confirm-btn') as HTMLButtonElement | null;
           if (btn) {
@@ -662,6 +701,7 @@ class LobbyPage extends Component {
             btn.textContent = 'CONFERMATO';
             btn.style.opacity = '0.7';
           }
+          this.updateUnlockedState();
         }
 
         // Update ready count text
@@ -704,6 +744,47 @@ class LobbyPage extends Component {
     }
   }
 
+  private updateUnlockedState(): void {
+    if (!this.isMyPresenceConfirmed) return;
+
+    // Unlock chat: swap lock banner with actual form
+    const chatInputArea = this.$id('chat-input-area');
+    if (chatInputArea && !this.$id('chat-form')) {
+      chatInputArea.innerHTML = `
+        <div class="p-3">
+          <div id="chat-error" class="font-ui mb-1"
+               style="font-size:10px; color:#ff4444; display:none; letter-spacing:0.05em"></div>
+          <form id="chat-form" class="flex gap-2">
+            <input id="chat-input" type="text" maxlength="${CHAT_MAX_LENGTH}"
+                   placeholder="Scrivi un messaggio..."
+                   class="flex-1 px-3 py-2 rounded-lg text-white placeholder-white/25 outline-none font-body"
+                   style="background:rgba(10,25,18,0.8); border:1px solid rgba(255,255,255,0.1);
+                          font-size:12px; min-width:0"
+                   autocomplete="off" />
+            <button type="submit"
+                    class="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:brightness-110 shrink-0"
+                    style="background:linear-gradient(135deg, #FFD700, #F0A500)">
+              <i data-lucide="send" style="width:14px;height:14px;color:#0F2A20"></i>
+            </button>
+          </form>
+        </div>
+      `;
+      refreshIcons();
+      this.bindChatEvents();
+    }
+
+    // Unlock aquarium: fade out and remove overlay
+    const aquariumLock = this.$id('aquarium-lock');
+    if (aquariumLock) {
+      gsap.to(aquariumLock, {
+        opacity: 0,
+        duration: 0.4,
+        ease: 'power2.out',
+        onComplete: () => aquariumLock.remove()
+      });
+    }
+  }
+
   // ── Confirm attendance ───────────────────────────────────────
 
   private bindConfirmButton(): void {
@@ -732,12 +813,17 @@ class LobbyPage extends Component {
         btn.textContent = 'CONFERMATO';
         btn.style.opacity = '0.7';
         this.updateReadyStatus();
+        this.updateUnlockedState();
       } catch (err: any) {
         console.error('[LobbyPage] Confirm error:', err);
         btn.disabled = false;
         btn.textContent = 'CONFERMA PRESENZA';
       }
     });
+  }
+
+  private get isMyPresenceConfirmed(): boolean {
+    return !!(this.myPlayerId && this.lobbyExists && this.confirmed.has(this.myPlayerId));
   }
 
   private shouldShowConfirmButton(): boolean {
@@ -755,9 +841,10 @@ class LobbyPage extends Component {
   // ── Admin Broadcast ─────────────────────────────────────────
 
   private renderAdminBroadcastCard(): string {
-    this.broadcastKick = new BroadcastKickComponent();
     return `
-      <div class="team-card glass-card rounded-xl p-6 text-center overflow-visible">
+      <div class="team-card glass-card rounded-xl p-6 text-center">
+        <i data-lucide="bell" class="mx-auto mb-3"
+           style="width:32px;height:32px;color:var(--color-gold)"></i>
         <p class="font-display text-xl text-[var(--color-gold)] mb-2"
            style="letter-spacing:0.12em">
           NESSUNA LOBBY ATTIVA
@@ -765,23 +852,56 @@ class LobbyPage extends Component {
         <p class="font-body text-sm mb-6" style="color:rgba(255,255,255,0.4)">
           Invia la notifica per iniziare una partita
         </p>
-        ${this.broadcastKick.render()}
-        <p class="font-ui mt-4" style="font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
-          PREMI LA PALLA PER INVIARE LE NOTIFICHE
+        <button id="admin-broadcast-btn"
+                class="px-6 py-2.5 rounded-lg font-ui transition-all duration-200 hover:brightness-110 active:scale-95"
+                style="background:linear-gradient(135deg, #FFD700, #F0A500); font-size:13px; letter-spacing:0.12em; color:#0F2A20">
+          AVVIA PARTITA
+        </button>
+        <p id="admin-broadcast-feedback" class="font-ui mt-4" style="font-size:11px; color:rgba(255,255,255,0.3); letter-spacing:0.1em; min-height:16px"></p>
+      </div>
+    `;
+  }
+
+  private renderConfirmKickCard(): string {
+    this.confirmKick?.destroy();
+    this.confirmKick = new BroadcastKickComponent();
+    const alreadyConfirmed = this.myPlayerId ? this.confirmed.has(this.myPlayerId) : false;
+    return `
+      <div class="team-card glass-card rounded-xl p-6 text-center overflow-visible">
+        <p class="font-display text-xl text-[var(--color-gold)] mb-2"
+           style="letter-spacing:0.12em">
+          LOBBY ATTIVA
         </p>
+        <p class="font-body text-sm mb-6" style="color:rgba(255,255,255,0.4)">
+          ${alreadyConfirmed ? 'Hai già confermato la tua presenza' : 'Premi la palla per confermare la tua presenza'}
+        </p>
+        ${alreadyConfirmed
+          ? `<span class="font-ui" style="font-size:14px; color:#4ADE80; letter-spacing:0.1em">CONFERMATO</span>`
+          : this.confirmKick.render()
+        }
+        ${!alreadyConfirmed ? `
+          <p class="font-ui mt-4" style="font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
+            PREMI LA PALLA PER CONFERMARE LA PRESENZA
+          </p>
+        ` : ''}
       </div>
     `;
   }
 
   private bindBroadcastButton(): void {
-    this.broadcastKick?.mount(() => this.handleBroadcast());
+    const btn = this.$id('admin-broadcast-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+
+    btn.addEventListener('click', () => this.handleBroadcast());
   }
 
   private async handleBroadcast(): Promise<void> {
-    if (!this.broadcastKick) return;
+    const btn = this.$id('admin-broadcast-btn') as HTMLButtonElement | null;
+    const feedback = this.$id('admin-broadcast-feedback');
+    if (!btn) return;
 
-    const kicked = await this.broadcastKick.playKick();
-    if (!kicked) return;
+    btn.disabled = true;
+    btn.textContent = '...';
 
     try {
       const token = localStorage.getItem('biliardino_admin_token');
@@ -800,10 +920,10 @@ class LobbyPage extends Component {
 
       const result = await res.json();
 
-      this.broadcastKick.showFeedback(
-        `${result.sent}/${result.total} NOTIFICHE INVIATE`,
-        '#4ADE80'
-      );
+      if (feedback) {
+        feedback.textContent = `${result.sent}/${result.total} NOTIFICHE INVIATE`;
+        feedback.style.color = '#4ADE80';
+      }
 
       appState.lobbyActive = true;
       appState.emit('lobby-change');
@@ -811,11 +931,51 @@ class LobbyPage extends Component {
       setTimeout(() => this.pollLobby(), 1500);
     } catch (err: any) {
       console.error('[LobbyPage] Broadcast error:', err);
-      this.broadcastKick.showFeedback(
-        err.message || 'ERRORE INVIO NOTIFICHE',
+      if (feedback) {
+        feedback.textContent = err.message || 'ERRORE INVIO NOTIFICHE';
+        feedback.style.color = '#F87171';
+      }
+      btn.disabled = false;
+      btn.textContent = 'AVVIA PARTITA';
+    }
+  }
+
+  // ── Confirm Kick ─────────────────────────────────────────────
+
+  private bindConfirmKick(): void {
+    if (!this.confirmKick) return;
+    this.confirmKick.mount(() => this.handleConfirmKick());
+  }
+
+  private async handleConfirmKick(): Promise<void> {
+    if (!this.confirmKick || !this.myPlayerId) return;
+
+    const kicked = await this.confirmKick.playKick();
+    if (!kicked) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/confirm-availability`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: this.myPlayerId,
+          subscription: localStorage.getItem('biliardino_subscription')
+        })
+      });
+
+      if (!res.ok) throw new Error('Errore nella conferma');
+
+      this.confirmed.add(this.myPlayerId);
+      this.confirmKick.showFeedback('CONFERMATO', '#4ADE80');
+      this.updateReadyStatus();
+      this.updateUnlockedState();
+    } catch (err: any) {
+      console.error('[LobbyPage] Confirm kick error:', err);
+      this.confirmKick.showFeedback(
+        err.message || 'ERRORE CONFERMA',
         '#F87171'
       );
-      this.broadcastKick.reset();
+      this.confirmKick.reset();
     }
   }
 

@@ -57,7 +57,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     const {
       title: rawTitle,
       subtitle: rawSubtitle,
-      body: rawBody
+      body: rawBody,
+      match: rawMatch
     } = req.body;
 
     // Valida e sanitizza input (se mancante, sarà usata la chiave 'default')
@@ -173,7 +174,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
           createdAt: new Date().toISOString(),
           notificationsSent: sent,
           active: true,
-          ...(matchData ? { match: matchData } : {})
+          ...(rawMatch ? { match: rawMatch } : {})
         },
         {
           ex: 5400 // TTL 90 minuti (5400 secondi)

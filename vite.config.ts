@@ -23,8 +23,8 @@ function devModePlugin(): Plugin {
       // Carica solo le variabili d'ambiente che iniziano con "VITE_" dal file .env.[mode]
       const env = loadEnv(mode, process.cwd(), 'VITE_');
 
-      // Attiva dev mode solo se VITE_DEV_MODE=true è esplicitamente impostato
-      isDevMode = env.VITE_DEV_MODE === 'true';
+      // Attiva dev mode se impostato nel file .env oppure come variabile shell (utile per e2e/CI)
+      isDevMode = env.VITE_DEV_MODE === 'true' || process.env.VITE_DEV_MODE === 'true';
 
       if (mode !== 'production') {
         console.log(`[dev-mode] mode=${mode}, VITE_DEV_MODE=${isDevMode ? 'true' : 'false'}`);
@@ -67,7 +67,8 @@ export default defineConfig(config => ({
     setupFiles: ['./tests/setup.ts'],
     env: {
       API_TOKEN: process.env.API_TOKEN || 'test-token',
-      VERCEL_URL: process.env.VERCEL_URL || ''
+      VERCEL_URL: process.env.VERCEL_URL || '',
+      ADMIN_API_TOKEN: process.env.ADMIN_API_TOKEN || 'admin-test-token'
     }
   }
 }));

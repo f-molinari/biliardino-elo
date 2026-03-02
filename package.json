@@ -12,6 +12,9 @@
     "lint": "eslint --fix",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "PWDEBUG=1 playwright test",
     "token": "node scripts/generate-token.js",
     "token:admin": "node scripts/generate-token.js admin",
     "token:cron": "node scripts/generate-token.js cron",
@@ -20,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.58.2",
     "@stylistic/eslint-plugin": "^5.6.1",
     "@types/node": "^24.10.1",
     "@types/web-push": "^3.6.4",

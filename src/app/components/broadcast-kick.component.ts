@@ -142,8 +142,8 @@ export class BroadcastKickComponent {
       x: 300, opacity: 0, duration: 0.35, ease: 'power3.in'
     }, '-=0.2');
 
-    // 8. Ball fades to loading state
-    tl.to(ball, { opacity: 0.5, duration: 0.15 }, '-=0.1');
+    // 8. Ball disappears after flying off-screen
+    tl.to(ball, { opacity: 0, duration: 0.15 }, '-=0.1');
 
     await tl.then();
     return true;
