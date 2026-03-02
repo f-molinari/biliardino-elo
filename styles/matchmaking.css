@@ -79,6 +79,7 @@ body {
   color: #1d1d1f;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 .header {
@@ -112,9 +113,10 @@ a.nav-link:hover {
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 600px 1fr;
+  grid-template-columns: minmax(0, 600px) minmax(0, 1fr);
   gap: 2rem;
   align-items: start;
+  width: 100%;
 }
 
 .players-section,
@@ -206,8 +208,9 @@ h2 {
   padding: 0.4rem;
   cursor: pointer;
   border-radius: 6px;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
   gap: 0.5rem;
+  box-shadow: inset 0 0 0 0 transparent;
 }
 
 .player-checkbox:hover {
@@ -216,7 +219,7 @@ h2 {
 
 .player-checkbox.priority {
   background: #fff9e6;
-  border: 1px solid #ffd966;
+  box-shadow: inset 0 0 0 1px #ffd966;
 }
 
 .player-checkbox.priority:hover {
@@ -827,5 +830,233 @@ h2 {
 
   .players-list {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+   CONFERME REAL-TIME
+   ======================================== */
+
+/* ---- Pannello conferme ---- */
+.confirmations-panel {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f0faf0 0%, #e8f5e9 100%);
+  border: 1px solid rgba(76, 175, 80, 0.25);
+}
+
+.confirmations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.confirmations-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.confirmations-icon {
+  font-size: 1rem;
+}
+
+.conf-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 14px;
+  background: #e0e0e0;
+  color: #555;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+}
+
+.conf-count-badge.enough {
+  background: #4caf50;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* ---- Barra di progresso ---- */
+.confirmations-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #66bb6a, #4caf50);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.progress-fill.complete {
+  background: linear-gradient(90deg, #4caf50, #2e7d32);
+}
+
+.progress-label {
+  font-size: 0.72rem;
+  color: #666;
+  white-space: nowrap;
+  font-weight: 600;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* (lista confermati rimossa — ora integrata nelle checkbox)
+
+ * Stile per giocatori confermati tramite app
+ */
+.player-checkbox.confirmed {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  box-shadow: inset 0 0 0 2px #4caf50;
+  animation: confirm-pulse 0.5s ease-out;
+}
+
+.player-checkbox.confirmed:hover {
+  background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+  box-shadow: inset 0 0 0 2px #4caf50, 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.confirmation-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  background: rgba(76, 175, 80, 0.15);
+  color: #2e7d32;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.4;
+  animation: conf-badge-in 0.3s ease-out;
+}
+
+@keyframes conf-badge-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes confirm-pulse {
+  0% {
+    box-shadow: inset 0 0 0 2px #4caf50, 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+
+  50% {
+    box-shadow: inset 0 0 0 2px #4caf50, 0 0 0 10px rgba(76, 175, 80, 0);
+  }
+
+  100% {
+    box-shadow: inset 0 0 0 2px #4caf50, 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+/**
+ * Override per priority + confirmed
+ * Border verde a sinistra per indicare conferma
+ */
+.player-checkbox.confirmed.priority {
+  background: linear-gradient(135deg, #fff9e6 0%, #ffd966 100%);
+  box-shadow: inset 0 0 0 2px #d4af37, inset 4px 0 0 0 #4caf50;
+}
+
+/**
+ * Broadcast Admin Floating Action Button
+ */
+.broadcast-admin-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.broadcast-admin-fab:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.broadcast-admin-fab:active {
+  transform: translateY(-2px) scale(1.02);
+}
+
+/**
+ * FAB quando l'admin è loggato
+ */
+.broadcast-admin-fab.logged-in {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.broadcast-admin-fab.logged-in:hover {
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.6);
+}
+
+/**
+ * Animazione pulse per il FAB loggato
+ */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 4px 24px rgba(102, 126, 234, 0.7);
+  }
+}
+
+/**
+ * Responsive per mobile
+ */
+@media (max-width: 768px) {
+  .broadcast-admin-fab {
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 56px;
+    height: 56px;
+    font-size: 1.75rem;
   }
 }

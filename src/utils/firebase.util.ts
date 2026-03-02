@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword, type Auth } from 'firebase/auth';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore } from 'firebase/firestore';
 
 /**
  * Firebase project configuration used by the web application.
@@ -19,22 +19,28 @@ const firebaseConfig = {
 
 /**
  * Root Firebase application instance initialized with the project configuration.
+ * In dev mode (__DEV_MODE__) è null — Firebase non viene inizializzato.
  */
-const app = initializeApp(firebaseConfig);
+let app: FirebaseApp | null = null;
+if (!__DEV_MODE__) {
+  app = initializeApp(firebaseConfig);
+}
+
 /**
  * Firestore database instance bound to the initialized Firebase app.
- *
  * Used by the repository code to read and write collections.
  */
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-});
+export const db: Firestore | null = (!__DEV_MODE__ && app)
+  ? initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    })
+  : null;
 
 /**
  * Firebase Authentication instance for the current app.
  * Used to authenticate predefined users via email (username) and password.
  */
-export const AUTH = getAuth(app);
+export const AUTH: Auth | null = (!__DEV_MODE__ && app) ? getAuth(app) : null;
 
 /**
  * Firestore collection name used to persist and retrieve match documents.
@@ -60,5 +66,16 @@ export const RUNNING_MATCH_COLLECTION = 'runningMatch';
  * @throws FirebaseError if authentication fails (invalid credentials, user not found, etc.).
  */
 export async function login(email: string, password: string): Promise<any> {
+  if (__DEV_MODE__) {
+    console.log('[MOCK] Login attempt with email:', email);
+    return Promise.resolve({
+      user: { uid: 'mock-user-id', email, displayName: 'Mock User' }
+    });
+  }
+
+  if (!AUTH) {
+    throw new Error('Firebase Auth is not initialized');
+  }
+
   return signInWithEmailAndPassword(AUTH, email, password);
 }

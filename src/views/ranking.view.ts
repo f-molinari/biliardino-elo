@@ -4,6 +4,7 @@ import { getBonusK } from '@/services/player.service';
 import { formatRank } from '@/utils/format-rank.util';
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
+import { BASE_PATH } from '../config/env.config';
 import { getAllMatches } from '../services/match.service';
 import { getAllPlayers, getPlayerById, getRank } from '../services/player.service';
 import { fetchRunningMatch } from '../services/repository.service';
@@ -47,6 +48,7 @@ export class RankingView {
     RankingView.render();
     RankingView.makeHeadersSortable();
     await RankingView.renderLiveMatch();
+    RankingView.initPlayButton();
   }
 
   /**
@@ -303,6 +305,9 @@ export class RankingView {
     const tbody = table.querySelector('tbody')!;
     const fragment = document.createDocumentFragment();
 
+    // Get the selected player ID from notifications
+    const selectedPlayerId = Number(localStorage.getItem('biliardino_player_id') || 0);
+
     const playerIdToStartRank = RankingView.buildRankMap(
       players,
       p => Math.round(p.elo - (todayDeltas.get(p.id)?.delta ?? 0))
@@ -375,14 +380,18 @@ export class RankingView {
       // Colora le prime 3 posizioni (podio)
       if (rank === 1) {
         tr.style.backgroundColor = 'rgba(255, 215, 0, 0.15)'; // oro leggero
+        tr.classList.add('podium', 'podium-1');
       } else if (rank === 2) {
         tr.style.backgroundColor = 'rgba(192, 192, 192, 0.15)'; // argento leggero
+        tr.classList.add('podium', 'podium-2');
       } else if (rank === 3) {
         tr.style.backgroundColor = 'rgba(205, 127, 50, 0.15)'; // bronzo leggero
+        tr.classList.add('podium', 'podium-3', 'podium-last');
       }
 
-      if (rank === 3) {
-        tr.classList.add('podium-last');
+      // Highlight the selected player from notifications
+      if (selectedPlayerId && player.id === selectedPlayerId) {
+        tr.classList.add('selected-player');
       }
 
       tr.addEventListener('click', () => {
@@ -396,7 +405,7 @@ export class RankingView {
       const avatarHTML = `
         <div class="player-avatar">
           <img 
-            src="/biliardino-elo/avatars/${player.id}.webp" 
+            src="${BASE_PATH}avatars/${player.id}.webp" 
             alt="${player.name}"
             class="avatar-img"
             onerror="this.src='${fallbackAvatar}'"
@@ -417,7 +426,7 @@ export class RankingView {
       const classImageHTML = player.class !== -1 ? `
         <div class="class-icon">
           <img 
-            src="/biliardino-elo/class/${player.class}.webp" 
+            src="/class/${player.class}.webp" 
             alt="Class ${player.class}"
             title="${getClassName(player.class)}"
             onerror="this.src='${fallbackClassIcon}'"
@@ -450,6 +459,17 @@ export class RankingView {
 
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
+
+    // Scroll to selected player if exists
+    if (selectedPlayerId) {
+      // Use setTimeout to ensure DOM is fully rendered
+      setTimeout(() => {
+        const selectedRow = tbody.querySelector('tr.selected-player');
+        if (selectedRow) {
+          selectedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
   }
 
   /**
@@ -828,8 +848,8 @@ export class RankingView {
                 <div class="live-player">
                   <a href="./players.html?id=${defA.id}" class="live-player-link">
                     <div class="live-avatar-wrapper">
-                      <img src="/biliardino-elo/avatars/${defA.id}.webp" alt="${defA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
-                      ${defA.class !== -1 ? `<img src="/biliardino-elo/class/${defA.class}.webp" alt="Class ${defA.class}" class="live-class-icon" />` : ''}
+                      <img src="/avatars/${defA.id}.webp" alt="${defA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                      ${defA.class !== -1 ? `<img src="/class/${defA.class}.webp" alt="Class ${defA.class}" class="live-class-icon" />` : ''}
                     </div>
                     <div class="live-player-info">
                       <span class="live-player-name">🛡️ ${defA.name} ${defA.class !== -1 ? `<span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankDefA)})</span>` : ''}</span>
@@ -843,8 +863,8 @@ export class RankingView {
                 <div class="live-player">
                   <a href="./players.html?id=${attA.id}" class="live-player-link">
                     <div class="live-avatar-wrapper">
-                      <img src="/biliardino-elo/avatars/${attA.id}.webp" alt="${attA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
-                      ${attA.class !== -1 ? `<img src="/biliardino-elo/class/${attA.class}.webp" alt="Class ${attA.class}" class="live-class-icon" />` : ''}
+                      <img src="/avatars/${attA.id}.webp" alt="${attA.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                      ${attA.class !== -1 ? `<img src="/class/${attA.class}.webp" alt="Class ${attA.class}" class="live-class-icon" />` : ''}
                     </div>
                     <div class="live-player-info">
                       <span class="live-player-name">⚔️ ${attA.name} ${attA.class !== -1 ? `<span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankAttA)})</span>` : ''}</span>
@@ -868,8 +888,8 @@ export class RankingView {
                 <div class="live-player">
                   <a href="./players.html?id=${defB.id}" class="live-player-link">
                     <div class="live-avatar-wrapper">
-                      <img src="/biliardino-elo/avatars/${defB.id}.webp" alt="${defB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
-                      ${defB.class !== -1 ? `<img src="/biliardino-elo/class/${defB.class}.webp" alt="Class ${defB.class}" class="live-class-icon" />` : ''}
+                      <img src="/avatars/${defB.id}.webp" alt="${defB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                      ${defB.class !== -1 ? `<img src="/class/${defB.class}.webp" alt="Class ${defB.class}" class="live-class-icon" />` : ''}
                     </div>
                     <div class="live-player-info">
                       <span class="live-player-name">🛡️ ${defB.name} ${defB.class !== -1 ? `<span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankDefB)})</span>` : ''}</span>
@@ -883,8 +903,8 @@ export class RankingView {
                 <div class="live-player">
                   <a href="./players.html?id=${attB.id}" class="live-player-link">
                     <div class="live-avatar-wrapper">
-                      <img src="/biliardino-elo/avatars/${attB.id}.webp" alt="${attB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
-                      ${attB.class !== -1 ? `<img src="/biliardino-elo/class/${attB.class}.webp" alt="Class ${attB.class}" class="live-class-icon" />` : ''}
+                      <img src="/avatars/${attB.id}.webp" alt="${attB.name}" class="live-avatar" onerror="this.src='${fallbackAvatar}'" />
+                      ${attB.class !== -1 ? `<img src="/class/${attB.class}.webp" alt="Class ${attB.class}" class="live-class-icon" />` : ''}
                     </div>
                     <div class="live-player-info">
                       <span class="live-player-name">⚔️ ${attB.name} ${attB.class !== -1 ? `<span style="font-size:0.9em;opacity:0.8;">(${formatRank(rankAttB)})</span>` : ''}</span>
@@ -903,6 +923,42 @@ export class RankingView {
     } catch (error) {
       console.error('Failed to render live match', error);
       container.innerHTML = '';
+    }
+  }
+
+  /**
+   * Calcola il prossimo matchTime basato sull'ora corrente
+   */
+  private static getNextMatchTime(): string {
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    if (mins < 660) return '11:00'; // Prima delle 11:00
+    if (mins < 960) return '16:00'; // Prima delle 16:00
+    return '11:00'; // Default giorno dopo
+  }
+
+  /**
+   * Inizializza il pulsante "Gioca" per redirect a confirm.html
+   */
+  private static initPlayButton(): void {
+    const playBtn = document.getElementById('play-btn');
+    if (!playBtn) return;
+
+    playBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const matchTime = RankingView.getNextMatchTime();
+      window.location.href = `./confirm.html?time=${matchTime}`;
+    });
+
+    // Mostra pulsante Matchmaking solo per admin (id: 25, 18, 22, 13)
+    const adminMatchmakingBtn = document.getElementById('admin-matchmaking-btn');
+    if (adminMatchmakingBtn) {
+      const playerId = localStorage.getItem('biliardino_player_id');
+      const adminIds = [25, 18, 22, 13];
+
+      if (playerId && adminIds.includes(Number(playerId))) {
+        adminMatchmakingBtn.style.display = 'inline-block';
+      }
     }
   }
 }

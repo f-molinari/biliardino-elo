@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 out/
+serve/
 
 # TypeScript compiled files
 *.tsbuildinfo
@@ -26,6 +27,10 @@ yarn-error.log*
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+# Vercel deployment files
+.vercel
+.env*.local
 
 # Coverage reports
 coverage/

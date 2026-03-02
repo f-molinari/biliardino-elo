@@ -1,0 +1,2018 @@
+<!doctype html>
+<html lang="it">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conferma Partecipazione - CAlcio Balilla</title>
+  <meta name="theme-color" content="#f5f5f7" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="./icons/icon-192.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+      background-attachment: fixed;
+      color: #1d1d1f;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ====== STATE SYSTEM: stati della pagina ====== */
+    /* LOBBY_FOUND: acqua + pesci + onde + pulsante conferma */
+    /* CONFIRMED: acqua + pesci + onde + messaggio conferma */
+    /* NO_LOBBY: ampolla isolata */
+    /* ERROR: pesci morti */
+
+    body[data-state="NO_LOBBY"] .only-lobby-found {
+      display: none !important;
+    }
+
+    body[data-state="LOBBY_FOUND"] .only-no-lobby,
+    body[data-state="CONFIRMED"] .only-no-lobby,
+    body[data-state="ERROR"] .only-no-lobby {
+      display: none !important;
+    }
+
+    body[data-state="NO_LOBBY"] #cta-footer {
+      display: none !important;
+    }
+
+    /* ====== WATER LAYER (70% vertical in LOBBY_FOUND state) ====== */
+    #water-layer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70vh;
+      background: linear-gradient(180deg,
+          rgba(60, 150, 255, 0.15) 0%,
+          rgba(30, 120, 220, 0.25) 50%,
+          rgba(10, 80, 180, 0.35) 100%);
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    body[data-state="LOBBY_FOUND"] #water-layer,
+    body[data-state="CONFIRMED"] #water-layer,
+    body[data-state="ERROR"] #water-layer {
+      opacity: 1;
+    }
+
+    /* ====== WAVES SVG (animato in cima all'acqua) ====== */
+    #waves {
+      position: fixed;
+      bottom: 70vh;
+      left: 0;
+      right: 0;
+      height: 80px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    body[data-state="LOBBY_FOUND"] #waves,
+    body[data-state="CONFIRMED"] #waves,
+    body[data-state="ERROR"] #waves {
+      opacity: 1;
+    }
+
+    #waves svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ====== AMPOLLA SVG (stato NO_LOBBY) ====== */
+    #ampolla-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      text-align: center;
+    }
+
+    body[data-state="NO_LOBBY"] #ampolla-container {
+      opacity: 1;
+    }
+
+    #ampolla-svg {
+      width: 250px;
+      height: 320px;
+      margin: 0 auto 1.5rem;
+      filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.12));
+    }
+
+    .ampolla-message {
+      max-width: 320px;
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .ampolla-message h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #1d1d1f;
+    }
+
+    .ampolla-message p {
+      font-size: 0.95rem;
+      color: #6e6e73;
+      line-height: 1.5;
+    }
+
+    /* Animazione pesce nell'ampolla */
+    #ampolla-fish {
+      animation: swim-in-ampolla 8s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    @keyframes swim-in-ampolla {
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+
+      75% {
+        transform: translate(0px, 7px);
+      }
+    }
+
+    /* ====== Aquarium layer (behind content) ====== */
+    #aquarium {
+      position: fixed;
+      inset: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: visible;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    body[data-state="LOBBY_FOUND"] #aquarium,
+    body[data-state="CONFIRMED"] #aquarium,
+    body[data-state="ERROR"] #aquarium {
+      opacity: 1;
+    }
+
+    /* ====== Each fish wrapper ====== */
+    .fish {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      will-change: transform;
+      z-index: 1;
+    }
+
+    .fish-sprite {
+      font-size: 2rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.1));
+      transition: transform 0.3s;
+      animation: tail-fin 1.2s ease-in-out infinite;
+    }
+
+    @keyframes tail-fin {
+
+      0%,
+      100% {
+        transform: rotate(0deg);
+      }
+
+      25% {
+        transform: rotate(-2deg);
+      }
+
+      75% {
+        transform: rotate(2deg);
+      }
+    }
+
+    /* Figma-style cursor label */
+    .fish-label {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 4px;
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      white-space: nowrap;
+      color: #fff;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      opacity: 0.92;
+    }
+
+    .fish-label::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 5px solid var(--label-color);
+    }
+
+    /* Fish free movement - controlled by JavaScript */
+    .fish {
+      left: 0;
+      top: 0;
+      transition: none;
+    }
+
+    /* ====== Dead fish (error state) ====== */
+    .fish.dead {
+      animation: dead-float var(--dead-float-dur, 3s) ease-in-out var(--dead-delay, 0s) infinite !important;
+      transition: top var(--dead-rise-dur, 12s) ease-out var(--dead-delay, 0s);
+      opacity: 0.55;
+    }
+
+    @keyframes dead-float {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(var(--dead-rot-a, -3deg));
+      }
+
+      50% {
+        transform: translateY(var(--dead-bob, -10px)) rotate(var(--dead-rot-b, 3deg));
+      }
+    }
+
+    .fish.dead .fish-sprite {
+      transform: scaleY(-1) !important;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.1)) grayscale(0.5);
+      transition: transform 0.4s, filter 0.4s;
+    }
+
+    .fish.dead .fish-label {
+      opacity: 0.4;
+      transition: opacity 0.4s;
+    }
+
+    /* ====== God rays ====== */
+    .god-rays {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      width: 200%;
+      height: 70%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    body[data-state="LOBBY_FOUND"] .god-rays,
+    body[data-state="CONFIRMED"] .god-rays,
+    body[data-state="ERROR"] .god-rays {
+      opacity: 1;
+    }
+
+    .god-ray {
+      position: absolute;
+      top: 0;
+      width: var(--ray-w, 120px);
+      height: 120%;
+      background: linear-gradient(180deg,
+          rgba(255, 255, 255, 0.4) 0%,
+          rgba(0, 132, 255, 0.18) 40%,
+          transparent 85%);
+      transform-origin: top center;
+      transform: rotate(var(--ray-angle, 0deg));
+      animation: ray-sway var(--ray-dur, 8s) ease-in-out infinite alternate;
+      opacity: var(--ray-opacity, 0.6);
+      filter: blur(4px);
+    }
+
+    @keyframes ray-sway {
+      0% {
+        transform: rotate(var(--ray-angle, 0deg)) translateX(-10px);
+        opacity: var(--ray-opacity, 0.6);
+      }
+
+      100% {
+        transform: rotate(var(--ray-angle, 0deg)) translateX(10px);
+        opacity: calc(var(--ray-opacity, 0.6) * 0.7);
+      }
+    }
+
+    /* ====== Rising bubbles ====== */
+    .bubble {
+      position: absolute;
+      bottom: -20px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 30% 30%,
+          rgba(60, 150, 255, 0.55),
+          rgba(60, 150, 255, 0.1));
+      border: 1px solid rgba(60, 150, 255, 0.35);
+      box-shadow: inset 0 -2px 6px rgba(60, 150, 255, 0.3), 0 0 8px rgba(60, 150, 255, 0.12);
+      animation: rise var(--rise-dur) ease-in infinite;
+      animation-delay: var(--rise-delay);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes rise {
+      0% {
+        opacity: 0;
+        transform: translateX(0) scale(0.7);
+        bottom: -20px;
+      }
+
+      10% {
+        opacity: 0.6;
+      }
+
+      70% {
+        opacity: 0.3;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(var(--drift, 15px)) scale(1.05);
+        bottom: 70%;
+      }
+    }
+
+    /* ====== Seabed SVG ====== */
+    .seabed {
+      position: fixed;
+      bottom: 0px;
+      left: 0;
+      right: 0;
+      height: 120px;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    body[data-state="LOBBY_FOUND"] .seabed,
+    body[data-state="CONFIRMED"] .seabed,
+    body[data-state="ERROR"] .seabed {
+      opacity: 1;
+    }
+
+    .seabed svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Alghe statiche */
+
+    /* ====== Top status bar ====== */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1rem;
+      padding-top: max(0.6rem, env(safe-area-inset-top));
+      background: rgba(249, 249, 249, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    a.nav-link {
+      color: #1d1d1f;
+      padding: 0.6rem 1.2rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      text-decoration: none;
+      display: inline-block;
+      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    a.nav-link:hover {
+      background: rgba(255, 255, 255, 0.98);
+      color: #000000;
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .top-bar-time {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #1d1d1f;
+      letter-spacing: -0.3px;
+    }
+
+    .top-bar-status {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #34c759;
+    }
+
+    /* ====== Content layer ====== */
+    .page-scroll {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+      padding-bottom: 6.5rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+      padding: 2rem 1.5rem;
+      position: relative;
+    }
+
+    /* ====== Hero watermark (behind fish) ====== */
+    .time-watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      pointer-events: none;
+      font-size: 8rem;
+      font-weight: 800;
+      color: rgba(6, 44, 125, 0.08);
+      letter-spacing: -4px;
+      line-height: 1;
+      white-space: nowrap;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    body[data-state="LOBBY_FOUND"] .time-watermark,
+    body[data-state="CONFIRMED"] .time-watermark,
+    body[data-state="ERROR"] .time-watermark {
+      opacity: 1;
+    }
+
+    /* ====== Status (in top bar) ====== */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .count-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.9rem;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1d1d1f;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .count-pill .num {
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    /* ====== Sticky CTA ====== */
+    .cta-footer {
+      position: relative;
+      margin-top: auto;
+      margin-bottom: auto;
+      padding: 1.5rem;
+      padding-bottom: 6rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 1.6rem;
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: white;
+      background: linear-gradient(180deg, #4dd0e1, #00acc1);
+      border: 5px solid #006064;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.12s cubic-bezier(0.6, 0.04, 0.98, 0.34);
+      box-shadow:
+        inset 0 -4px 0 #004d56,
+        0 6px 0 #004d56,
+        0 8px 16px rgba(0, 0, 0, 0.4);
+      -webkit-tap-highlight-color: transparent;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      letter-spacing: 1px;
+      position: relative;
+      top: 0;
+    }
+
+    .btn:hover {
+      background: linear-gradient(180deg, #80deea, #4dd0e1);
+      box-shadow:
+        inset 0 -4px 0 #004d56,
+        0 8px 0 #004d56,
+        0 12px 20px rgba(0, 0, 0, 0.5);
+      transform: scale(1.05);
+    }
+
+    .btn:active {
+      background: linear-gradient(180deg, #00acc1, #00838f);
+      box-shadow:
+        inset 0 -2px 0 #004d56,
+        inset 0 3px 8px rgba(0, 0, 0, 0.4),
+        0 2px 0 #004d56,
+        0 4px 8px rgba(0, 0, 0, 0.3);
+      top: 4px;
+    }
+
+    .btn:disabled {
+      background: linear-gradient(180deg, #999999, #666666);
+      color: #ddd;
+      cursor: not-allowed;
+      border-color: #333333;
+      box-shadow:
+        inset 0 -4px 0 #222222,
+        0 4px 0 #222222,
+        0 6px 12px rgba(0, 0, 0, 0.3);
+      transform: none;
+      top: 0;
+    }
+
+    .confirmed-msg {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      width: 100%;
+      max-width: 420px;
+      padding: 0.85rem 1.5rem;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      border: 1px solid rgba(46, 125, 50, 0.15);
+      opacity: 0;
+      transform: scale(0.8);
+      animation: fade-in-scale 0.5s ease-out forwards;
+    }
+
+    @keyframes fade-in-scale {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .confirmed-msg .confirmed-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #2e7d32;
+    }
+
+    .confirmed-msg .confirmed-sub {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #558b2f;
+    }
+
+    .error-msg {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .error-msg .error-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #d32f2f;
+    }
+
+    .error-msg .error-actions {
+      display: flex;
+      gap: 0.75rem;
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+
+    .error-msg .error-actions .btn {
+      flex: 1;
+      width: auto;
+      height: auto;
+      border-radius: 16px;
+      padding: 0.85rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      animation: none;
+      background: linear-gradient(135deg, #062c7d 0%, #1a4aad 50%, #2563d4 100%);
+      border: none;
+    }
+
+    .error-msg .error-actions .btn:hover {
+      background: linear-gradient(135deg, #0a3592 0%, #1e52b8 50%, #2d6ddf 100%);
+    }
+
+    .btn-secondary {
+      display: block;
+      flex: 1;
+      padding: 0.85rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #6e6e73;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.9);
+      color: #1d1d1f;
+    }
+
+    /* ====== States ====== */
+    .loading-container {
+      padding: 2rem 0;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      margin: 0 auto 0.75rem;
+      border: 3px solid rgba(0, 0, 0, 0.08);
+      border-top-color: #34c759;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .status-text {
+      font-size: 0.95rem;
+      color: #6e6e73;
+    }
+
+    .page-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .success {
+      color: #2e7d32;
+    }
+
+    .error {
+      color: #d32f2f;
+    }
+
+    .back-link {
+      margin-top: 1.25rem;
+      font-size: 0.85rem;
+    }
+
+    .back-link a {
+      color: #6e6e73;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .back-link a:hover {
+      color: #1d1d1f;
+    }
+
+    /* ====== Dev Panel ====== */
+    .dev-panel {
+      position: fixed;
+      bottom: 80px;
+      right: 12px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      max-width: 160px;
+    }
+
+    .dev-panel-title {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .dev-panel button {
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .dev-panel button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .dev-panel button:active {
+      transform: scale(0.96);
+    }
+
+    .dev-panel button.active {
+      background: rgba(59, 130, 246, 0.5);
+      border-color: rgba(59, 130, 246, 0.6);
+    }
+
+    /* ====== CHAT FORM - VERCEL STYLE MINIMAL ====== */
+    .snes-chat-container {
+      display: none;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 360px;
+      padding: 0;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      opacity: 0;
+      animation: fade-in 0.3s ease-out forwards;
+    }
+
+    .snes-chat-container.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    #message-textarea {
+      flex: 1;
+      padding: 0.5rem 0.8rem;
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 14px;
+      color: #000000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    #message-textarea:focus {
+      outline: none;
+      border-color: #000000;
+      background: #ffffff;
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    #message-textarea::placeholder {
+      color: #666666;
+      font-weight: 600;
+    }
+
+    /* Fish sprite SVG 8-bit */
+    .fish-svg {
+      width: 2.2rem;
+      height: auto;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    }
+
+    /* Fish tooltip con typewriter effect */
+    .fish-tooltip {
+      position: absolute;
+      top: -56px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      backdrop-filter: none;
+      border: 3px solid #000000;
+      padding: 0.6rem 1rem;
+      border-radius: 14px;
+      color: #000000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      animation: tooltip-appear 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      z-index: 100;
+      box-shadow:
+        0 8px 16px rgba(0, 0, 0, 0.25),
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      max-width: 240px;
+      overflow: visible;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes tooltip-appear {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px) scale(0.85);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+    }
+
+    @keyframes tooltip-disappear {
+      from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+
+      to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px) scale(0.85);
+      }
+    }
+
+    .fish-tooltip::after {
+      content: '';
+      position: absolute;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 14px solid #000000;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    /* Bianche e nere */
+    .fish-tooltip[data-color="1"],
+    .fish-tooltip[data-color="2"],
+    .fish-tooltip[data-color="3"],
+    .fish-tooltip[data-color="4"],
+    .fish-tooltip[data-color="5"] {
+      background: #ffffff;
+      border-color: #000000;
+    }
+
+    /* ====== Responsive ====== */
+    @media (max-width: 380px) {
+      .time-watermark {
+        font-size: 5.5rem;
+      }
+
+      .btn {
+        font-size: 1rem;
+        padding: 0.875rem 1.5rem;
+      }
+
+      .fish-sprite {
+        font-size: 1.5rem;
+      }
+    }
+
+    @media (min-height: 700px) {
+      .page-scroll {
+        justify-content: center;
+      }
+    }
+
+    @media (max-height: 550px) {
+      .page-scroll {
+        justify-content: flex-start;
+        padding-top: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Water layer (70% dello schermo in LOBBY_FOUND) -->
+  <div id="water-layer" class="only-lobby-found"></div>
+
+  <!-- Waves SVG (onde animate sopra l'acqua) -->
+  <div id="waves" class="only-lobby-found">
+    <svg viewBox="0 0 1200 80" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:rgba(100, 180, 255, 0.3);stop-opacity:1" />
+          <stop offset="100%" style="stop-color:rgba(60, 150, 255, 0.2);stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <!-- Onda layer 1 -->
+      <path d="M0,40 Q150,20 300,40 T600,40 T900,40 T1200,40 L1200,80 L0,80 Z" fill="url(#wave-gradient)" opacity="0.6">
+        <animate attributeName="d" dur="8s" repeatCount="indefinite" values="
+            M0,40 Q150,20 300,40 T600,40 T900,40 T1200,40 L1200,80 L0,80 Z;
+            M0,40 Q150,60 300,40 T600,40 T900,40 T1200,40 L1200,80 L0,80 Z;
+            M0,40 Q150,20 300,40 T600,40 T900,40 T1200,40 L1200,80 L0,80 Z" />
+      </path>
+      <!-- Onda layer 2 -->
+      <path d="M0,50 Q200,35 400,50 T800,50 T1200,50 L1200,80 L0,80 Z" fill="url(#wave-gradient)" opacity="0.4">
+        <animate attributeName="d" dur="12s" repeatCount="indefinite" values="
+            M0,50 Q200,35 400,50 T800,50 T1200,50 L1200,80 L0,80 Z;
+            M0,50 Q200,65 400,50 T800,50 T1200,50 L1200,80 L0,80 Z;
+            M0,50 Q200,35 400,50 T800,50 T1200,50 L1200,80 L0,80 Z" />
+      </path>
+      <!-- Onda layer 3 (più veloce) -->
+      <path d="M0,55 Q100,45 200,55 T400,55 T600,55 T800,55 T1000,55 T1200,55 L1200,80 L0,80 Z"
+        fill="rgba(255, 255, 255, 0.3)" opacity="0.5">
+        <animate attributeName="d" dur="6s" repeatCount="indefinite" values="
+            M0,55 Q100,45 200,55 T400,55 T600,55 T800,55 T1000,55 T1200,55 L1200,80 L0,80 Z;
+            M0,55 Q100,65 200,55 T400,55 T600,55 T800,55 T1000,55 T1200,55 L1200,80 L0,80 Z;
+            M0,55 Q100,45 200,55 T400,55 T600,55 T800,55 T1000,55 T1200,55 L1200,80 L0,80 Z" />
+      </path>
+    </svg>
+  </div>
+
+  <!-- Ampolla isolata (stato NO_LOBBY) -->
+  <div id="ampolla-container" class="only-no-lobby">
+    <svg id="ampolla-svg" viewBox="355 130 80 80" xmlns="http://www.w3.org/2000/svg">
+      <!-- Sfondo acqua dentro l'ampolla -->
+      <path style="opacity:0.2;fill:#7AABAB;"
+        d="M413.764,137.923h-42.049c-8.678,6.437-14.304,16.755-14.304,28.39
+        c0,19.511,15.817,35.328,35.328,35.328c19.511,0,35.328-15.817,35.328-35.328C428.067,154.678,422.441,144.36,413.764,137.923z" />
+
+      <!-- Corpo acqua -->
+      <path style="opacity:0.3;fill:#66a2e7;"
+        d="M363.885,148.048c-3.354,5.284-5.306,11.544-5.306,18.265
+        c0,18.866,15.294,34.16,34.16,34.16c18.866,0,34.16-15.294,34.16-34.16c0-6.721-1.952-12.981-5.306-18.265H363.885z" />
+
+      <!-- Riflesso -->
+      <path style="opacity:0.5;fill:#FFFFFF;" d="M368.667,188.96c-5.592-5.918-9.001-13.895-9.001-22.648
+        c0-10.182,4.771-19.891,12.804-26.135h10.868C366.057,148.446,362.231,170.914,368.667,188.96z" />
+
+      <!-- Bordo superiore -->
+      <path style="opacity:0.3;fill:#7AABAB;" d="M414.558,137.102c0,0.453-0.367,0.82-0.82,0.82h-41.933c-0.453,0-0.82-0.367-0.82-0.82
+        l0,0c0-0.453,0.367-0.82,0.82-0.82h41.933C414.19,136.282,414.558,136.649,414.558,137.102L414.558,137.102z" />
+
+
+
+      <!-- Bolle animate -->
+      <circle cx="376" cy="175" r="2.5" fill="rgba(255, 255, 255, 0.6)">
+        <animate attributeName="cy" values="175;171;175" dur="12s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.6;0.3;0.6" dur="12s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="408" cy="165" r="1.8" fill="rgba(255, 255, 255, 0.5)">
+        <animate attributeName="cy" values="165;161;165" dur="15s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.5;0.25;0.5" dur="15s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="385" cy="185" r="3" fill="rgba(255, 255, 255, 0.7)">
+        <animate attributeName="cy" values="185;181;185" dur="18s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.7;0.35;0.7" dur="18s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="402" cy="152" r="1.5" fill="rgba(255, 255, 255, 0.45)">
+        <animate attributeName="cy" values="152;148;152" dur="14s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.45;0.2;0.45" dur="14s" repeatCount="indefinite" />
+      </circle>
+
+
+      <!-- Pesce dentro l'ampolla -->
+      <text id="ampolla-fish" x="392.7" y="170" font-size="20" text-anchor="middle"
+        style="animation: swim-in-ampolla 8s ease-in-out infinite;">🦈</text>
+    </svg>
+
+    <div class="ampolla-message">
+      <h2>Nessuna lobby attiva</h2>
+      <p>Non ci sono partite programmate al momento. Aspetta la notifica per giocare!</p>
+      <a href="./index.html" class="btn-secondary" style="margin-top: 1rem; display: inline-block;">← Torna alla
+        Home</a>
+    </div>
+  </div>
+
+  <!-- God rays -->
+  <div class="god-rays" id="god-rays"></div>
+
+  <!-- Aquarium: fish + bubbles spawn here -->
+  <div id="aquarium"></div>
+
+  <!-- Time watermark behind fish -->
+  <div class="time-watermark" id="time-watermark">--:--</div>
+
+  <!-- Top status bar -->
+  <div class="top-bar only-lobby-found" id="top-bar" style="display:none">
+    <a href="./index.html" class="nav-link">← Torna alla Classifica</a>
+    <span class="top-bar-time" id="top-bar-time">⚽ 11:00</span>
+    <div class="count-pill">
+      <span>🐟</span>
+      <span class="num" id="queue-count">0</span>
+      <span>/ 5</span>
+    </div>
+    <span class="top-bar-status" id="top-bar-status"></span>
+  </div>
+
+  <div class="page-scroll">
+    <div class="container">
+
+      <!-- Loading -->
+      <div id="loading-state" class="loading-container">
+        <div class="spinner"></div>
+        <p class="status-text">Caricamento...</p>
+      </div>
+
+      <!-- Confirm state -->
+      <div id="confirm-state" style="display: none;"></div>
+
+      <!-- These states are now rendered in the CTA footer -->
+      <div id="success-state" style="display: none;"></div>
+      <div id="error-state" style="display: none;"></div>
+
+    </div>
+  </div>
+
+  <!-- Sticky CTA -->
+  <div class="cta-footer" id="cta-footer">
+    <button id="confirm-btn" class="btn">🌊 Ci sono!</button>
+
+    <!-- Chat SNES compact dopo conferma -->
+    <form id="confirmed-msg" class="snes-chat-container">
+      <input type="text" id="message-textarea" placeholder="💬 Scrivi (max 6 parole)..." maxlength="500"
+        aria-label="Invia messaggio partita" />
+    </form>
+
+    <div id="error-msg" class="error-msg">
+      <span class="error-title" id="error-title">❌ Errore nella conferma</span>
+      <div class="error-actions">
+        <a href="./index.html" class="btn-secondary">← Home</a>
+        <button id="retry-btn" class="btn">↻ Riprova</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // ===============================================
+    // STATE MANAGER - stati della pagina
+    // ===============================================
+    const AppState = {
+      LOADING: 'LOADING',
+      LOBBY_FOUND: 'LOBBY_FOUND',
+      NO_LOBBY: 'NO_LOBBY',
+      CONFIRMED: 'CONFIRMED',
+      ERROR: 'ERROR'
+    };
+
+    let currentState = AppState.LOADING;
+
+    function setState(newState) {
+      currentState = newState;
+      document.body.dataset.state = newState;
+      console.log(`🎯 Stato cambiato: ${newState}`);
+
+      // Gestione display degli elementi UI
+      const loadingEl = document.getElementById('loading-state');
+      const confirmStateEl = document.getElementById('confirm-state');
+      const topBar = document.getElementById('top-bar');
+      const ctaFooter = document.getElementById('cta-footer');
+      const confirmBtn = document.getElementById('confirm-btn');
+      const confirmedMsg = document.getElementById('confirmed-msg');
+      const errorMsg = document.getElementById('error-msg');
+
+      // Reset display
+      loadingEl.style.display = 'none';
+      confirmStateEl.style.display = 'none';
+      confirmBtn.style.display = 'none';
+      confirmedMsg.style.display = 'none';
+      errorMsg.style.display = 'none';
+
+      switch (newState) {
+        case AppState.LOADING:
+          loadingEl.style.display = 'block';
+          ctaFooter.style.display = 'none';
+          topBar.style.display = 'none';
+          break;
+
+        case AppState.LOBBY_FOUND:
+          confirmStateEl.style.display = 'block';
+          confirmBtn.style.display = 'block';
+          ctaFooter.style.display = 'flex';
+          topBar.style.display = 'flex';
+          reviveFish();
+          break;
+
+        case AppState.CONFIRMED:
+          confirmStateEl.style.display = 'block';
+          confirmedMsg.style.display = 'flex';
+          ctaFooter.style.display = 'flex';
+          topBar.style.display = 'flex';
+          reviveFish();
+          break;
+
+        case AppState.NO_LOBBY:
+          // Mostra solo l'ampolla, nasconde tutto il resto
+          ctaFooter.style.display = 'none';
+          topBar.style.display = 'none';
+          // Popola il pesce nell'ampolla
+          populateAmpollaFish();
+          break;
+
+        case AppState.ERROR:
+          errorMsg.style.display = 'flex';
+          ctaFooter.style.display = 'flex';
+          topBar.style.display = 'flex';
+          killFish();
+          break;
+      }
+    }
+
+    function populateAmpollaFish() {
+      const ampollaFish = document.getElementById('ampolla-fish');
+      if (ampollaFish) {
+        // Usa il pesce del giocatore (squalo)
+        ampollaFish.textContent = '🦈';
+      }
+    }
+
+    // ===============================================
+    // CONFIGURAZIONE
+    // ===============================================  
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchTime = urlParams.get('time') || getNextMatchTime();
+    const confirmation = urlParams.get('c');
+    const MIN_PLAYERS = 5;
+    const myPlayerId = localStorage.getItem('biliardino_player_id');
+
+    const confirmBtn = document.getElementById('confirm-btn');
+    const ctaFooter = document.getElementById('cta-footer');
+    const aquarium = document.getElementById('aquarium');
+    const topBar = document.getElementById('top-bar');
+
+    // ─── Fish / sea creature emoji pool ──────────────────────────────────
+    const FISH_POOL = ['🐟', '🐠', '🐡', '🦈', '🐙', '🦑', '🐳', '🐬', '🦐', '🦭', '🪼'];
+    // Figma-style label colors — one per fish, cycling
+    const LABEL_COLORS = [
+      '#1e90ff', '#e74c3c', '#8e44ad', '#e67e22', '#2ecc71',
+      '#f39c12', '#16a085', '#c0392b', '#2980b9', '#d35400'
+    ];
+
+    // Track current fish on screen: Map<playerId, HTMLElement>
+    const fishMap = new Map();
+
+    // Expose spawnFish for dev panel
+    window.__devSpawnFish = (id, name, idx) => spawnFish(id, name, idx);
+
+    function getNextMatchTime() {
+      const now = new Date();
+      const mins = now.getHours() * 60 + now.getMinutes();
+      if (mins < 660) return '11:00';
+      if (mins < 960) return '16:00';
+      return '11:00';
+    }
+
+    function formatTimeAgo(isoDate) {
+      const diff = Date.now() - new Date(isoDate).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'adesso';
+      if (mins === 1) return '1 min fa';
+      return `${mins} min fa`;
+    }
+
+    const confirmedMsg = document.getElementById('confirmed-msg');
+    const errorMsg = document.getElementById('error-msg');
+
+    function killFish() {
+      for (const fish of fishMap.values()) {
+        // Freeze current position so animation starts from here
+        const rect = fish.getBoundingClientRect();
+        const parentRect = aquarium.getBoundingClientRect();
+        const currentTop = ((rect.top - parentRect.top) / parentRect.height) * 100;
+        const currentLeft = ((rect.left - parentRect.left) / parentRect.width) * 100;
+        fish.style.top = currentTop + '%';
+        fish.style.left = currentLeft + '%';
+        // Randomize dead animation per fish
+        fish.style.setProperty('--dead-float-dur', rand(2, 5).toFixed(1) + 's');
+        fish.style.setProperty('--dead-rise-dur', rand(8, 18).toFixed(1) + 's');
+        fish.style.setProperty('--dead-delay', rand(0, 2).toFixed(1) + 's');
+        fish.style.setProperty('--dead-bob', rand(-6, -16).toFixed(0) + 'px');
+        fish.style.setProperty('--dead-rot-a', rand(-6, -1).toFixed(0) + 'deg');
+        fish.style.setProperty('--dead-rot-b', rand(1, 6).toFixed(0) + 'deg');
+        // Apply the 'dead' class, then force a reflow so the subsequent top change
+        // reliably triggers the CSS transition without relying on nested rAF.
+        fish.classList.add('dead');
+        void fish.offsetHeight;
+        // Rise to surface (top:0%) via CSS transition
+        fish.style.top = '5px';
+      }
+    }
+
+    function reviveFish() {
+      for (const fish of fishMap.values()) {
+        fish.classList.remove('dead');
+        fish.style.marginTop = '';
+        // Remove inline overrides so CSS animations take back over
+        fish.style.top = '';
+        fish.style.left = '';
+      }
+    }
+
+    // ─── Aquarium fish system ────────────────────────────────────────────
+
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+
+    // Fish movement state
+    const fishMovement = new Map();
+
+    function spawnFish(playerId, name, index) {
+      if (fishMap.has(playerId)) return; // already swimming
+
+      const isMe = String(playerId) === String(myPlayerId);
+      const fishType = isMe ? 'Squalo' : FISH_TYPES[index % FISH_TYPES.length];
+      const labelColor = LABEL_COLORS[index % LABEL_COLORS.length];
+      const svgSprite = FISH_SPRITES_SVG[fishType];
+
+      const fish = document.createElement('div');
+      fish.className = `fish`;
+      fish.dataset.playerId = playerId;
+      fish.dataset.fishType = fishType;
+
+      fish.innerHTML = `
+        <div class="fish-sprite">${svgSprite}</div>
+        <span class="fish-label" style="background:${labelColor};--label-color:${labelColor}">
+          ${isMe ? '🙋 Tu' : name}
+        </span>
+      `;
+
+      aquarium.appendChild(fish);
+      fishMap.set(playerId, fish);
+
+      // Initialize fish movement
+      const screenWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const aquariumStartY = viewportHeight * 0.3; // Water starts at 30%
+      const marginHorizontal = 20; // Margin on sides
+      const marginVertical = 100; // Margin on top/bottom
+      const fishSprite = fish.querySelector('.fish-sprite');
+      fishMovement.set(playerId, {
+        x: rand(marginHorizontal, screenWidth - marginHorizontal),
+        y: rand(aquariumStartY + marginVertical, viewportHeight - marginVertical),
+        vx: rand(-1, 1),
+        vy: rand(-0.5, 0.5),
+        speed: rand(0.5, 1.5),
+        element: fish,
+        sprite: fishSprite
+      });
+    }
+
+    function removeFish(playerId) {
+      const fish = fishMap.get(playerId);
+      if (!fish) return;
+      fish.style.transition = 'opacity 0.5s';
+      fish.style.opacity = '0';
+      setTimeout(() => {
+        fish.remove();
+        fishMap.delete(playerId);
+        fishMovement.delete(playerId);
+      }, 500);
+    }
+
+    // Fish movement animation loop
+    function updateFishMovement() {
+      const viewportHeight = window.innerHeight;
+      const screenWidth = window.innerWidth;
+      const aquariumStartY = viewportHeight * 0.3; // Water starts at 30%
+      const marginHorizontal = 20; // Margin on sides
+      const marginVertical = 50; // Margin on top/bottom
+      const minY = aquariumStartY + marginVertical;
+      const maxY = viewportHeight - marginVertical;
+      const minX = marginHorizontal;
+      const maxX = screenWidth - marginHorizontal;
+
+      fishMovement.forEach((movement, playerId) => {
+        const { element } = movement;
+        if (!element || !document.body.contains(element)) {
+          fishMovement.delete(playerId);
+          return;
+        }
+
+        // Update position
+        movement.x += movement.vx * movement.speed;
+        movement.y += movement.vy * movement.speed;
+
+        // Bounce off walls with margin
+        if (movement.x <= minX || movement.x >= maxX) {
+          movement.vx *= -1;
+          movement.x = Math.max(minX, Math.min(maxX, movement.x));
+        }
+        if (movement.y <= minY || movement.y >= maxY) {
+          movement.vy *= -1;
+          movement.y = Math.max(minY, Math.min(maxY, movement.y));
+        }
+
+        // Random direction changes
+        if (Math.random() < 0.01) {
+          movement.vx += rand(-0.3, 0.3);
+          movement.vy += rand(-0.2, 0.2);
+          // Limit speed
+          const maxSpeed = 2;
+          const currentSpeed = Math.sqrt(movement.vx ** 2 + movement.vy ** 2);
+          if (currentSpeed > maxSpeed) {
+            movement.vx = (movement.vx / currentSpeed) * maxSpeed;
+            movement.vy = (movement.vy / currentSpeed) * maxSpeed;
+          }
+        }
+
+        // Calculate rotation angle based on movement direction (add 180° to fix direction)
+        const angle = Math.atan2(movement.vy, movement.vx) * (180 / Math.PI) + 180;
+
+        // Apply position to container and rotation only to fish sprite
+        element.style.transform = `translate(${movement.x}px, ${movement.y}px)`;
+        if (movement.sprite) {
+          movement.sprite.style.transform = `rotate(${angle}deg)`;
+        }
+      });
+
+      requestAnimationFrame(updateFishMovement);
+    }
+
+    // Start fish movement loop
+    updateFishMovement();
+
+    function syncFish(confirmations) {
+      const activeIds = new Set(confirmations.map(c => c.playerId));
+
+      // Remove fish that are no longer confirmed
+      for (const id of fishMap.keys()) {
+        if (!activeIds.has(id)) removeFish(id);
+      }
+
+      // Spawn new fish
+      const sorted = [...confirmations].sort(
+        (a, b) => new Date(a.confirmedAt).getTime() - new Date(b.confirmedAt).getTime()
+      );
+      sorted.forEach((conf, i) => {
+        const isMe = String(conf.playerId) === String(myPlayerId);
+        const fishName = conf.fishName || `Giocatore #${conf.playerId}`;
+        const name = isMe ? '🙋 Tu' : fishName;
+        spawnFish(conf.playerId, name, i);
+      });
+    }
+
+    // ─── Bubbles ─────────────────────────────────────────────────────
+
+    function spawnBubbles() {
+      const count = 18;
+      for (let i = 0; i < count; i++) {
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        const size = rand(8, 26);
+        b.style.cssText = `
+          width: ${size}px;
+          height: ${size}px;
+          left: ${rand(3, 97)}%;
+          --rise-dur: ${rand(7, 16)}s;
+          --rise-delay: ${rand(0, 10)}s;
+          --drift: ${rand(-30, 30)}px;
+        `;
+        aquarium.appendChild(b);
+      }
+    }
+
+    function spawnGodRays() {
+      const container = document.getElementById('god-rays');
+      const rays = 4;
+      for (let i = 0; i < rays; i++) {
+        const r = document.createElement('div');
+        r.className = 'god-ray';
+        // Raggi tutti dalla stessa direzione (alto-sinistra), leggera variazione
+        const baseAngle = -15;
+        const angle = baseAngle + rand(-5, 5);
+        r.style.cssText = `
+          left: ${20 + i * 18 + rand(-5, 5)}%;
+          --ray-w: ${rand(100, 220)}px;
+          --ray-angle: ${angle}deg;
+          --ray-dur: ${rand(7, 14)}s;
+          --ray-opacity: ${rand(0.4, 0.7)};
+        `;
+        container.appendChild(r);
+      }
+    }
+
+    // ─── API ─────────────────────────────────────────────────────────────
+
+    let pollingIntervalId = null;
+    let pollingTimeoutId = null;
+    let pollingStartTime = 0;
+    let pollingElapsedTime = 0;
+
+    async function loadConfirmations() {
+      try {
+        // Fetch confirmations e messages in parallelo per ottimizzare le API calls
+        const [confirmRes, messagesRes] = await Promise.all([
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/get-confirmations?time=${matchTime}`),
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/get-messages?time=${matchTime}&since=${lastMessageTimestamp}`)
+        ]);
+
+        const confirmData = await confirmRes.json();
+        const messagesData = await messagesRes.json();
+
+        // Process confirmations
+        const count = confirmData.count || 0;
+        document.getElementById('queue-count').textContent = count;
+
+        const statusEl = document.getElementById('top-bar-status');
+        statusEl.textContent = count >= MIN_PLAYERS ? 'Si gioca! ⚽' : '';
+
+        // Sync the aquarium
+        if (confirmData.confirmations && confirmData.confirmations.length > 0) {
+          syncFish(confirmData.confirmations);
+
+          // Check if I have confirmed
+          const iHaveConfirmed = confirmData.confirmations.some(c => String(c.playerId) === String(myPlayerId));
+
+          // Update state to CONFIRMED only if currently in LOBBY_FOUND
+          if (iHaveConfirmed && currentState === AppState.LOBBY_FOUND) {
+            setState(AppState.CONFIRMED);
+          }
+        } else {
+          // Remove all fish
+          for (const id of fishMap.keys()) removeFish(id);
+        }
+
+        // Process messages - stessi dati che prima arrivavano con loadMessages() separato
+        if (messagesData.messages && messagesData.messages.length > 0) {
+          for (const msg of messagesData.messages) {
+            const fish = fishMap.get(msg.playerId);
+            if (fish) {
+              showFishTooltip(fish, msg.text);
+            }
+            lastMessageTimestamp = Math.max(lastMessageTimestamp, msg.sentAt);
+          }
+        }
+      } catch (err) {
+        console.error('Errore caricamento conferme:', err);
+      }
+    }
+
+    function startPolling() {
+      loadConfirmations();
+
+      pollingIntervalId = setInterval(loadConfirmations, 5000);
+
+      const remainingTime = 60_000 - pollingElapsedTime;
+      pollingStartTime = Date.now();
+      pollingTimeoutId = setTimeout(() => {
+        stopPolling();
+        console.log('⏱️ Polling fermato per timeout (60 secondi)');
+      }, remainingTime);
+
+      console.log('🔄 Polling avviato');
+    }
+
+    function stopPolling() {
+      if (pollingIntervalId !== null) {
+        clearInterval(pollingIntervalId);
+        pollingIntervalId = null;
+
+        if (pollingStartTime > 0) {
+          pollingElapsedTime += Date.now() - pollingStartTime;
+        }
+
+        console.log('🛑 Polling fermato');
+      }
+      if (pollingTimeoutId !== null) {
+        clearTimeout(pollingTimeoutId);
+        pollingTimeoutId = null;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        if (pollingIntervalId !== null) {
+          stopPolling();
+          console.log('⏸️ Polling in pausa (pagina non visibile)');
+        }
+      } else {
+        if (pollingIntervalId === null && pollingElapsedTime < 60_000) {
+          startPolling();
+          console.log('▶️ Polling ripreso (pagina visibile)');
+        }
+      }
+    }
+
+    async function init() {
+      // Inizializza lo stato loading
+      setState(AppState.LOADING);
+
+      spawnBubbles();
+      spawnGodRays();
+
+      // Verifica lobby prima di mostrare UI
+      const lobbyExists = await checkLobby();
+
+      if (!lobbyExists) {
+        setState(AppState.NO_LOBBY);
+        showNoLobbyMessage();
+        return; // Non avviare polling
+      }
+
+      setState(AppState.LOBBY_FOUND);
+      startPolling();
+
+      // Cleanup al beforeunload
+      window.addEventListener('beforeunload', () => {
+        stopPolling();
+      });
+
+      // Pausa polling quando la pagina non è visibile
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    async function checkLobby() {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/check-lobby?time=${matchTime}`);
+        if (!res.ok) {
+          console.warn(`❌ API check-lobby fallita: ${res.status}`);
+          return true; // Fail-open: permetti accesso in caso di errore
+        }
+
+        const data = await res.json();
+
+        if (!data.exists) {
+          console.warn(`❌ Nessuna lobby attiva per ${matchTime}`);
+          return false;
+        }
+
+        console.log(`✅ Lobby attiva per ${matchTime} (TTL: ${data.ttl}s)`);
+        return true;
+      } catch (err) {
+        console.error('❌ Errore verifica lobby:', err);
+        return true; // Fail-open
+      }
+    }
+
+    function showNoLobbyMessage() {
+      // Il messaggio è già nell'HTML dentro #ampolla-container
+      // Aggiorniamo solo il testo se necessario
+      const ampollaMessage = document.querySelector('.ampolla-message h2');
+      const ampollaText = document.querySelector('.ampolla-message p');
+
+      if (ampollaMessage && ampollaText) {
+        ampollaMessage.textContent = 'Nessuna lobby attiva';
+        ampollaText.textContent = `Non ci sono partite programmate per le ${matchTime}. Aspetta la notifica per giocare!`;
+      }
+    }
+
+    // Deprecato: usa showNoLobbyMessage() o setState(AppState.NO_LOBBY)
+    function showNoLobbyState() {
+      setState(AppState.ERROR);
+
+      const errorTitle = document.getElementById('error-title');
+      errorTitle.textContent = '❌ Nessuna lobby attiva';
+
+      const errorMsg = document.getElementById('error-msg');
+      errorMsg.querySelector('.error-actions').innerHTML = `
+        <p style="margin: 1rem 0; color: #6e6e73; font-size: 0.95rem;">
+          Non ci sono partite programmate per le ${matchTime}.
+          <br>Attendi la notifica dal sistema o torna più tardi.
+        </p>
+        <a href="./index.html" class="btn-secondary">← Torna alla Home</a>
+        <button id="retry-lobby-btn" class="btn" onclick="location.reload()">↻ Riprova</button>
+      `;
+    }
+
+    async function confirmAttendance() {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '⏳';
+
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/confirm-availability`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matchTime, playerId: myPlayerId, subscription: localStorage.getItem('biliardino_subscription') })
+        });
+        if (!res.ok) throw new Error('Errore nella conferma');
+        setState(AppState.CONFIRMED);
+      } catch (err) {
+        document.getElementById('error-title').textContent = '❌ ' + (err.message || 'Errore nella conferma');
+        setState(AppState.ERROR);
+      }
+    }
+
+    async function autoConfirm() {
+      setState(AppState.LOBBY_FOUND);
+      await confirmAttendance();
+    }
+
+    // ===============================================
+    // CHAT SYSTEM - SNES Retro Style
+    // ===============================================
+
+    const FISH_TYPES = ['Squalo', 'Barracuda', 'Tonno', 'Spigola', 'Sogliola'];
+    const FISH_EMOJIS = { Squalo: '🦈', Barracuda: '🐟', Tonno: '🐠', Spigola: '🐡', Sogliola: '🦑' };
+
+    // 8-bit SVG sprites for aquarium fish - detailed pixel art
+    const FISH_SPRITES_SVG = {
+      Squalo: '🦈',
+      Barracuda: '🐟',
+      Tonno: '🐠',
+      Spigola: '🐡',
+      Sogliola: '🦑'
+    };
+
+    let currentFishType = FISH_TYPES[Math.floor(Math.random() * FISH_TYPES.length)];
+    let messagesPollingId = null;
+    let lastMessageTimestamp = 0;
+
+    // Mostra tooltip con messaggio e typewriter effect (SOLO messaggio, senza nome)
+    function showFishTooltip(fish, message) {
+      // Rimuovi tooltip precedente se esiste
+      const oldTooltip = fish.querySelector('.fish-tooltip');
+      if (oldTooltip) oldTooltip.remove();
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'fish-tooltip';
+      // Assegna colore random (1-5)
+      const randomColor = Math.floor(Math.random() * 5) + 1;
+      tooltip.setAttribute('data-color', randomColor);
+      tooltip.textContent = '';
+      fish.appendChild(tooltip);
+
+      // Animazione typewriter nel tooltip - veloce stile Nintendo
+      let index = 0;
+      const typewriterInterval = setInterval(() => {
+        if (index < message.length) {
+          tooltip.textContent += message[index];
+          index++;
+        } else {
+          clearInterval(typewriterInterval);
+          // Rimuovi il tooltip dopo 2.5 secondi con fade-out animation
+          setTimeout(() => {
+            tooltip.style.animation = 'tooltip-disappear 0.18s ease-out forwards';
+            setTimeout(() => tooltip.remove(), 180);
+          }, 2500);
+        }
+      }, 25);
+    }
+
+    // Effetto typewriter per il messaggio (legacy, non usato più)
+    function typewriterEffect(element, text, speed = 50) {
+      element.textContent = '';
+      let index = 0;
+
+      function type() {
+        if (index < text.length) {
+          element.textContent += text[index];
+          index++;
+          setTimeout(type, speed);
+        }
+      }
+
+      type();
+    }
+
+    // Invia un messaggio
+    async function sendMessage() {
+      const textarea = document.getElementById('message-textarea');
+      let text = textarea.value.trim();
+
+      if (!text) return;
+
+      const wordCount = text.split(/\s+/).length;
+      if (wordCount > 6) {
+        // Evidenzia l'errore
+        textarea.style.borderColor = '#ff4444';
+        setTimeout(() => {
+          textarea.style.borderColor = '';
+        }, 500);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matchTime,
+            playerId: myPlayerId,
+            playerName: 'Giocatore',
+            fishType: currentFishType,
+            text,
+            sentAt: Date.now(),
+            timestamp: new Date().toISOString()
+          })
+        });
+
+        if (!res.ok) throw new Error('Errore invio messaggio');
+
+        // Mostra il messaggio nel tooltip del vostro pesce
+        const myFish = fishMap.get(parseInt(myPlayerId));
+        if (myFish) {
+          showFishTooltip(myFish, text);
+        }
+
+        textarea.value = '';
+      } catch (err) {
+        console.error('Errore send-message:', err);
+      }
+    }
+
+    // Ferma polling dei messaggi - NON PIÙ USATO (i messaggi arrivano con confirmations polling)
+    function stopMessagesPolling() {
+      // Placeholder: i messaggi vengono caricati insieme alle confirmations
+    }
+
+    // Setup chat UI quando confermato
+    function setupChat() {
+      const form = document.getElementById('confirmed-msg');
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendMessage();
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // DEV - Polling simulato per testing
+    // ═══════════════════════════════════════════════════════════════════
+    let devPollingInterval = null;
+    const devMessages = [
+      'Sono pronto!',
+      'A dopo alla partita 🎱',
+      'Sto arrivando',
+      'Che partita!',
+      'Perfetto',
+      'Buongiorno',
+      'Ci vediamo',
+      'Pronto a giocare',
+      'Vammmmooo',
+      'Puntiamo bene oggi'
+    ];
+
+    function startDevPolling() {
+      if (devPollingInterval) clearInterval(devPollingInterval);
+
+      devPollingInterval = setInterval(() => {
+        const fish = Array.from(document.querySelectorAll('#aquarium .fish'));
+        if (fish.length === 0) return;
+
+        // Random fish riceve messaggio - più frequente stile Nintendo
+        const randomFish = fish[Math.floor(Math.random() * fish.length)];
+        const randomMsg = devMessages[Math.floor(Math.random() * devMessages.length)];
+
+        showFishTooltip(randomFish, randomMsg);
+      }, 1500 + Math.random() * 1500); // 1.5-3 secondi random - più veloce e energico
+
+      console.log('🎮 Dev polling messaggi avviato');
+    }
+
+    function stopDevPolling() {
+      if (devPollingInterval) clearInterval(devPollingInterval);
+      devPollingInterval = null;
+      console.log('🎮 Dev polling messaggi fermato');
+    }
+
+    // Modifica setState per gestire CONFIRMED e inizializzare chat
+    const originalSetState = setState;
+    setState = function (newState) {
+      if (newState === AppState.CONFIRMED) {
+        setupChat();
+        document.getElementById('confirmed-msg').style.display = 'flex';
+      }
+      originalSetState(newState);
+    };
+
+    if (confirmation === 'true') {
+      await autoConfirm();
+    } else if (confirmation === 'false') {
+      setState(AppState.ERROR);
+      document.getElementById('error-title').textContent = '❌ Hai rifiutato la partecipazione alla partita.';
+    }
+    document.getElementById('time-watermark').textContent = matchTime;
+    document.getElementById('top-bar-time').textContent = `⚽ ${matchTime}`;
+    confirmBtn.textContent = `🌊 Ci sono!`;
+
+    confirmBtn.addEventListener('click', confirmAttendance);
+    document.getElementById('retry-btn').addEventListener('click', () => {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = `🌊 Ci sono!`;
+      setState(AppState.LOBBY_FOUND);
+    });
+
+    init();
+
+    // ═════════════════════════════════════════════════════════════════════
+    // DEV PANEL - inline nello stesso script per accesso alle funzioni
+    // ═════════════════════════════════════════════════════════════════════
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isDev) {
+      const panel = document.createElement('div');
+      panel.className = 'dev-panel';
+      panel.innerHTML = `
+        <div class="dev-panel-title">DEV</div>
+        <button data-state="LOADING">Loading</button>
+        <button data-state="LOBBY_FOUND">Lobby Found</button>
+        <button data-state="CONFIRMED">Confirmed</button>
+        <button data-state="NO_LOBBY">No Lobby</button>
+        <button data-state="ERROR">Error</button>
+        <button data-action="add-fish">+ Pesce</button>
+        <button data-action="clear-fish">Clear Pesci</button>
+      `;
+      document.body.appendChild(panel);
+
+      let devFishCount = 0;
+      const devNames = ['Mario', 'Luigi', 'Peach', 'Toad', 'Yoshi', 'Bowser', 'Wario', 'Daisy', 'Rosalina', 'Koopa'];
+
+      function updateActiveBtn(state) {
+        panel.querySelectorAll('button[data-state]').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.state === state);
+        });
+      }
+
+      // Osserva cambiamenti stato
+      const observer = new MutationObserver(() => {
+        updateActiveBtn(document.body.dataset.state);
+      });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['data-state'] });
+
+      panel.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        const state = btn.dataset.state;
+        const action = btn.dataset.action;
+
+        if (state) {
+          // Forza state change senza API
+          const loadingEl = document.getElementById('loading-state');
+          const confirmStateEl = document.getElementById('confirm-state');
+          const topBar = document.getElementById('top-bar');
+          const ctaFooter = document.getElementById('cta-footer');
+          const confirmBtn = document.getElementById('confirm-btn');
+          const confirmedMsg = document.getElementById('confirmed-msg');
+          const errorMsg = document.getElementById('error-msg');
+
+          document.body.dataset.state = state;
+
+          loadingEl.style.display = 'none';
+          confirmStateEl.style.display = 'none';
+          confirmBtn.style.display = 'none';
+          confirmedMsg.style.display = 'none';
+          errorMsg.style.display = 'none';
+
+          switch (state) {
+            case 'LOADING':
+              loadingEl.style.display = 'block';
+              ctaFooter.style.display = 'none';
+              topBar.style.display = 'none';
+              break;
+            case 'LOBBY_FOUND':
+              confirmStateEl.style.display = 'block';
+              confirmBtn.style.display = 'block';
+              ctaFooter.style.display = 'flex';
+              topBar.style.display = 'flex';
+              // Spawn demo fish se non ce ne sono
+              if (document.querySelectorAll('#aquarium .fish').length === 0) {
+                for (let i = 0; i < 3; i++) {
+                  devFishCount++;
+                  const name = devNames[(devFishCount - 1) % devNames.length];
+                  window.__devSpawnFish?.(`dev-${devFishCount}`, name, devFishCount - 1);
+                }
+              }
+              // Revive fish in caso venissero da ERROR
+              document.querySelectorAll('#aquarium .fish').forEach(f => {
+                f.classList.remove('dead');
+                f.style.marginTop = '';
+                f.style.top = '';
+                f.style.left = '';
+              });
+              // Avvia polling simulato messaggi
+              startDevPolling();
+              break;
+            case 'CONFIRMED':
+              confirmStateEl.style.display = 'block';
+              confirmedMsg.style.display = 'flex';
+              ctaFooter.style.display = 'flex';
+              topBar.style.display = 'flex';
+              // Revive fish in caso venissero da ERROR
+              document.querySelectorAll('#aquarium .fish').forEach(f => {
+                f.classList.remove('dead');
+                f.style.marginTop = '';
+                f.style.top = '';
+                f.style.left = '';
+              });
+              stopDevPolling();
+              break;
+            case 'NO_LOBBY':
+              ctaFooter.style.display = 'none';
+              topBar.style.display = 'none';
+              stopDevPolling();
+              break;
+            case 'ERROR':
+              errorMsg.style.display = 'flex';
+              ctaFooter.style.display = 'flex';
+              topBar.style.display = 'flex';
+              document.getElementById('error-title').textContent = '❌ Errore di test (dev)';
+              // Kill fish using shared logic
+              killFish();
+              stopDevPolling();
+              break;
+          }
+          updateActiveBtn(state);
+        }
+
+        if (action === 'add-fish') {
+          devFishCount++;
+          const name = devNames[(devFishCount - 1) % devNames.length];
+          window.__devSpawnFish?.(`dev-${devFishCount}`, name, devFishCount - 1);
+          document.getElementById('queue-count').textContent =
+            document.querySelectorAll('#aquarium .fish').length;
+        }
+
+        if (action === 'clear-fish') {
+          document.querySelectorAll('#aquarium .fish').forEach(f => f.remove());
+          devFishCount = 0;
+          document.getElementById('queue-count').textContent = '0';
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>

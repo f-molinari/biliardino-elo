@@ -7,7 +7,7 @@
   <title>CAlcio Balilla</title>
   <meta name="description" content="CA Biliardino Championship" />
   <meta name="theme-color" content="#062c7d" />
-  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.jpg" />
   <link rel="apple-touch-icon" href="./icons/icon-192.jpg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +24,9 @@
         <div class="shark-info-col">
           <div class="shark-title">Shark Season</div>
           <div class="season-end">Termina il 28 Febbraio</div>
-          <a href="./matchmaking.html" class="play-btn">🎮 Gioca</a>
+          <a href="#" id="play-btn" class="play-btn">Gioca</a>
+          <a href="./matchmaking.html" id="admin-matchmaking-btn"
+            style="display: none; margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; text-decoration: none; border-radius: 12px; background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%); color: white; text-align: center; box-sizing: border-box; max-width: 100%;">Matchmaking</a>
         </div>
       </div>
     </div>
@@ -61,6 +63,9 @@
   </div>
 
   <script type="module" src="./src/ranking.ts"></script>
+  <footer style="font-size: 0.8em; opacity: 0.5; text-align: center; margin: 20px 0;">
+    version <span id="pwa-version"></span> - &copy; 2026 CA Biliardino Championship
+  </footer>
 </body>
 
 </html>

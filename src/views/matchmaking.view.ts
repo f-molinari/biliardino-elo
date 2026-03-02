@@ -1,3 +1,4 @@
+import { IConfirmationsResponse } from '@/models/confirmation.interface';
 import { IRunningMatchDTO } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { expectedScore, getMatchPlayerElo } from '@/services/elo.service';
@@ -5,6 +6,8 @@ import { addMatch } from '@/services/match.service';
 import { clearRunningMatch, fetchRunningMatch, saveMatch, saveRunningMatch } from '@/services/repository.service';
 import { availabilityList } from '@/utils/availability.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
+import { getNextMatchTime } from '@/utils/next-match-time.util';
+import { API_BASE_URL, BASE_PATH } from '../config/env.config';
 import { findBestMatch, IMatchProposal } from '../services/matchmaking.service';
 import { getAllPlayers, getPlayerById, getPlayerByName, getRank } from '../services/player.service';
 
@@ -20,6 +23,13 @@ export class MatchmakingView {
   private static readonly playerStates: Map<string, PlayerState> = new Map();
   private static currentMatch: IMatchProposal | null = null;
 
+  // Conferme real-time
+  private static pollingIntervalId: number | null = null;
+  private static pollingTimeoutId: number | null = null;
+  private static confirmedPlayerIds: Set<number> = new Set();
+  private static confirmationTimes: Map<number, string> = new Map();
+  private static currentMatchTime: string = '';
+
   /**
    * Initialize the matchmaking UI.
    */
@@ -27,8 +37,17 @@ export class MatchmakingView {
     MatchmakingView.renderPlayersList();
     MatchmakingView.setupEventListeners();
     MatchmakingView.renderDisclaimer();
+
+    // Avvia polling conferme subito, prima del restore async
+    MatchmakingView.startConfirmationsPolling();
+
     await MatchmakingView.restoreSavedMatch();
     MatchmakingView.updateUI();
+
+    // Cleanup al beforeunload
+    window.addEventListener('beforeunload', () => {
+      MatchmakingView.stopConfirmationsPolling();
+    });
   }
 
   /**
@@ -96,18 +115,28 @@ export class MatchmakingView {
       playersToRender.push(...sortedPlayers);
     }
 
-    // Determine today's availability key
-    const dayKeyMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-    const todayKey = dayKeyMap[new Date().getDay()];
-    const todaysAvailable = (availabilityList as any)[todayKey] as string[] | undefined;
-
+    // Render players without considering daily availability
     const fragment = document.createDocumentFragment();
 
+    // Determine if there's an active lobby (confirmations from DB)
+    const hasActiveLobby = MatchmakingView.confirmedPlayerIds.size > 0;
+
+    // Get today's availability if there's no active lobby
+    let todaysAvailable: string[] | undefined;
+    if (!hasActiveLobby) {
+      const dayKeyMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+      const todayKey = dayKeyMap[new Date().getDay()];
+      todaysAvailable = (availabilityList as any)[todayKey] as string[] | undefined;
+    }
+
     playersToRender.forEach((player) => {
-      // Default state
+      // If there's an active lobby, show only confirmed players
+      // If there's no active lobby, use daily availability
       let initialState: PlayerState = 0;
-      const isAvailableToday = Array.isArray(todaysAvailable) && todaysAvailable.includes(player.name);
-      if (isAvailableToday) {
+      const isConfirmed = MatchmakingView.confirmedPlayerIds.has(player.id);
+      const isAvailableToday = !hasActiveLobby && Array.isArray(todaysAvailable) && todaysAvailable.includes(player.name);
+
+      if (isConfirmed || isAvailableToday) {
         initialState = 1; // queue
       }
       MatchmakingView.playerStates.set(player.name, initialState);
@@ -115,6 +144,11 @@ export class MatchmakingView {
       const label = document.createElement('label');
       label.className = 'player-checkbox';
       label.dataset.playerName = player.name;
+
+      // Controlla se il giocatore ha confermato tramite app
+      if (isConfirmed) {
+        label.classList.add('confirmed');
+      }
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -498,9 +532,13 @@ export class MatchmakingView {
             <span class="heuristic-label">⭐ Priorità</span>
             <span class="heuristic-value">${match.heuristicData.priority.score.toFixed(2)} / ${match.heuristicData.priority.max.toFixed(2)}</span>
           </div>
-          <div class="heuristic-item" title="Varietà nelle combinazioni di giocatori">
-            <span class="heuristic-label">🎲 Diversità</span>
-            <span class="heuristic-value">${match.heuristicData.diversity.score.toFixed(2)} / ${match.heuristicData.diversity.max.toFixed(2)}</span>
+          <div class="heuristic-item" title="Varietà nelle coppie dei team">
+            <span class="heuristic-label">🎲 Diversita team</span>
+            <span class="heuristic-value">${match.heuristicData.diversityTeam.score.toFixed(2)} / ${match.heuristicData.diversityTeam.max.toFixed(2)}</span>
+          </div>
+          <div class="heuristic-item" title="Varieta negli avversari">
+            <span class="heuristic-label">🤝 Diversita avversari</span>
+            <span class="heuristic-value">${match.heuristicData.diversityOpponent.score.toFixed(2)} / ${match.heuristicData.diversityOpponent.max.toFixed(2)}</span>
           </div>
           <div class="heuristic-item" title="Fattore di casualità">
             <span class="heuristic-label">🎰 Casualità</span>
@@ -568,7 +606,7 @@ export class MatchmakingView {
           <div class="match-player-grid">
             <div class="match-player-avatar">
               <img 
-                src="/biliardino-elo/avatars/${player1.id}.webp" 
+                src="${BASE_PATH}avatars/${player1.id}.webp" 
                 alt="${player1.name}"
                 class="match-avatar-img"
                 onerror="this.src='${fallbackAvatar}'"
@@ -578,7 +616,7 @@ export class MatchmakingView {
             <div class="match-player-meta">
               <span class="role-badge ${roleBadgeClass1}" title="Percentuale partite nel ruolo assegnato">${roleLabel1}</span>
               <span class="player-elo">${Math.round(getMatchPlayerElo(player1, role1 === 'defence'))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(player1)})</span></span>
-              ${player1.class !== -1 ? `<img src="/biliardino-elo/class/${player1.class}.webp" alt="Class ${player1.class}" style="width:24px;height:24px;object-fit:contain;" />` : ''}
+              ${player1.class !== -1 ? `<img src="/class/${player1.class}.webp" alt="Class ${player1.class}" style="width:24px;height:24px;object-fit:contain;" />` : ''}
             </div>
           </div>
         </div>
@@ -586,7 +624,7 @@ export class MatchmakingView {
           <div class="match-player-grid">
             <div class="match-player-avatar">
               <img 
-                src="/biliardino-elo/avatars/${player2.id}.webp" 
+                src="${BASE_PATH}avatars/${player2.id}.webp" 
                 alt="${player2.name}"
                 class="match-avatar-img"
                 onerror="this.src='${fallbackAvatar}'"
@@ -596,7 +634,7 @@ export class MatchmakingView {
             <div class="match-player-meta">
               <span class="role-badge ${roleBadgeClass2}" title="Percentuale partite nel ruolo assegnato">${roleLabel2}</span>
               <span class="player-elo">${Math.round(getMatchPlayerElo(player2, role2 === 'defence'))} <span style="font-size:0.85em;opacity:0.7;">(${getDisplayElo(player2)})</span></span>
-              ${player2.class !== -1 ? `<img src="/biliardino-elo/class/${player2.class}.webp" alt="Class ${player2.class}" style="width:24px;height:24px;object-fit:contain;" />` : ''}
+              ${player2.class !== -1 ? `<img src="/class/${player2.class}.webp" alt="Class ${player2.class}" style="width:24px;height:24px;object-fit:contain;" />` : ''}
             </div>
           </div>
         </div>
@@ -761,6 +799,14 @@ export class MatchmakingView {
     try {
       const matchDTO = addMatch(teamA, teamB, [scoreTeamA, scoreTeamB]);
       await saveMatch(matchDTO);
+
+      // Cancella le conferme da Redis
+      try {
+        await MatchmakingView.clearConfirmations();
+      } catch (clearError) {
+        console.error('Errore durante la cancellazione delle conferme:', clearError);
+      }
+
       try {
         await clearRunningMatch();
       } catch (clearError) {
@@ -769,6 +815,7 @@ export class MatchmakingView {
 
       // Reset state
       MatchmakingView.currentMatch = null;
+      MatchmakingView.confirmedPlayerIds.clear();
       MatchmakingView.renderMatches([]);
       MatchmakingView.updateUI();
     } catch (error) {
@@ -776,5 +823,241 @@ export class MatchmakingView {
       alert('Errore durante il salvataggio della partita. Riprova.');
       submitButton.disabled = false;
     }
+  }
+
+  /**
+   * Inizializza il polling delle conferme ogni 7 secondi
+   */
+  private static startConfirmationsPolling(): void {
+    MatchmakingView.currentMatchTime = getNextMatchTime();
+
+    // Carica subito
+    MatchmakingView.loadConfirmations();
+
+    // Polling ogni 7 secondi
+    MatchmakingView.pollingIntervalId = window.setInterval(() => {
+      MatchmakingView.loadConfirmations();
+    }, 7000);
+
+    // Timeout massimo di 10 minuti per evitare polling infinito
+    MatchmakingView.pollingTimeoutId = window.setTimeout(() => {
+      MatchmakingView.stopConfirmationsPolling();
+      console.log('⏱️ Polling conferme fermato per timeout (10 minuti)');
+    }, 600_000);
+
+    console.log(`🔄 Polling conferme avviato per match ${MatchmakingView.currentMatchTime}`);
+  }
+
+  /**
+   * Ferma il polling delle conferme
+   */
+  private static stopConfirmationsPolling(): void {
+    if (MatchmakingView.pollingIntervalId !== null) {
+      clearInterval(MatchmakingView.pollingIntervalId);
+      MatchmakingView.pollingIntervalId = null;
+      console.log('🛑 Polling conferme fermato');
+    }
+    if (MatchmakingView.pollingTimeoutId !== null) {
+      clearTimeout(MatchmakingView.pollingTimeoutId);
+      MatchmakingView.pollingTimeoutId = null;
+    }
+  }
+
+  /**
+   * Carica le conferme dal server e aggiorna la UI
+   */
+  private static async loadConfirmations(): Promise<void> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/get-confirmations?time=${MatchmakingView.currentMatchTime}`
+      );
+
+      if (!response.ok) {
+        console.error('Errore caricamento conferme:', response.status);
+        return;
+      }
+
+      const data: IConfirmationsResponse = await response.json();
+
+      // Rileva nuove conferme
+      const newConfirmedIds = new Set(
+        data.confirmations.map(c => c.playerId)
+      );
+
+      const addedIds = [...newConfirmedIds].filter(
+        id => !MatchmakingView.confirmedPlayerIds.has(id)
+      );
+
+      // Aggiorna timestamps
+      MatchmakingView.confirmationTimes.clear();
+      for (const c of data.confirmations) {
+        MatchmakingView.confirmationTimes.set(c.playerId, c.confirmedAt);
+      }
+
+      // Rimuovi classe confirmed dai giocatori che non sono più confermati
+      const removedIds = [...MatchmakingView.confirmedPlayerIds].filter(
+        id => !newConfirmedIds.has(id)
+      );
+      MatchmakingView.removeConfirmedStatus(removedIds);
+
+      MatchmakingView.confirmedPlayerIds = newConfirmedIds;
+
+      // Auto-seleziona i giocatori confermati e aggiorna badge inline
+      MatchmakingView.autoSelectConfirmedPlayers();
+
+      // Aggiorna il pannello riepilogo (solo conteggio + progresso)
+      MatchmakingView.renderConfirmationsPanel(data);
+
+      if (addedIds.length > 0) {
+        console.log(`✅ Nuove conferme: ${addedIds.join(', ')} (totale: ${data.count})`);
+      }
+
+    } catch (error) {
+      console.error('Errore nel polling conferme:', error);
+    }
+  }
+
+  /**
+   * Aggiorna il pannello riepilogo conferme (solo conteggio + barra progresso).
+   * La lista dettagliata è integrata direttamente nelle checkbox di #players-list.
+   */
+  private static renderConfirmationsPanel(data: IConfirmationsResponse): void {
+    const panel = document.getElementById('confirmations-panel');
+    if (!panel) return;
+
+    panel.style.display = '';
+
+    // Orario match
+    const timeEl = document.getElementById('conf-match-time');
+    if (timeEl) timeEl.textContent = MatchmakingView.currentMatchTime;
+
+    // Badge conteggio
+    const badge = document.getElementById('conf-count-badge');
+    if (badge) {
+      badge.textContent = String(data.count);
+      badge.classList.toggle('enough', data.count >= 5);
+    }
+
+    // Barra progresso (minimo 5 per una partita)
+    const MIN_PLAYERS = 5;
+    const fill = document.getElementById('conf-progress-fill');
+    const label = document.getElementById('conf-progress-label');
+    if (fill) {
+      const pct = Math.min(100, (data.count / MIN_PLAYERS) * 100);
+      fill.style.width = `${pct}%`;
+      fill.classList.toggle('complete', data.count >= MIN_PLAYERS);
+    }
+    if (label) {
+      label.textContent = data.count >= MIN_PLAYERS
+        ? `${data.count} confermati ✓`
+        : `${data.count} / ${MIN_PLAYERS} min.`;
+    }
+  }
+
+  /**
+   * Auto-seleziona i giocatori che hanno confermato tramite app
+   * e aggiorna badge inline nella lista principale.
+   */
+  private static autoSelectConfirmedPlayers(): void {
+    const playersList = document.getElementById('players-list');
+    if (!playersList) return;
+
+    MatchmakingView.confirmedPlayerIds.forEach(playerId => {
+      const player = getPlayerById(playerId);
+      if (!player) {
+        console.warn(`⚠️ Player ${playerId} non trovato`);
+        return;
+      }
+
+      const currentState = MatchmakingView.playerStates.get(player.name) || 0;
+
+      // Se non selezionato, seleziona (stato 1 = queue)
+      if (currentState === 0) {
+        MatchmakingView.playerStates.set(player.name, 1);
+      }
+
+      // Aggiorna UI
+      const label = playersList.querySelector(
+        `label[data-player-name="${player.name}"]`
+      ) as HTMLLabelElement;
+
+      if (label) {
+        const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement;
+        if (checkbox && !checkbox.checked) {
+          checkbox.checked = true;
+        }
+
+        // Aggiungi classe CSS per indicatore visivo
+        if (!label.classList.contains('confirmed')) {
+          label.classList.add('confirmed');
+        }
+
+        // Badge inline con tempo relativo
+        MatchmakingView.upsertConfirmationBadge(label, playerId);
+      }
+    });
+
+    MatchmakingView.updateUI();
+  }
+
+  /**
+   * Aggiunge o aggiorna il badge "📱 confermato Xm fa" dentro la label.
+   */
+  private static upsertConfirmationBadge(label: HTMLLabelElement, playerId: number): void {
+    let badge = label.querySelector('.confirmation-badge') as HTMLSpanElement | null;
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'confirmation-badge';
+      label.appendChild(badge);
+    }
+    badge.textContent = `📱`;
+    badge.title = 'Confermato tramite app';
+  }
+
+  /**
+   * Rimuove lo stato "confermato" dai giocatori la cui conferma è scaduta/rimossa.
+   */
+  private static removeConfirmedStatus(playerIds: number[]): void {
+    const playersList = document.getElementById('players-list');
+    if (!playersList) return;
+
+    for (const playerId of playerIds) {
+      const player = getPlayerById(playerId);
+      if (!player) continue;
+
+      const label = playersList.querySelector(
+        `label[data-player-name="${player.name}"]`
+      ) as HTMLLabelElement | null;
+      if (!label) continue;
+
+      label.classList.remove('confirmed');
+      const badge = label.querySelector('.confirmation-badge');
+      if (badge) badge.remove();
+    }
+  }
+
+  /**
+   * Cancella le conferme da Redis
+   */
+  private static async clearConfirmations(): Promise<void> {
+    const token = localStorage.getItem('biliardino_admin_token');
+
+    const response = await fetch(`${API_BASE_URL}/clear-confirmations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        matchTime: MatchmakingView.currentMatchTime
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to clear confirmations: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`🗑️ Conferme cancellate: ${data.deleted}`);
   }
 }

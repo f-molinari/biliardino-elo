@@ -355,6 +355,115 @@ tbody tr.podium-last {
   border-bottom: 3px solid rgba(45, 55, 72, 0.2);
 }
 
+/* Selected player highlighting */
+tbody tr.selected-player:not(.podium) {
+  scroll-margin-top: 100px;
+  animation: playerBlink 2.4s ease-in-out 1;
+}
+
+tbody tr.selected-player.podium-1 {
+  scroll-margin-top: 100px;
+  animation: playerBlinkPodium1 2.4s ease-in-out 1;
+}
+
+tbody tr.selected-player.podium-2 {
+  scroll-margin-top: 100px;
+  animation: playerBlinkPodium2 2.4s ease-in-out 1;
+}
+
+tbody tr.selected-player.podium-3 {
+  scroll-margin-top: 100px;
+  animation: playerBlinkPodium3 2.4s ease-in-out 1;
+}
+
+@keyframes playerBlink {
+  0% {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  25% {
+    background-color: rgba(135, 206, 235, 0.4);
+  }
+
+  50% {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  75% {
+    background-color: rgba(135, 206, 235, 0.4);
+  }
+
+  100% {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+@keyframes playerBlinkPodium1 {
+  0% {
+    background-color: rgba(255, 215, 0, 0.15);
+  }
+
+  25% {
+    background-color: rgba(135, 206, 235, 0.4);
+  }
+
+  50% {
+    background-color: rgba(255, 215, 0, 0.15);
+  }
+
+  75% {
+    background-color: rgba(135, 206, 235, 0.4);
+  }
+
+  100% {
+    background-color: rgba(255, 215, 0, 0.15);
+  }
+}
+
+@keyframes playerBlinkPodium2 {
+  0% {
+    background-color: rgba(192, 192, 192, 0.15);
+  }
+
+  25% {
+    background-color: rgba(135, 206, 235, 0.4);
+  }
+
+  50% {
+    background-color: rgba(192, 192, 192, 0.15);
+  }
+
+  75% {
+    background-color: rgba(135, 206, 235, 0.4);
+  }
+
+  100% {
+    background-color: rgba(192, 192, 192, 0.15);
+  }
+}
+
+@keyframes playerBlinkPodium3 {
+  0% {
+    background-color: rgba(205, 127, 50, 0.15);
+  }
+
+  25% {
+    background-color: rgba(135, 206, 235, 0.4);
+  }
+
+  50% {
+    background-color: rgba(205, 127, 50, 0.15);
+  }
+
+  75% {
+    background-color: rgba(135, 206, 235, 0.4);
+  }
+
+  100% {
+    background-color: rgba(205, 127, 50, 0.15);
+  }
+}
+
 @keyframes fadeInRow {
   from {
     opacity: 0;
