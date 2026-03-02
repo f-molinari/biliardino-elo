@@ -8,6 +8,30 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
   setCorsHeaders(res);
 
   if (handleCorsPreFlight(req, res)) return res;
+
+  if (req.method === 'DELETE') {
+    try {
+      const { playerId: rawPlayerId } = req.body as { playerId?: string | number };
+      if (!rawPlayerId) return res.status(400).json({ error: 'Missing playerId' });
+      const playerIdNum = validatePlayerId(rawPlayerId);
+      const field = String(playerIdNum);
+      const pipeline = redisRaw.pipeline();
+      pipeline.hdel(prefixed('availability'), field);
+      pipeline.zrem(prefixed('availability_ts'), field);
+      await pipeline.exec();
+      try {
+        await redisRaw.publish('availability_events', JSON.stringify({ playerId: playerIdNum, removed: true }));
+      } catch (e) {
+        console.warn('Publish cancel event fallito:', (e as Error).message || e);
+      }
+      console.log(`❌ Cancellazione conferma da ${sanitizeLogOutput(String(playerIdNum))}`);
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('Errore cancellazione conferma:', err);
+      return res.status(500).json({ error: 'Errore cancellazione conferma' });
+    }
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

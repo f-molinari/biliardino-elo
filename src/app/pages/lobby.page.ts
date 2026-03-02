@@ -33,6 +33,13 @@ const POLL_INTERVAL_MS = 10_000;
 const MSG_POLL_INTERVAL_MS = 15_000;
 const CHAT_MAX_LENGTH = 50;
 const FISH_TYPES = ['Squalo', 'Barracuda', 'Tonno', 'Spigola', 'Sogliola'] as const;
+const FISH_EMOJI: Record<string, string> = {
+  Squalo: '🦈',
+  Barracuda: '🐠',
+  Tonno: '🐟',
+  Spigola: '🐡',
+  Sogliola: '🐬',
+};
 const LABEL_COLORS = [
   '#1e90ff', '#e74c3c', '#8e44ad', '#e67e22', '#2ecc71',
   '#f39c12', '#16a085', '#c0392b', '#2980b9', '#d35400'
@@ -393,8 +400,11 @@ class LobbyPage extends Component {
           </div>
           <button id="confirm-btn"
                   class="shrink-0 px-4 py-1.5 rounded-lg font-ui transition-all duration-200 hover:brightness-110"
-                  style="background:linear-gradient(135deg, #FFD700, #F0A500); font-size:12px; letter-spacing:0.1em; color:#0F2A20; display:${this.shouldShowConfirmButton() ? 'block' : 'none'}">
-            CONFERMA PRESENZA
+                  style="${this.isMyPresenceConfirmed
+                    ? 'background:rgba(248,113,113,0.15); border:1px solid rgba(248,113,113,0.4); font-size:12px; letter-spacing:0.1em; color:#F87171'
+                    : 'background:linear-gradient(135deg, #FFD700, #F0A500); font-size:12px; letter-spacing:0.1em; color:#0F2A20'
+                  }; display:${this.isLobbyParticipant() ? 'block' : 'none'}">
+            ${this.isMyPresenceConfirmed ? 'ANNULLA CONFERMA' : 'CONFERMA PRESENZA'}
           </button>
         </div>
 
@@ -697,14 +707,9 @@ class LobbyPage extends Component {
         // Sync fish in aquarium
         this.syncFish(confirmations);
 
-        // If current player is now confirmed, hide button and unlock components
+        // Sync confirm button state and unlock components if confirmed
+        this.updateConfirmButtonState();
         if (this.myPlayerId && this.confirmed.has(this.myPlayerId)) {
-          const btn = this.$id('confirm-btn') as HTMLButtonElement | null;
-          if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'CONFERMATO';
-            btn.style.opacity = '0.7';
-          }
           this.updateUnlockedState();
         }
 
@@ -797,42 +802,131 @@ class LobbyPage extends Component {
 
     btn.addEventListener('click', async () => {
       if (!this.myPlayerId) return;
-
-      btn.disabled = true;
-      btn.textContent = '...';
-
-      try {
-        const res = await fetch(`${API_BASE_URL}/confirm-availability`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            playerId: this.myPlayerId,
-            subscription: localStorage.getItem('biliardino_subscription')
-          })
-        });
-
-        if (!res.ok) throw new Error('Errore nella conferma');
-
-        this.confirmed.add(this.myPlayerId);
-        btn.textContent = 'CONFERMATO';
-        btn.style.opacity = '0.7';
-        this.updateReadyStatus();
-        this.updateUnlockedState();
-      } catch (err: any) {
-        console.error('[LobbyPage] Confirm error:', err);
-        btn.disabled = false;
-        btn.textContent = 'CONFERMA PRESENZA';
+      const isConfirmed = this.confirmed.has(this.myPlayerId);
+      if (isConfirmed) {
+        await this.handleCancelConfirmation(btn);
+      } else {
+        await this.handleConfirm(btn);
       }
     });
+  }
+
+  private async handleConfirm(btn: HTMLButtonElement): Promise<void> {
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      const res = await fetch(`${API_BASE_URL}/confirm-availability`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: this.myPlayerId,
+          subscription: localStorage.getItem('biliardino_subscription')
+        })
+      });
+      if (!res.ok) throw new Error('Errore nella conferma');
+      this.confirmed.add(this.myPlayerId!);
+      this.updateConfirmButtonState();
+      this.updateReadyStatus();
+      this.updateUnlockedState();
+    } catch (err: any) {
+      console.error('[LobbyPage] Confirm error:', err);
+      btn.disabled = false;
+      this.updateConfirmButtonState();
+    }
+  }
+
+  private async handleCancelConfirmation(btn: HTMLButtonElement): Promise<void> {
+    if (!this.myPlayerId) return;
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      const res = await fetch(`${API_BASE_URL}/confirm-availability`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: this.myPlayerId })
+      });
+      if (!res.ok) throw new Error('Errore nella cancellazione');
+      this.confirmed.delete(this.myPlayerId);
+      this.removeFish(this.myPlayerId);
+      this.updateReadyStatus();
+      this.updateConfirmButtonState();
+      this.lockAfterCancel();
+      const fishCount = this.$id('fish-count');
+      if (fishCount) fishCount.textContent = `${this.confirmed.size} PESCI`;
+      const countEl = this.$id('ready-count');
+      if (countEl) {
+        countEl.textContent = `${this.confirmed.size}/4 PRONTI`;
+        countEl.style.color = 'rgba(255,255,255,0.4)';
+      }
+    } catch (err: any) {
+      console.error('[LobbyPage] Cancel confirm error:', err);
+      btn.disabled = false;
+      this.updateConfirmButtonState();
+    }
+  }
+
+  private lockAfterCancel(): void {
+    const aquarium = this.$id('aquarium');
+    if (aquarium && !this.$id('aquarium-lock')) {
+      const overlay = document.createElement('div');
+      overlay.id = 'aquarium-lock';
+      overlay.className = 'absolute inset-0 flex flex-col items-center justify-center gap-2 z-20';
+      overlay.style.cssText = 'background:rgba(0,10,25,0.6); backdrop-filter:blur(3px)';
+      overlay.innerHTML = `
+        <i data-lucide="lock" style="width:22px;height:22px;color:rgba(255,255,255,0.35)"></i>
+        <span class="font-ui"
+              style="font-size:10px; color:rgba(255,255,255,0.35); letter-spacing:0.12em; text-align:center; line-height:1.8">
+          CONFERMA LA PRESENZA<br>PER SBLOCCARE IL MINIGIOCO
+        </span>
+      `;
+      aquarium.appendChild(overlay);
+      refreshIcons();
+    }
+    const chatInputArea = this.$id('chat-input-area');
+    if (chatInputArea) {
+      chatInputArea.innerHTML = `
+        <div class="px-4 py-4 flex items-center justify-center gap-2">
+          <i data-lucide="lock" style="width:13px;height:13px;color:rgba(255,255,255,0.3)"></i>
+          <span class="font-ui"
+                style="font-size:11px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
+            CONFERMA LA PRESENZA PER CHATTARE
+          </span>
+        </div>
+      `;
+      refreshIcons();
+    }
+  }
+
+  private updateConfirmButtonState(): void {
+    const btn = this.$id('confirm-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    if (!this.isLobbyParticipant()) {
+      btn.style.display = 'none';
+      return;
+    }
+    btn.style.display = 'block';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    const confirmed = this.myPlayerId ? this.confirmed.has(this.myPlayerId) : false;
+    if (confirmed) {
+      btn.textContent = 'ANNULLA CONFERMA';
+      btn.style.background = 'rgba(248,113,113,0.15)';
+      btn.style.border = '1px solid rgba(248,113,113,0.4)';
+      btn.style.color = '#F87171';
+    } else {
+      btn.textContent = 'CONFERMA PRESENZA';
+      btn.style.background = 'linear-gradient(135deg, #FFD700, #F0A500)';
+      btn.style.border = '';
+      btn.style.color = '#0F2A20';
+    }
   }
 
   private get isMyPresenceConfirmed(): boolean {
     return !!(this.myPlayerId && this.lobbyExists && this.confirmed.has(this.myPlayerId));
   }
 
-  private shouldShowConfirmButton(): boolean {
+  private isLobbyParticipant(): boolean {
     if (!this.myPlayerId || !this.lobbyData) return false;
-    if (this.confirmed.has(this.myPlayerId)) return false;
     const ids = [
       this.lobbyData.teamA.defence,
       this.lobbyData.teamA.attack,
@@ -853,9 +947,21 @@ class LobbyPage extends Component {
            style="letter-spacing:0.12em">
           NESSUNA LOBBY ATTIVA
         </p>
-        <p class="font-body text-sm mb-6" style="color:rgba(255,255,255,0.4)">
+        <p class="font-body text-sm mb-4" style="color:rgba(255,255,255,0.4)">
           Invia la notifica per iniziare una partita
         </p>
+        <div class="mb-4 flex items-center justify-center gap-3">
+          <label for="admin-duration-select" class="font-ui" style="font-size:11px; letter-spacing:0.1em; color:rgba(255,255,255,0.5)">DURATA LOBBY</label>
+          <select id="admin-duration-select"
+                  class="rounded-lg px-3 py-1.5 font-ui"
+                  style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,215,0,0.3); color:#FFD700; font-size:12px; letter-spacing:0.08em; outline:none; cursor:pointer">
+            <option value="1800">30 min</option>
+            <option value="2700">45 min</option>
+            <option value="3600">60 min</option>
+            <option value="5400" selected>90 min</option>
+            <option value="7200">120 min</option>
+          </select>
+        </div>
         <button id="admin-broadcast-btn"
                 class="px-6 py-2.5 rounded-lg font-ui transition-all duration-200 hover:brightness-110 active:scale-95"
                 style="background:linear-gradient(135deg, #FFD700, #F0A500); font-size:13px; letter-spacing:0.12em; color:#0F2A20">
@@ -904,7 +1010,10 @@ class LobbyPage extends Component {
   private async handleBroadcast(): Promise<void> {
     const btn = this.$id('admin-broadcast-btn') as HTMLButtonElement | null;
     const feedback = this.$id('admin-broadcast-feedback');
+    const durationSelect = this.$id('admin-duration-select') as HTMLSelectElement | null;
     if (!btn) return;
+
+    const durationSeconds = durationSelect ? parseInt(durationSelect.value, 10) : LOBBY_TTL_DEFAULT;
 
     btn.disabled = true;
     btn.textContent = '...';
@@ -916,7 +1025,8 @@ class LobbyPage extends Component {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({ durationSeconds })
       });
 
       if (!res.ok) {
@@ -925,6 +1035,12 @@ class LobbyPage extends Component {
       }
 
       const result = await res.json();
+
+      // Sync countdown with the TTL chosen for this lobby
+      if (typeof result.durationSeconds === 'number' && result.durationSeconds > 0) {
+        this.countdownTotal = result.durationSeconds;
+        this.countdownSeconds = result.durationSeconds;
+      }
 
       if (feedback) {
         feedback.textContent = `${result.sent}/${result.total} NOTIFICHE INVIATE`;
@@ -1152,14 +1268,14 @@ class LobbyPage extends Component {
     const isMe = playerId === this.myPlayerId;
     const fishTypeKey = isMe ? 'Squalo' : FISH_TYPES[index % FISH_TYPES.length];
     const labelColor = LABEL_COLORS[index % LABEL_COLORS.length];
-    const svgSprite = FISH_SPRITES[fishTypeKey as keyof typeof FISH_SPRITES] || FISH_SPRITES.Tonno;
+    const fishEmoji = FISH_EMOJI[fishTypeKey] ?? '🐟';
 
     const fish = document.createElement('div');
     fish.className = 'absolute pointer-events-none';
     fish.style.cssText = 'transition:opacity 0.5s; z-index:5;';
     fish.dataset.playerId = String(playerId);
     fish.innerHTML = `
-      <div class="fish-sprite" style="width:32px;height:24px">${svgSprite}</div>
+      <div class="fish-sprite" style="width:36px;height:36px;font-size:28px;line-height:1;display:flex;align-items:center;justify-content:center;user-select:none">${fishEmoji}</div>
       <span class="font-ui block text-center mt-0.5 px-1 py-0.5 rounded"
             style="font-size:8px; letter-spacing:0.05em; color:white;
                    background:${labelColor}; white-space:nowrap; max-width:80px;

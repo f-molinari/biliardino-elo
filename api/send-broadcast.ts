@@ -58,8 +58,16 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       title: rawTitle,
       subtitle: rawSubtitle,
       body: rawBody,
-      match: rawMatch
+      match: rawMatch,
+      durationSeconds: rawDurationSeconds
     } = req.body;
+
+    // Lobby TTL: optional override, must be between 60 s and 24 h. Default: 5400 s (90 min)
+    const LOBBY_TTL_DEFAULT = 5400;
+    const parsedDuration = rawDurationSeconds !== undefined ? parseInt(String(rawDurationSeconds), 10) : NaN;
+    const lobbyTtl = (!isNaN(parsedDuration) && parsedDuration >= 60 && parsedDuration <= 86400)
+      ? parsedDuration
+      : LOBBY_TTL_DEFAULT;
 
     // Valida e sanitizza input (se mancante, sarà usata la chiave 'default')
     const customTitle = rawTitle ? validateString(rawTitle, 'title', 100) : undefined;
@@ -143,7 +151,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
               'Content-Type': 'application/notification+json'
             },
             urgency: 'high',
-            TTL: 5400 // 1 ora e mezza
+            TTL: lobbyTtl
           }
         );
 
@@ -174,14 +182,15 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
           createdAt: new Date().toISOString(),
           notificationsSent: sent,
           active: true,
+          durationSeconds: lobbyTtl,
           ...(rawMatch ? { match: rawMatch } : {})
         },
         {
-          ex: 5400 // TTL 90 minuti (5400 secondi)
+          ex: lobbyTtl
         }
       );
 
-      console.log(`🏁 Lobby registry creata: ${lobbyKey} (TTL: 90 min)`);
+      console.log(`🏁 Lobby registry creata: ${lobbyKey} (TTL: ${lobbyTtl}s / ${Math.round(lobbyTtl / 60)} min)`);
     } catch (err) {
       console.error('❌ Errore creazione lobby registry:', err);
       // Non bloccare la risposta se fallisce
@@ -191,7 +200,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       sent,
       failed,
       total: validSubscriptions.length,
-      lobbyActive: true
+      lobbyActive: true,
+      durationSeconds: lobbyTtl
     });
   } catch (err) {
     console.error('Errore broadcast:', err);

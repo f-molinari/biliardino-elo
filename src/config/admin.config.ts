@@ -10,6 +10,7 @@ const ADMIN_PLAYER_IDS = [
 ];
 
 export function isPlayerAdmin(playerId: number | null | undefined): boolean {
+  if (__DEV_MODE__) return true; // In dev mode, everyone is admin
   if (!playerId) return false;
   return ADMIN_PLAYER_IDS.includes(playerId);
 }
