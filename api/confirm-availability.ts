@@ -54,26 +54,29 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     const valueObj = { playerId: playerIdNum, confirmedAt };
     const ts = Math.floor(Date.now() / 1000);
 
-    // Usa pipeline per operazioni atomiche e migliori performance
+    // Pipeline unico: hset + zadd + hlen + ttl(lobby) — 1 solo HTTP request verso Upstash
     const pipeline = redisRaw.pipeline();
 
-    // Salva nello hash globale (una singola chiave) per ridurre richieste
-    pipeline.hset(prefixed(availabilityKey), {
-      [field]: JSON.stringify(valueObj)
-    });
-
-    // Aggiungi index temporale per cleanup TTL (score = epoch seconds)
+    pipeline.hset(prefixed(availabilityKey), { [field]: JSON.stringify(valueObj) });
     pipeline.zadd(prefixed('availability_ts'), { score: ts, member: field });
-
-    // Conta le conferme con HLEN (incluso nel pipeline per consistency)
     pipeline.hlen(prefixed(availabilityKey));
+    pipeline.ttl(prefixed('lobby')); // legge TTL lobby nello stesso batch
 
-    // Esegui tutte le operazioni in un singolo HTTP request
-    // Upstash pipeline lancia eccezione se un comando fallisce
-    const results = await pipeline.exec();
+    const [hsetResult, zaddResult, availabilityCount, lobbyTtl] = await pipeline.exec() as [unknown, unknown, number, number];
+    // hsetResult e zaddResult non sono usati, ma restano per mantenere l'allineamento con il pipeline.
+    const count = availabilityCount;
 
-    // results è un array di valori diretti: [hset_result, zadd_result, hlen_result]
-    const count = results[2] as number;
+    // Se la lobby è attiva, allinea il TTL delle chiavi availability in un secondo pipeline
+    if (lobbyTtl > 0) {
+      try {
+        const expirePipeline = redisRaw.pipeline();
+        expirePipeline.expire(prefixed(availabilityKey), lobbyTtl);
+        expirePipeline.expire(prefixed('availability_ts'), lobbyTtl);
+        await expirePipeline.exec();
+      } catch (e) {
+        console.warn('Impossibile impostare TTL availability:', (e as Error).message || e);
+      }
+    }
 
     // Pubblica evento per aggiornamenti realtime (non critico, fuori dal pipeline)
     try {

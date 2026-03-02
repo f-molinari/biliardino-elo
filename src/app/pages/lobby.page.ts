@@ -30,16 +30,9 @@ import type { IPlayer } from '@/models/player.interface';
 
 const LOBBY_TTL_DEFAULT = 5400; // 90 min
 const POLL_INTERVAL_MS = 10_000;
-const MSG_POLL_INTERVAL_MS = 15_000;
 const CHAT_MAX_LENGTH = 50;
 const FISH_TYPES = ['Squalo', 'Barracuda', 'Tonno', 'Spigola', 'Sogliola'] as const;
-const FISH_EMOJI: Record<string, string> = {
-  Squalo: '🦈',
-  Barracuda: '🐠',
-  Tonno: '🐟',
-  Spigola: '🐡',
-  Sogliola: '🐬',
-};
+const FISH_EMOJI = ['🐟', '🐠', '🐡', '🦈', '🐙', '🦑', '🐳', '🐬', '🦐', '🦭', '🪼'];
 const LABEL_COLORS = [
   '#1e90ff', '#e74c3c', '#8e44ad', '#e67e22', '#2ecc71',
   '#f39c12', '#16a085', '#c0392b', '#2980b9', '#d35400'
@@ -91,7 +84,6 @@ class LobbyPage extends Component {
 
   // Intervals / animation
   private pollInterval: ReturnType<typeof setInterval> | null = null;
-  private msgPollInterval: ReturnType<typeof setInterval> | null = null;
   private countdownInterval: ReturnType<typeof setInterval> | null = null;
   private animFrameId: number | null = null;
   private lastMessageTimestamp = 0;
@@ -113,22 +105,39 @@ class LobbyPage extends Component {
     this.myPlayerId = Number(localStorage.getItem('biliardino_player_id')) || null;
     this.isAdmin = isPlayerAdmin(this.myPlayerId);
 
-    // Attempt to load lobby data on render
+    // Fetch lobby state (single API call — includes lobby, confirmations, messages)
     try {
-      const res = await fetch(`${API_BASE_URL}/check-lobby`);
+      const res = await fetch(`${API_BASE_URL}/lobby-state`);
+
       if (res.ok) {
         const data = await res.json();
-        if (data.exists) {
+
+        // Lobby metadata
+        const lobby = data.lobby;
+        if (lobby?.exists) {
           this.lobbyExists = true;
+          if (lobby.match) this.lobbyData = lobby.match as IRunningMatchDTO;
+          if (typeof lobby.ttl === 'number' && lobby.ttl > 0) {
+            this.countdownTotal = lobby.ttl;
+            this.countdownSeconds = lobby.ttl;
+          }
         }
-        if (data.exists && data.match) {
-          this.lobbyData = data.match as IRunningMatchDTO;
+
+        // Confirmations
+        const confirmations: IConfirmation[] = data.confirmations ?? [];
+        this.confirmed.clear();
+        for (const c of confirmations) this.confirmed.add(c.playerId);
+
+        // Messages (initial load)
+        if (data.messages?.length > 0) {
+          this.messages = data.messages;
+          for (const m of data.messages) {
+            this.lastMessageTimestamp = Math.max(this.lastMessageTimestamp, m.sentAt);
+          }
         }
-        // Sync countdown from server TTL
-        if (data.exists && typeof data.ttl === 'number' && data.ttl > 0) {
-          this.countdownTotal = data.ttl;
-          this.countdownSeconds = data.ttl;
-        }
+
+        // Update global state
+        appState.lobbyActive = this.lobbyExists;
       }
     } catch {
       // fail-open -- render skeleton, polling will retry
@@ -149,25 +158,93 @@ class LobbyPage extends Component {
     }
 
     return `
-      <div class="space-y-5 md:space-y-6" id="lobby-page">
-
+      <div class="space-y-4" id="lobby-page">
         ${this.renderHeader()}
-
-        <div class="flex flex-col lg:grid lg:grid-cols-[1fr_320px] gap-4 md:gap-5">
-
-          <div class="space-y-4">
-            <div id="teams-section">
-              ${this.renderTeams()}
-            </div>
-            ${this.renderAquarium()}
-          </div>
-
-          ${this.renderChat()}
-
+        <div id="lobby-main">
+          ${this.renderMain()}
         </div>
-
       </div>
     `;
+  }
+
+  // ── Main content layout (confirmed vs unconfirmed) ───────────
+
+  private renderMain(): string {
+    if (this.isMyPresenceConfirmed) {
+      const color = this.getCountdownColor();
+      return `
+        <div class="space-y-3">
+
+          <!-- Countdown bar — always visible when scrolled past header -->
+          <div id="confirmed-ttl-bar"
+               class="flex items-center justify-between px-4 py-2.5 rounded-xl"
+               style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08)">
+            <div class="flex items-center gap-2">
+              <i data-lucide="timer" style="width:13px;height:13px;color:${color}"></i>
+              <span class="font-ui"
+                    style="font-size:11px; color:rgba(255,255,255,0.4); letter-spacing:0.1em">
+                LOBBY SCADE TRA
+              </span>
+            </div>
+            <span id="confirmed-countdown-text" class="font-display"
+                  style="font-size:16px; color:${color}; letter-spacing:0.08em; transition:color 0.5s">
+              ${this.formatCountdown(this.countdownSeconds)}
+            </span>
+          </div>
+
+          <!-- Aquarium — expanded, unlocked -->
+          ${this.renderAquarium(true)}
+
+          <!-- Chat — full-width, unlocked -->
+          ${this.renderChat()}
+
+          <!-- Abandon button — always visible -->
+          ${this.renderAbandonButton()}
+
+        </div>
+      `;
+    }
+
+    // Unconfirmed layout: teams + locked aquarium + locked chat (side column on lg)
+    return `
+      <div class="flex flex-col lg:grid lg:grid-cols-[1fr_320px] gap-4 md:gap-5">
+        <div class="space-y-4">
+          <div id="teams-section">
+            ${this.renderTeams()}
+          </div>
+          ${this.renderAquarium(false)}
+        </div>
+        ${this.renderChat()}
+      </div>
+    `;
+  }
+
+  // ── Re-render main content on state transitions ──────────────
+
+  private rerenderMain(): void {
+    const mainEl = this.$id('lobby-main');
+    if (!mainEl) return;
+
+    // Clear fish state — aquarium DOM will be recreated
+    this.fishMap.clear();
+    this.fishMovement.clear();
+
+    mainEl.innerHTML = this.renderMain();
+    refreshIcons();
+
+    this.bindChatEvents();
+    this.bindConfirmButton();
+    this.bindBroadcastButton();
+    this.bindConfirmKick();
+    this.bindAbandonButton();
+
+    // Re-spawn aquarium decorations (new DOM nodes)
+    this.spawnBubbles();
+    this.spawnGodRays();
+
+    gsap.from('#lobby-aquarium', { opacity: 0, y: 10, duration: 0.35, ease: 'power2.out' });
+    gsap.from('#lobby-chat', { opacity: 0, y: 10, duration: 0.35, ease: 'power2.out', delay: 0.08 });
+    gsap.from('.team-card', { opacity: 0, y: 15, stagger: 0.08, duration: 0.3, ease: 'power2.out', delay: 0.05 });
   }
 
   // ── Mount / Destroy ──────────────────────────────────────────
@@ -179,14 +256,9 @@ class LobbyPage extends Component {
     // Start countdown
     this.countdownInterval = setInterval(() => this.tickCountdown(), 1000);
 
-    // Start lobby polling
-    console.log('[LobbyPage] Starting pollLobby()');
+    // Perform an immediate lobby poll, then start periodic polling
     this.pollLobby();
     this.pollInterval = setInterval(() => this.pollLobby(), POLL_INTERVAL_MS);
-
-    // Start message polling
-    this.pollMessages();
-    this.msgPollInterval = setInterval(() => this.pollMessages(), MSG_POLL_INTERVAL_MS);
 
     // Start fish animation
     this.startFishAnimation();
@@ -200,6 +272,7 @@ class LobbyPage extends Component {
     this.bindConfirmButton();
     this.bindBroadcastButton();
     this.bindConfirmKick();
+    this.bindAbandonButton();
 
     // GSAP entrance animations
     gsap.from('#lobby-header', {
@@ -236,10 +309,18 @@ class LobbyPage extends Component {
   }
 
   override destroy(): void {
-    if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
-    if (this.msgPollInterval) { clearInterval(this.msgPollInterval); this.msgPollInterval = null; }
-    if (this.countdownInterval) { clearInterval(this.countdownInterval); this.countdownInterval = null; }
-    if (this.animFrameId !== null) { cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+    if (this.animFrameId !== null) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
     this.confirmKick?.destroy();
   }
 
@@ -256,7 +337,7 @@ class LobbyPage extends Component {
     return `
       <div id="lobby-header" class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2 md:gap-3 min-w-0">
-          <i data-lucide="users" class="text-[var(--color-gold)] shrink-0"
+          <i data-lucide="users" class="text-(--color-gold) shrink-0"
              style="width:26px;height:26px"></i>
           <div class="min-w-0">
             <h1 class="text-white font-display"
@@ -267,28 +348,6 @@ class LobbyPage extends Component {
                style="font-size:11px; color:rgba(255,255,255,0.5); letter-spacing:0.1em">
               CONFERMA LA TUA PRESENZA
             </p>
-          </div>
-        </div>
-
-        <!-- Countdown circle -->
-        <div class="flex flex-col items-center gap-1 shrink-0">
-          <div class="relative w-14 h-14 md:w-18 md:h-18" id="countdown-container">
-            <svg viewBox="0 0 64 64" class="absolute inset-0 w-full h-full -rotate-90">
-              <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.1)"
-                      stroke-width="3" fill="none" />
-              <circle id="countdown-circle" cx="32" cy="32" r="28"
-                      stroke="${color}" stroke-width="3" fill="none"
-                      stroke-dasharray="${circumference}"
-                      stroke-dashoffset="${offset}"
-                      stroke-linecap="round"
-                      style="transition: stroke-dashoffset 1s linear, stroke 0.5s" />
-            </svg>
-            <div class="absolute inset-0 flex items-center justify-center">
-              <span id="countdown-text" class="font-display"
-                    style="font-size:14px; color:${color}; transition:color 0.5s">
-                ${this.formatCountdown(this.countdownSeconds)}
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -310,7 +369,7 @@ class LobbyPage extends Component {
         <div class="team-card glass-card rounded-xl p-6 text-center">
           <i data-lucide="users" class="mx-auto mb-3"
              style="width:32px;height:32px;color:rgba(255,255,255,0.3)"></i>
-          <p class="font-display text-xl text-[var(--color-gold)] mb-2"
+          <p class="font-display text-xl text-(--color-gold) mb-2"
              style="letter-spacing:0.12em">
             NESSUNA LOBBY ATTIVA
           </p>
@@ -400,9 +459,10 @@ class LobbyPage extends Component {
           </div>
           <button id="confirm-btn"
                   class="shrink-0 px-4 py-1.5 rounded-lg font-ui transition-all duration-200 hover:brightness-110"
-                  style="${this.isMyPresenceConfirmed
-                    ? 'background:rgba(248,113,113,0.15); border:1px solid rgba(248,113,113,0.4); font-size:12px; letter-spacing:0.1em; color:#F87171'
-                    : 'background:linear-gradient(135deg, #FFD700, #F0A500); font-size:12px; letter-spacing:0.1em; color:#0F2A20'
+                  style="${
+                    this.isMyPresenceConfirmed
+                      ? 'background:rgba(248,113,113,0.15); border:1px solid rgba(248,113,113,0.4); font-size:12px; letter-spacing:0.1em; color:#F87171'
+                      : 'background:linear-gradient(135deg, #FFD700, #F0A500); font-size:12px; letter-spacing:0.1em; color:#0F2A20'
                   }; display:${this.isLobbyParticipant() ? 'block' : 'none'}">
             ${this.isMyPresenceConfirmed ? 'ANNULLA CONFERMA' : 'CONFERMA PRESENZA'}
           </button>
@@ -531,12 +591,12 @@ class LobbyPage extends Component {
     `;
   }
 
-  private renderAquarium(): string {
+  private renderAquarium(tall = false): string {
+    const fishAreaH = tall ? '320px' : '180px';
     return `
       <div id="lobby-aquarium" class="rounded-xl overflow-hidden relative"
            style="background:linear-gradient(180deg, rgba(0,40,80,0.6) 0%, rgba(0,20,50,0.9) 100%);
-                  border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px);
-                  min-height:220px">
+                  border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px)">
 
         <!-- Header -->
         <div class="px-4 md:px-5 py-3 flex items-center gap-2 relative z-10"
@@ -553,7 +613,7 @@ class LobbyPage extends Component {
         </div>
 
         <!-- Fish area -->
-        <div id="aquarium" class="relative" style="height:180px; overflow:hidden">
+        <div id="aquarium" class="relative" style="height:${fishAreaH}; overflow:hidden">
           <div id="god-rays" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
           ${!this.isMyPresenceConfirmed
             ? `
@@ -570,6 +630,22 @@ class LobbyPage extends Component {
             : ''}
         </div>
 
+      </div>
+    `;
+  }
+
+  private renderAbandonButton(): string {
+    return `
+      <div class="pb-2">
+        <button id="abandon-lobby-btn"
+                class="w-full py-3 rounded-xl font-ui transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                style="background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.35);
+                       font-size:13px; letter-spacing:0.12em; color:#F87171">
+          <span class="flex items-center justify-center gap-2">
+            <i data-lucide="log-out" style="width:14px;height:14px"></i>
+            ABBANDONA LOBBY
+          </span>
+        </button>
       </div>
     `;
   }
@@ -604,6 +680,15 @@ class LobbyPage extends Component {
       text.style.color = color;
     }
 
+    // Update TTL bar in confirmed layout
+    const confirmedText = this.$id('confirmed-countdown-text');
+    if (confirmedText) {
+      confirmedText.textContent = this.formatCountdown(this.countdownSeconds);
+      confirmedText.style.color = color;
+    }
+    const timerIcon = this.$('#confirmed-ttl-bar [data-lucide="timer"]') as HTMLElement | null;
+    if (timerIcon) timerIcon.style.color = color;
+
     if (this.countdownSeconds <= 0) {
       this.onCountdownExpired();
     }
@@ -623,28 +708,28 @@ class LobbyPage extends Component {
     // Could navigate away or show "time's up" state
   }
 
-  // ── Lobby polling ────────────────────────────────────────────
+  // ── Lobby polling (single /lobby-state call per tick) ──────
 
   private async pollLobby(): Promise<void> {
-    console.log('[LobbyPage] pollLobby() called');
+    // Capture state before fetch (for transition detection)
+    const wasConfirmed = this.isMyPresenceConfirmed;
+    const hadLobby = !!this.lobbyData;
+    const hadLobbyExists = this.lobbyExists;
+
     try {
-      console.log('[LobbyPage] Fetching:', `${API_BASE_URL}/check-lobby`, `${API_BASE_URL}/lobby-state`);
-      const [lobbyRes, stateRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/check-lobby`),
-        fetch(`${API_BASE_URL}/lobby-state`)
-      ]);
-      console.log('[LobbyPage] Fetch responses:', lobbyRes, stateRes);
+      const res = await fetch(`${API_BASE_URL}/lobby-state`);
+      if (!res.ok) return;
+      const data = await res.json();
 
-      if (lobbyRes.ok) {
-        const lobbyData = await lobbyRes.json();
-        console.log('[LobbyPage] lobbyData:', lobbyData);
-        const hadLobby = !!this.lobbyData;
-        const hadLobbyExists = this.lobbyExists;
-        this.lobbyExists = lobbyData.exists;
+      // ── Lobby metadata ──────────────────────────────────────
+      const lobby = data.lobby;
+      if (lobby) {
+        this.lobbyExists = !!lobby.exists;
+        appState.lobbyActive = this.lobbyExists;
+        appState.emit('lobby-change');
 
-        if (lobbyData.exists && lobbyData.match) {
-          this.lobbyData = lobbyData.match as IRunningMatchDTO;
-          // Resolve players
+        if (lobby.exists && lobby.match) {
+          this.lobbyData = lobby.match as IRunningMatchDTO;
           const ids = [
             this.lobbyData.teamA.defence,
             this.lobbyData.teamA.attack,
@@ -659,73 +744,52 @@ class LobbyPage extends Component {
           }
         }
 
-        // Sync countdown from server TTL (with drift threshold)
-        if (lobbyData.exists && typeof lobbyData.ttl === 'number' && lobbyData.ttl > 0) {
-          const serverTtl = lobbyData.ttl;
+        if (lobby.exists && typeof lobby.ttl === 'number' && lobby.ttl > 0) {
+          const serverTtl = lobby.ttl;
           if (Math.abs(this.countdownSeconds - serverTtl) > 5) {
             this.countdownSeconds = serverTtl;
           }
-          // Keep total in sync for percentage calculations
           if (this.countdownTotal < serverTtl) {
             this.countdownTotal = serverTtl;
           }
         }
-
-        // Re-render teams section when lobby state changes
-        if ((!hadLobby && this.lobbyData) || (!hadLobbyExists && this.lobbyExists)) {
-          const teamsSection = this.$id('teams-section');
-          if (teamsSection) {
-            teamsSection.innerHTML = this.renderTeams();
-            refreshIcons();
-            this.bindConfirmButton();
-            this.bindBroadcastButton();
-            this.bindConfirmKick();
-            gsap.from('.team-card', {
-              opacity: 0,
-              y: 20,
-              stagger: 0.1,
-              duration: 0.4,
-              ease: 'power2.out'
-            });
-          }
-        }
       }
 
-      if (stateRes.ok) {
-        const stateData = await stateRes.json();
-        console.log('[LobbyPage] stateData:', stateData);
-        const confirmations: IConfirmation[] = stateData.confirmations ?? [];
-        const oldSize = this.confirmed.size;
-        this.confirmed.clear();
-        for (const c of confirmations) {
-          this.confirmed.add(c.playerId);
-        }
+      // ── Confirmations ───────────────────────────────────────
+      const confirmations: IConfirmation[] = data.confirmations ?? [];
+      this.confirmed.clear();
+      for (const c of confirmations) this.confirmed.add(c.playerId);
 
-        // Update ready dots in the DOM
-        this.updateReadyStatus();
+      // ── Messages ────────────────────────────────────────────
+      this.processMessages(data.messages ?? []);
 
-        // Sync fish in aquarium
+      const isNowConfirmed = this.isMyPresenceConfirmed;
+      const layoutChanged = (!hadLobby && this.lobbyData)
+        || (!hadLobbyExists && this.lobbyExists)
+        || (wasConfirmed !== isNowConfirmed);
+
+      if (layoutChanged) {
+        // Full re-render of main content when layout needs to change
+        this.rerenderMain();
+
+        // Sync fish after re-render (new DOM)
         this.syncFish(confirmations);
-
-        // Sync confirm button state and unlock components if confirmed
-        this.updateConfirmButtonState();
-        if (this.myPlayerId && this.confirmed.has(this.myPlayerId)) {
-          this.updateUnlockedState();
-        }
-
-        // Update ready count text
-        const countEl = this.$id('ready-count');
-        if (countEl) {
-          countEl.textContent = `${this.confirmed.size}/4 PRONTI`;
-          countEl.style.color = this.confirmed.size >= 4 ? '#4ADE80' : 'rgba(255,255,255,0.4)';
-        }
-
-        // Update fish count
-        const fishCount = this.$id('fish-count');
-        if (fishCount) {
-          fishCount.textContent = `${this.confirmed.size} PESCI`;
-        }
+        return;
       }
+
+      // Targeted DOM updates (no layout change needed)
+      this.updateReadyStatus();
+      this.syncFish(confirmations);
+      this.updateConfirmButtonState();
+
+      const countEl = this.$id('ready-count');
+      if (countEl) {
+        countEl.textContent = `${this.confirmed.size}/4 PRONTI`;
+        countEl.style.color = this.confirmed.size >= 4 ? '#4ADE80' : 'rgba(255,255,255,0.4)';
+      }
+
+      const fishCount = this.$id('fish-count');
+      if (fishCount) fishCount.textContent = `${this.confirmed.size} PESCI`;
     } catch (err) {
       console.error('[LobbyPage] Poll error:', err);
     }
@@ -754,44 +818,7 @@ class LobbyPage extends Component {
   }
 
   private updateUnlockedState(): void {
-    if (!this.isMyPresenceConfirmed) return;
-
-    // Unlock chat: swap lock banner with actual form
-    const chatInputArea = this.$id('chat-input-area');
-    if (chatInputArea && !this.$id('chat-form')) {
-      chatInputArea.innerHTML = `
-        <div class="p-3">
-          <div id="chat-error" class="font-ui mb-1"
-               style="font-size:10px; color:#ff4444; display:none; letter-spacing:0.05em"></div>
-          <form id="chat-form" class="flex gap-2">
-            <input id="chat-input" type="text" maxlength="${CHAT_MAX_LENGTH}"
-                   placeholder="Scrivi un messaggio..."
-                   class="flex-1 px-3 py-2 rounded-lg text-white placeholder-white/25 outline-none font-body"
-                   style="background:rgba(10,25,18,0.8); border:1px solid rgba(255,255,255,0.1);
-                          font-size:12px; min-width:0"
-                   autocomplete="off" />
-            <button type="submit"
-                    class="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:brightness-110 shrink-0"
-                    style="background:linear-gradient(135deg, #FFD700, #F0A500)">
-              <i data-lucide="send" style="width:14px;height:14px;color:#0F2A20"></i>
-            </button>
-          </form>
-        </div>
-      `;
-      refreshIcons();
-      this.bindChatEvents();
-    }
-
-    // Unlock aquarium: fade out and remove overlay
-    const aquariumLock = this.$id('aquarium-lock');
-    if (aquariumLock) {
-      gsap.to(aquariumLock, {
-        opacity: 0,
-        duration: 0.4,
-        ease: 'power2.out',
-        onComplete: () => aquariumLock.remove()
-      });
-    }
+    // No-op: confirmation transitions are handled by rerenderMain()
   }
 
   // ── Confirm attendance ───────────────────────────────────────
@@ -811,6 +838,14 @@ class LobbyPage extends Component {
     });
   }
 
+  private bindAbandonButton(): void {
+    const btn = this.$id('abandon-lobby-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      await this.handleCancelConfirmation(btn);
+    });
+  }
+
   private async handleConfirm(btn: HTMLButtonElement): Promise<void> {
     btn.disabled = true;
     btn.textContent = '...';
@@ -824,10 +859,13 @@ class LobbyPage extends Component {
         })
       });
       if (!res.ok) throw new Error('Errore nella conferma');
+
+      // Update single source of truth, then re-render the whole main section
       this.confirmed.add(this.myPlayerId!);
-      this.updateConfirmButtonState();
-      this.updateReadyStatus();
-      this.updateUnlockedState();
+      this.rerenderMain();
+
+      // Sync fish and messages via a single poll (reuses the same /lobby-state call)
+      await this.pollLobby();
     } catch (err: any) {
       console.error('[LobbyPage] Confirm error:', err);
       btn.disabled = false;
@@ -846,18 +884,10 @@ class LobbyPage extends Component {
         body: JSON.stringify({ playerId: this.myPlayerId })
       });
       if (!res.ok) throw new Error('Errore nella cancellazione');
+
+      // Update single source of truth, then re-render the whole main section
       this.confirmed.delete(this.myPlayerId);
-      this.removeFish(this.myPlayerId);
-      this.updateReadyStatus();
-      this.updateConfirmButtonState();
-      this.lockAfterCancel();
-      const fishCount = this.$id('fish-count');
-      if (fishCount) fishCount.textContent = `${this.confirmed.size} PESCI`;
-      const countEl = this.$id('ready-count');
-      if (countEl) {
-        countEl.textContent = `${this.confirmed.size}/4 PRONTI`;
-        countEl.style.color = 'rgba(255,255,255,0.4)';
-      }
+      this.rerenderMain();
     } catch (err: any) {
       console.error('[LobbyPage] Cancel confirm error:', err);
       btn.disabled = false;
@@ -866,35 +896,7 @@ class LobbyPage extends Component {
   }
 
   private lockAfterCancel(): void {
-    const aquarium = this.$id('aquarium');
-    if (aquarium && !this.$id('aquarium-lock')) {
-      const overlay = document.createElement('div');
-      overlay.id = 'aquarium-lock';
-      overlay.className = 'absolute inset-0 flex flex-col items-center justify-center gap-2 z-20';
-      overlay.style.cssText = 'background:rgba(0,10,25,0.6); backdrop-filter:blur(3px)';
-      overlay.innerHTML = `
-        <i data-lucide="lock" style="width:22px;height:22px;color:rgba(255,255,255,0.35)"></i>
-        <span class="font-ui"
-              style="font-size:10px; color:rgba(255,255,255,0.35); letter-spacing:0.12em; text-align:center; line-height:1.8">
-          CONFERMA LA PRESENZA<br>PER SBLOCCARE IL MINIGIOCO
-        </span>
-      `;
-      aquarium.appendChild(overlay);
-      refreshIcons();
-    }
-    const chatInputArea = this.$id('chat-input-area');
-    if (chatInputArea) {
-      chatInputArea.innerHTML = `
-        <div class="px-4 py-4 flex items-center justify-center gap-2">
-          <i data-lucide="lock" style="width:13px;height:13px;color:rgba(255,255,255,0.3)"></i>
-          <span class="font-ui"
-                style="font-size:11px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
-            CONFERMA LA PRESENZA PER CHATTARE
-          </span>
-        </div>
-      `;
-      refreshIcons();
-    }
+    // No-op: handled by rerenderMain()
   }
 
   private updateConfirmButtonState(): void {
@@ -943,7 +945,7 @@ class LobbyPage extends Component {
       <div class="team-card glass-card rounded-xl p-6 text-center">
         <i data-lucide="bell" class="mx-auto mb-3"
            style="width:32px;height:32px;color:var(--color-gold)"></i>
-        <p class="font-display text-xl text-[var(--color-gold)] mb-2"
+        <p class="font-display text-xl text-(--color-gold) mb-2"
            style="letter-spacing:0.12em">
           NESSUNA LOBBY ATTIVA
         </p>
@@ -978,7 +980,7 @@ class LobbyPage extends Component {
     const alreadyConfirmed = this.myPlayerId ? this.confirmed.has(this.myPlayerId) : false;
     return `
       <div class="team-card glass-card rounded-xl p-6 text-center overflow-visible">
-        <p class="font-display text-xl text-[var(--color-gold)] mb-2"
+        <p class="font-display text-xl text-(--color-gold) mb-2"
            style="letter-spacing:0.12em">
           LOBBY ATTIVA
         </p>
@@ -1087,17 +1089,19 @@ class LobbyPage extends Component {
 
       if (!res.ok) throw new Error('Errore nella conferma');
 
+      // Update single source of truth, then re-render layout
       this.confirmed.add(this.myPlayerId);
-      this.confirmKick.showFeedback('CONFERMATO', '#4ADE80');
-      this.updateReadyStatus();
-      this.updateUnlockedState();
+      this.rerenderMain();
+
+      // Sync fish and messages via poll
+      await this.pollLobby();
     } catch (err: any) {
       console.error('[LobbyPage] Confirm kick error:', err);
-      this.confirmKick.showFeedback(
+      this.confirmKick?.showFeedback(
         err.message || 'ERRORE CONFERMA',
         '#F87171'
       );
-      this.confirmKick.reset();
+      this.confirmKick?.reset();
     }
   }
 
@@ -1148,34 +1152,29 @@ class LobbyPage extends Component {
   }
 
   private async pollMessages(): Promise<void> {
-    try {
-      const data = await MessageService.getMessages(
-        this.lastMessageTimestamp > 0 ? this.lastMessageTimestamp : undefined
-      );
+    // Replaced by processMessages() called from pollLobby()
+    // Kept as no-op for safety in case of stale references
+  }
 
-      if (data.messages && data.messages.length > 0) {
-        // Determine if there are truly new messages
-        const newMessages = data.messages.filter(
-          m => m.sentAt > this.lastMessageTimestamp
-        );
+  private processMessages(messages: IMessage[]): void {
+    if (!messages || messages.length === 0) return;
 
-        if (newMessages.length > 0 || this.messages.length === 0) {
-          // On first load, take all messages; afterwards, only new ones
-          if (this.messages.length === 0) {
-            this.messages = data.messages;
-          } else {
-            this.messages.push(...newMessages);
-          }
+    const newMessages = messages.filter(
+      m => m.sentAt > this.lastMessageTimestamp
+    );
 
-          for (const m of data.messages) {
-            this.lastMessageTimestamp = Math.max(this.lastMessageTimestamp, m.sentAt);
-          }
-
-          this.renderMessages();
-        }
+    if (newMessages.length > 0 || this.messages.length === 0) {
+      if (this.messages.length === 0) {
+        this.messages = messages;
+      } else {
+        this.messages.push(...newMessages);
       }
-    } catch (err) {
-      console.error('[LobbyPage] Message poll error:', err);
+
+      for (const m of messages) {
+        this.lastMessageTimestamp = Math.max(this.lastMessageTimestamp, m.sentAt);
+      }
+
+      this.renderMessages();
     }
   }
 
@@ -1266,9 +1265,10 @@ class LobbyPage extends Component {
     if (!aquarium || this.fishMap.has(playerId)) return;
 
     const isMe = playerId === this.myPlayerId;
-    const fishTypeKey = isMe ? 'Squalo' : FISH_TYPES[index % FISH_TYPES.length];
-    const labelColor = LABEL_COLORS[index % LABEL_COLORS.length];
-    const fishEmoji = FISH_EMOJI[fishTypeKey] ?? '🐟';
+    const fishEmoji = isMe
+      ? '🦈'
+      : FISH_EMOJI[index % FISH_EMOJI.length];
+    const fishEmoji = FISH_EMOJI[Math.floor(Math.random() * FISH_EMOJI.length)];
 
     const fish = document.createElement('div');
     fish.className = 'absolute pointer-events-none';
@@ -1314,7 +1314,7 @@ class LobbyPage extends Component {
   }
 
   private startFishAnimation(): void {
-    const loop = () => {
+    const loop = (): void => {
       this.updateFishMovement();
       this.animFrameId = requestAnimationFrame(loop);
     };

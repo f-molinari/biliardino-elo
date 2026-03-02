@@ -3,13 +3,13 @@
     border-bottom: 1px solid var(--glass-border-gold);
     backdrop-filter: blur(12px);
   ">
-  <div class="max-w-[var(--max-width)] mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
+  <div class="max-w-(--max-width) mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
     <a href="/" class="flex items-center gap-2 md:gap-3 group" data-nav>
       <div class="shrink-0 transition-transform duration-300 group-hover:scale-105">
-        {{logoSvg}}
+        <img src="/logo.png" alt="logo" class="w-10 h-10 rounded-lg object-cover" />
       </div>
       <div class="hidden sm:block">
-        <div class="text-[var(--color-gold)] tracking-[0.15em] font-ui" style="font-size: 11px; font-weight: 500">
+        <div class="text-(--color-gold) tracking-[0.15em] font-ui" style="font-size: 11px; font-weight: 500">
           CALCIO BLILIARDINO
         </div>
         <div class="text-white tracking-[0.2em] font-display" style="font-size: 20px; line-height: 1">
@@ -37,7 +37,7 @@
             <span class="font-ui text-white" data-user-initials style="font-size: 11px">{{playerInitials}}</span>
           </div>
           <div id="notif-state-dot" class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
-            style="background:transparent;ring:2px solid var(--color-bg-deep);display:none;box-shadow:0 0 0 2px var(--color-bg-deep)">
+            style="background:transparent;display:none;box-shadow:0 0 0 2px var(--color-bg-deep)">
           </div>
         </div>
         <span class="text-white/90 font-ui" data-user-name style="font-size: 13px">{{playerName}}</span>
@@ -79,7 +79,7 @@
   </nav>
 
   <button id="mobile-menu-user"
-    class="mx-3 mb-3 px-4 py-3 rounded-lg flex items-center gap-3 w-[calc(100%-24px)] transition-all hover:bg-white/[0.06]"
+    class="mx-3 mb-3 px-4 py-3 rounded-lg flex items-center gap-3 w-[calc(100%-24px)] transition-all hover:bg-white/6"
     style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08)">
     <div class="w-9 h-9 rounded-full flex items-center justify-center ring-2 ring-[#FFD700]/40 shrink-0"
       style="background: linear-gradient(135deg, #E8A020dd, #E8A02088)">

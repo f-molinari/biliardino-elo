@@ -305,7 +305,7 @@ class MatchmakingPage extends Component {
                   </div>
                   <input id="score-team-a" type="number" min="0" max="8"
                          class="w-16 h-16 rounded-xl text-center font-display bg-white/5 text-white outline-none
-                                focus:ring-2 focus:ring-[var(--color-gold)]/50 transition-all"
+                                focus:ring-2 focus:ring-(--color-gold)/50 transition-all"
                          style="font-size:32px; border:1px solid rgba(255,255,255,0.15)"
                          placeholder="0" />
                 </div>
@@ -316,7 +316,7 @@ class MatchmakingPage extends Component {
                   </div>
                   <input id="score-team-b" type="number" min="0" max="8"
                          class="w-16 h-16 rounded-xl text-center font-display bg-white/5 text-white outline-none
-                                focus:ring-2 focus:ring-[var(--color-gold)]/50 transition-all"
+                                focus:ring-2 focus:ring-(--color-gold)/50 transition-all"
                          style="font-size:32px; border:1px solid rgba(255,255,255,0.15)"
                          placeholder="0" />
                 </div>

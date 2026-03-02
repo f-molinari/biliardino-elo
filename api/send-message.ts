@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { IMessage } from '../src/models/message.interface.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
-import { redis } from './_redisClient.js';
+import { prefixed, redisRaw } from './_redisClient.js';
 import { validatePlayerId, validateString } from './_validation.js';
 
 interface SendMessageBody {
@@ -61,14 +61,12 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       timestamp
     };
 
-    // Chiave Redis per i messaggi globali della lobby
-    const messagesKey = `messages`;
-    const messageDataKey = `message:${messageId}`;
-
-    // Salva il messaggio
-    await redis.set(messageDataKey, JSON.stringify(message), { ex: 240 }); // TTL 4 minuti
-    await redis.lpush(messagesKey, messageId); // Aggiungi a lista
-    await redis.expire(messagesKey, 240); // TTL 4 minuti per la lista
+    // Pipeline: set + lpush + expire in 1 HTTP request to Upstash
+    const pipeline = redisRaw.pipeline();
+    pipeline.set(prefixed(`message:${messageId}`), JSON.stringify(message), { ex: 240 });
+    pipeline.lpush(prefixed('messages'), messageId);
+    pipeline.expire(prefixed('messages'), 240);
+    await pipeline.exec();
 
     return res.status(201).json(message);
   } catch (error) {

@@ -209,7 +209,7 @@ test.describe('Full Integration — Redis + API + UI End-to-End', () => {
       'button:not([disabled]):has(svg)' // Enabled button with icon
     ];
 
-    let confirmBtn = null;
+    let confirmBtn;
     for (const selector of possibleSelectors) {
       try {
         confirmBtn = page.locator(selector).first();
@@ -285,7 +285,7 @@ test.describe('Full Integration — Redis + API + UI End-to-End', () => {
       const confirmations = [];
       for (let i = 0; i < 3; i++) {
         const playerId = PLAYER_IDS[i];
-        
+
         try {
           const confirmResult = await apiCall('/confirm-availability', {
             method: 'POST',
@@ -293,7 +293,7 @@ test.describe('Full Integration — Redis + API + UI End-to-End', () => {
           });
           confirmations.push({ playerId, result: confirmResult });
           console.log(`✅ Player ${playerId} confirmed via API`);
-          
+
           // Small delay between confirmations to avoid race conditions
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
@@ -327,7 +327,7 @@ test.describe('Full Integration — Redis + API + UI End-to-End', () => {
 
       // Verify admin sees matchmaking interface
       await expect(adminPage.getByText('MATCHMAKING').first()).toBeVisible({ timeout: 10_000 });
-      
+
       // Verify admin sees active players in matchmaking interface
       // Check for player avatars or names that should be visible
       for (const playerId of PLAYER_IDS.slice(0, 3)) {
@@ -336,7 +336,7 @@ test.describe('Full Integration — Redis + API + UI End-to-End', () => {
           const playerVisible = await adminPage.locator(
             `[data-player-id="${playerId}"], [data-testid="player-${playerId}"], .player-card`
           ).first().isVisible({ timeout: 5000 });
-          
+
           if (playerVisible) {
             console.log(`✅ Player ${playerId} visible in matchmaking`);
           } else {

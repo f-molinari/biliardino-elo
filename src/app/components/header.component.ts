@@ -13,7 +13,6 @@ import { router } from '../router';
 import { appState } from '../state';
 import { bindHtml, rawHtml } from '../utils/html-template.util';
 import { Component } from './component.base';
-import { renderFoosballLogo } from './foosball-logo.component';
 import template from './header.component.html?raw';
 import { userDropdown } from './user-dropdown.component';
 
@@ -48,7 +47,6 @@ export class HeaderComponent extends Component {
     const playerInitials = playerName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'G';
 
     return bindHtml(template)`${{
-      logoSvg: rawHtml(renderFoosballLogo(44, '#FFD700')),
       desktopNav: rawHtml(this.renderDesktopNav(currentPath)),
       mobileNav: rawHtml(this.renderMobileNav(currentPath)),
       playerInitials,
@@ -241,6 +239,10 @@ export class HeaderComponent extends Component {
   // ── Lobby active indicator ──────────────────────────────────
 
   private async pollLobbyStatus(): Promise<void> {
+    // Skip when lobby page is active — it already maintains appState.lobbyActive
+    const isLobbyPageActive = (appState as any).isLobbyPageActive as boolean | undefined;
+    if (isLobbyPageActive) return;
+
     try {
       const res = await fetch(`${API_BASE_URL}/check-lobby`);
       if (!res.ok) return;
