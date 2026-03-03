@@ -32,10 +32,7 @@
         class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200 hover:bg-white/10"
         style="border: 1px solid var(--glass-border-gold)" aria-label="Apri profilo utente">
         <div class="relative shrink-0">
-          <div class="w-7 h-7 rounded-full flex items-center justify-center ring-2 ring-[#FFD700]/40"
-            style="background: linear-gradient(135deg, #E8A020dd, #E8A02088)">
-            <span class="font-ui text-white" data-user-initials style="font-size: 11px">{{playerInitials}}</span>
-          </div>
+          <div id="user-avatar-desktop">{{userAvatarDesktop}}</div>
           <div id="notif-state-dot" class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
             style="background:transparent;display:none;box-shadow:0 0 0 2px var(--color-bg-deep)">
           </div>
@@ -48,9 +45,9 @@
       </button>
 
       <button id="user-pill-mobile"
-        class="md:hidden relative flex items-center justify-center w-8 h-8 rounded-full ring-2 ring-[#FFD700]/40 transition-all duration-200 hover:ring-[#FFD700]/70"
-        style="background: linear-gradient(135deg, #E8A020dd, #E8A02088)" aria-label="Apri profilo utente">
-        <span class="font-ui text-white" data-user-initials style="font-size: 12px">{{playerInitials}}</span>
+        class="md:hidden relative transition-all duration-200 hover:opacity-80"
+        aria-label="Apri profilo utente">
+        <div id="user-avatar-mobile">{{userAvatarMobile}}</div>
         <div id="notif-state-dot-mobile" class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
           style="background:transparent;display:none;box-shadow:0 0 0 2px var(--color-bg-deep)"></div>
       </button>
@@ -81,10 +78,7 @@
   <button id="mobile-menu-user"
     class="mx-3 mb-3 px-4 py-3 rounded-lg flex items-center gap-3 w-[calc(100%-24px)] transition-all hover:bg-white/6"
     style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08)">
-    <div class="w-9 h-9 rounded-full flex items-center justify-center ring-2 ring-[#FFD700]/40 shrink-0"
-      style="background: linear-gradient(135deg, #E8A020dd, #E8A02088)">
-      <span class="font-ui text-white" data-user-initials style="font-size: 13px">{{playerInitials}}</span>
-    </div>
+    <div id="user-avatar-mobile-menu">{{userAvatarMobileMenu}}</div>
     <div class="flex-1 text-left">
       <div class="font-ui text-white" data-user-name style="font-size: 14px">{{playerName}}</div>
       <div class="font-body" style="font-size: 11px; color: rgba(255,215,0,0.6)">

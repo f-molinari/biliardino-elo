@@ -8,12 +8,14 @@
 
 import { API_BASE_URL } from '@/config/env.config';
 import gsap from 'gsap';
+import { getPlayerById } from '../../services/player.service';
 import { refreshIcons } from '../icons';
 import { router } from '../router';
 import { appState } from '../state';
 import { bindHtml, rawHtml } from '../utils/html-template.util';
 import { Component } from './component.base';
 import template from './header.component.html?raw';
+import { CLASS_COLORS, getInitials, renderPlayerAvatar } from './player-avatar.component';
 import { userDropdown } from './user-dropdown.component';
 
 interface NavItem {
@@ -44,12 +46,19 @@ export class HeaderComponent extends Component {
   override render(): string {
     const currentPath = router.getCurrentPath();
     const playerName = appState.currentPlayerName ?? 'Guest';
-    const playerInitials = playerName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'G';
+
+    const playerId = appState.currentPlayerId ?? undefined;
+    const player = playerId ? getPlayerById(playerId) : null;
+    const initials = getInitials(player?.name ?? playerName) || 'G';
+    const color = player ? (CLASS_COLORS[player.class] ?? '#E8A020') : '#E8A020';
+    const avatarHtml = renderPlayerAvatar({ initials, color, size: 'xs', playerId: player?.id, playerClass: player?.class });
 
     return bindHtml(template)`${{
       desktopNav: rawHtml(this.renderDesktopNav(currentPath)),
       mobileNav: rawHtml(this.renderMobileNav(currentPath)),
-      playerInitials,
+      userAvatarDesktop: rawHtml(avatarHtml),
+      userAvatarMobile: rawHtml(avatarHtml),
+      userAvatarMobileMenu: rawHtml(avatarHtml),
       playerName
     }}`;
   }
