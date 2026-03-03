@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 const VERSION = '0.3.1=alpha.0';
-const CACHE_PREFIX = 'calcio-bliliardino';
+const CACHE_PREFIX = 'calcio-biliardino';
 // Will be updated by client messages when the firebase key/version changes (e.g. when adding a match)
 let FIREBASE_CACHE_KEY = 'initial';
 const STATIC_CACHE = () => `${CACHE_PREFIX}-static-${VERSION}-${FIREBASE_CACHE_KEY}`;
@@ -191,7 +191,7 @@ async function handleNavigationRequest(event) {
   } catch {
     const cachedShell = await caches.match('/index.html');
     if (cachedShell) return cachedShell;
-    return new Response(`<!doctype html><html lang="it"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>CAlcio bliliardino</title><style>html,body{margin:0;min-height:100%;background:#0F2A20;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.sw-splash{min-height:100vh;display:flex;align-items:center;justify-content:center;opacity:.9;letter-spacing:.08em;font-size:12px}</style></head><body><div class="sw-splash">CARICAMENTO…</div></body></html>`, {
+    return new Response(`<!doctype html><html lang="it"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>CAlcio biliardino</title><style>html,body{margin:0;min-height:100%;background:#0F2A20;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.sw-splash{min-height:100vh;display:flex;align-items:center;justify-content:center;opacity:.9;letter-spacing:.08em;font-size:12px}</style></head><body><div class="sw-splash">CARICAMENTO…</div></body></html>`, {
       headers: { 'Content-Type': 'text/html; charset=UTF-8' },
       status: 200
     });

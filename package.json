@@ -1,5 +1,5 @@
 {
-  "name": "calcio-bliliardino",
+  "name": "calcio-biliardino",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
@@ -19,7 +19,8 @@
     "token:admin": "node scripts/generate-token.js admin",
     "token:cron": "node scripts/generate-token.js cron",
     "token:notify": "node scripts/generate-token.js notify",
-    "test-broadcast": "node scripts/test-broadcast.js"
+    "test-broadcast": "node scripts/test-broadcast.js",
+    "pwa:assets": "pwa-asset-generator src/assets/logo.png public/icons --manifest public/manifest.webmanifest --index index.html --favicon --path \"/icons\" --maskable --no-sandbox"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -32,6 +33,7 @@
     "dotenv": "^17.2.3",
     "happy-dom": "^20.4.0",
     "node-fetch": "^3.3.2",
+    "pwa-asset-generator": "^8.1.2",
     "shadcn": "^3.8.5",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.48.1",

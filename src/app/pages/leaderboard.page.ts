@@ -76,7 +76,7 @@ class LeaderboardPage extends Component {
         ${this.renderReminderBanner()}
         ${this.renderIdentityBanner()}
         ${this.renderLiveMatch(runningMatch ?? null)}
-        ${hasMatch ? '' : this.renderPodium()}
+        ${hasMatch ? '' : this.renderPodiumOrSkeleton()}
         ${this.renderRankingTable()}
         ${this.renderRecentMatches()}
       </div>
@@ -517,6 +517,67 @@ class LeaderboardPage extends Component {
 
   // ── Podium (fedele al React Figma) ──────────────────────────
 
+  private renderPodiumOrSkeleton(): string {
+    const players = this.getAllRankedPlayers()
+      .sort((a, b) => getRank(a.id) - getRank(b.id));
+
+    const top3 = players.filter(p => getRank(p.id) <= 3).slice(0, 3);
+    if (top3.length < 3) {
+      // Se non ci sono 3 giocatori, mostra lo skeleton
+      return this.renderPodiumSkeleton();
+    }
+
+    return this.renderPodium();
+  }
+
+  private renderPodiumSkeleton(): string {
+    const skeletonCard = (): string => `
+      <div class="podium-card group flex flex-col items-center p-4 md:p-5 gap-2 md:gap-3 rounded-xl animate-pulse"
+           style="
+             min-height: 287px;
+             background: rgba(255,255,255,0.04);
+             border: 1px solid rgba(255,255,255,0.08);
+             backdrop-filter: blur(8px);
+           "
+      >
+        <!-- Avatar skeleton -->
+        <div class="relative mb-7 w-16 h-16 rounded-full bg-gray-600/30"></div>
+        
+        <!-- Name skeleton -->
+        <div class="w-28 h-4 rounded bg-gray-600/30"></div>
+        
+        <!-- ELO skeleton -->
+        <div class="mt-2 w-20 h-8 rounded bg-gray-600/30"></div>
+        <div class="w-20 h-3 rounded bg-gray-600/20 mt-1"></div>
+        
+        <!-- Stats skeleton -->
+        <div class="flex gap-4 text-center mt-3 w-full justify-center">
+          <div class="w-12 h-5 rounded bg-gray-600/30"></div>
+          <div class="w-0.5 h-5 bg-gray-600/20"></div>
+          <div class="w-12 h-5 rounded bg-gray-600/30"></div>
+        </div>
+      </div>
+    `;
+
+    return `
+      <!-- Mobile: #1 in cima, #2/#3 affiancati -->
+      <div class="flex flex-col gap-3 sm:hidden">
+        ${skeletonCard()}
+        <div class="grid grid-cols-2 gap-3">
+          ${skeletonCard()}
+          ${skeletonCard()}
+        </div>
+      </div>
+
+      <!-- Desktop: #2 | #1 | #3 -->
+      <div class="hidden sm:grid grid-cols-3 gap-4 items-end">
+        ${skeletonCard()}
+        ${skeletonCard()}
+        ${skeletonCard()}
+      </div>
+    `;
+  }
+
   private renderPodium(): string {
     const players = this.getAllRankedPlayers()
       .sort((a, b) => getRank(a.id) - getRank(b.id));
@@ -538,7 +599,7 @@ class LeaderboardPage extends Component {
       const medal = MEDALS[rank];
       const color = CLASS_COLORS[p.class] ?? '#8B7D6B';
       const initials = getInitials(p.name);
-      const elevatedStyle = elevated ? 'min-height:290px' : '';
+      const elevatedClass = elevated ? 'podium-card-elevated' : '';
       // Card bg: 15% white base gives ~50 RGB unit contrast over the dark field
       // (#0F2A20 → #1F5C3A); previous 8% was below perceptible threshold.
       // Medal gradient on top adds gold/silver/bronze identity.
@@ -550,9 +611,9 @@ class LeaderboardPage extends Component {
 
       return `
         <a href="/profile/${p.id}"
-           class="podium-card group flex flex-col items-center p-4 md:p-5 gap-2 md:gap-3 rounded-xl"
+           class="podium-card ${elevatedClass} group flex flex-col items-center p-4 md:p-5 gap-2 md:gap-3 rounded-xl"
            style="
-             ${elevatedStyle};
+             min-height: 290px;
              background: ${bg};
              border: 1px solid ${border};
              box-shadow: ${shadow};
