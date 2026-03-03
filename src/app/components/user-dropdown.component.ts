@@ -23,18 +23,13 @@ import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import gsap from 'gsap';
-import { getInitials } from './player-avatar.component';
+import { CLASS_COLORS, getInitials, renderPlayerAvatar } from './player-avatar.component';
 
 /* ── Keys localStorage ─────────────────────────────────────── */
 const PLAYER_ID_KEY = 'biliardino_player_id';
 const PLAYER_NAME_KEY = 'biliardino_player_name';
 const SUBSCRIPTION_KEY = 'biliardino_subscription';
 const SUBSCRIPTION_VERIFIED_KEY = 'biliardino_subscription_verified';
-
-/* ── Colori classe ─────────────────────────────────────────── */
-const CLASS_COLORS: Record<number, string> = {
-  0: '#FFD700', 1: '#4A90D9', 2: '#27AE60', 3: '#C0C0C0', 4: '#8B7D6B'
-};
 
 /* ── Stato notifiche ───────────────────────────────────────── */
 type NotifState
@@ -516,13 +511,20 @@ class UserDropdownComponent {
 
   private updateHeader(): void {
     /* Update the name shown in the user pill */
-    const name = localStorage.getItem(PLAYER_NAME_KEY) ?? 'Guest';
-    const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || 'G';
-    document.querySelectorAll('[data-user-initials]').forEach((el) => {
-      el.textContent = initials;
-    });
+    const playerId = Number(localStorage.getItem(PLAYER_ID_KEY) ?? 0) || undefined;
+    const player = playerId ? getPlayerById(playerId) : null;
+    const name = player?.name ?? localStorage.getItem(PLAYER_NAME_KEY) ?? 'Guest';
+    const initials = getInitials(name) || 'G';
+    const color = player ? (CLASS_COLORS[player.class] ?? '#E8A020') : '#E8A020';
+
     document.querySelectorAll('[data-user-name]').forEach((el) => {
       el.textContent = name;
+    });
+
+    const avatarHtml = renderPlayerAvatar({ initials, color, size: 'xs', playerId: player?.id, playerClass: player?.class });
+    ['user-avatar-desktop', 'user-avatar-mobile', 'user-avatar-mobile-menu'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = avatarHtml;
     });
   }
 
@@ -579,10 +581,7 @@ class UserDropdownComponent {
 
       return `
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 ring-2"
-               style="background:${color}22;color:${color};ring-color:${color}44;font-family:var(--font-ui);font-size:14px;font-weight:600;border:2px solid ${color}44">
-            ${initials}
-          </div>
+          ${renderPlayerAvatar({ initials, color, size: 'sm', playerId: player.id, playerClass: player.class })}
           <div class="flex-1 min-w-0">
             <div class="font-ui text-sm text-white leading-tight truncate">${player.name}</div>
             <div class="font-body flex items-center gap-1.5 mt-0.5" style="font-size:11px;color:rgba(255,255,255,0.4)">
@@ -619,10 +618,7 @@ class UserDropdownComponent {
       return `
         <button class="dd-player-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 hover:bg-white/[0.07] active:scale-[0.98]"
                 data-action="select-player" data-id="${p.id}">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-               style="background:${color}22;color:${color};font-family:var(--font-ui);font-size:12px;font-weight:600;border:1.5px solid ${color}44">
-            ${initials}
-          </div>
+          ${renderPlayerAvatar({ initials, color, size: 'xs', playerId: p.id, playerClass: p.class })}
           <div class="flex-1 text-left min-w-0">
             <div class="font-ui text-xs text-white truncate">${p.name}</div>
           </div>

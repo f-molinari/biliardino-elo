@@ -12,6 +12,10 @@ let avatarRenderSequence = 0;
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'base' | 'lg' | 'xl' | 'match';
 
+export const CLASS_COLORS: Record<number, string> = {
+  0: '#FFD700', 1: '#4A90D9', 2: '#27AE60', 3: '#C0C0C0', 4: '#8B7D6B'
+};
+
 const sizeMap: Record<AvatarSize, { container: string; text: string; dot: string; coreInsetClass: string }> = {
   xs: { container: 'w-[34px] h-[34px]', text: 'text-[10px]', dot: 'w-2 h-2', coreInsetClass: 'inset-[8%]' },
   sm: { container: 'w-[43px] h-[43px]', text: 'text-xs', dot: 'w-2.5 h-2.5', coreInsetClass: 'inset-[8%]' },
