@@ -10,7 +10,7 @@
     "prebuild": "node scripts/generate-sw-version.js",
     "build": "vite build",
     "predev": "node scripts/generate-sw-version.js",
-    "dev": "npx vercel dev",
+    "dev": "vite",
     "lint": "eslint --fix",
     "test": "vitest",
     "test:ui": "vitest --ui",
