@@ -6,8 +6,8 @@
  * The host page supplies the click callback; all animation logic
  * lives inside this component.
  */
+import haptics from '@/utils/haptics.util';
 import gsap from 'gsap';
-import { WebHaptics } from 'web-haptics';
 import brodcustKickPlayerSVG from './brodcast-kick.svg?raw';
 
 const SVG_ROTATION_ORIGIN = '62 88';
@@ -92,7 +92,6 @@ export class BroadcastKickComponent {
     const ball = document.getElementById('broadcast-btn');
     const player = document.getElementById('kick-player');
     const body = document.getElementById('kick-player-body');
-    const haptics = new WebHaptics();
 
     if (!ball || !player || !body) {
       this.broadcasting = false;
@@ -134,6 +133,7 @@ export class BroadcastKickComponent {
     tl.to(ball, {
       scaleX: 1, scaleY: 1, x: -240, rotation: 720, duration: 0.4, ease: 'power1.out'
     }, '-=0.1').then(() => {
+      alert('Kick animation complete! Triggering haptic feedback.');
       haptics.trigger([{ duration: 120 }], { intensity: 0.9 });
     });
 
@@ -149,6 +149,8 @@ export class BroadcastKickComponent {
 
     // 8. Ball disappears after flying off-screen
     tl.to(ball, { opacity: 0, duration: 0.15 }, '-=0.1');
+
+    haptics.trigger([{ duration: 120 }], { intensity: 0.9 });
 
     await tl.then();
     return true;
