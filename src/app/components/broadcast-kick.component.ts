@@ -6,8 +6,8 @@
  * The host page supplies the click callback; all animation logic
  * lives inside this component.
  */
-import { triggerImpact } from '@/utils/haptics.util';
 import gsap from 'gsap';
+import { WebHaptics } from 'web-haptics';
 import brodcustKickPlayerSVG from './brodcast-kick.svg?raw';
 
 const SVG_ROTATION_ORIGIN = '62 88';
@@ -92,6 +92,8 @@ export class BroadcastKickComponent {
     const ball = document.getElementById('broadcast-btn');
     const player = document.getElementById('kick-player');
     const body = document.getElementById('kick-player-body');
+    const haptics = new WebHaptics();
+
     if (!ball || !player || !body) {
       this.broadcasting = false;
       return false;
@@ -124,8 +126,6 @@ export class BroadcastKickComponent {
     }, '-=0.12');
 
     // 4. Kick! — controlled power kick (longer, more defined)
-    // Trigger strong haptic feedback at the moment of impact
-    tl.call(() => triggerImpact('strong'), undefined, '-=0.22');
     tl.to(body, {
       rotation: 70, duration: 0.22, ease: 'power2.inOut', svgOrigin: SVG_ROTATION_ORIGIN
     }, '-=0.22');
@@ -133,7 +133,9 @@ export class BroadcastKickComponent {
     // 5. Ball flies away with arc trajectory
     tl.to(ball, {
       scaleX: 1, scaleY: 1, x: -240, rotation: 720, duration: 0.4, ease: 'power1.out'
-    }, '-=0.1');
+    }, '-=0.1').then(() => {
+      haptics.trigger([{ duration: 120 }], { intensity: 0.9 });
+    });
 
     // 6. Ball returns to center Y during flight (natural arc)
     tl.to(ball, {

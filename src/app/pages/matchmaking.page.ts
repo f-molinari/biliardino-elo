@@ -18,7 +18,7 @@ import { getAllPlayers, getClass, getPlayerById, getRank } from '@/services/play
 import { clearRunningMatch, fetchRunningMatch, saveMatch, saveRunningMatch } from '@/services/repository.service';
 import { availabilityList } from '@/utils/availability.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
-import { triggerImpact } from '@/utils/haptics.util';
+import haptics from '@/utils/haptics.util';
 import gsap from 'gsap';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
@@ -810,7 +810,7 @@ class MatchmakingPage extends Component {
 
     const matchDTO = addMatch(teamA, teamB, [scoreA, scoreB]);
     await saveMatch(matchDTO);
-    triggerImpact('strong'); // Haptic feedback for successful match save
+    haptics.trigger('success');
 
     // Clear Redis confirmations
     try {
