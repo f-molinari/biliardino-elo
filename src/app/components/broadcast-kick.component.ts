@@ -147,10 +147,9 @@ export class BroadcastKickComponent {
     // 8. Ball disappears after flying off-screen
     tl.to(ball, { opacity: 0, duration: 0.15 }, '-=0.1');
 
-    haptics.trigger('heavy');
-    haptics.trigger('heavy');
-    haptics.trigger('heavy');
-    haptics.trigger('heavy');
+    haptics.trigger([
+      { delay: 300, duration: 20 }
+    ], { intensity: 1 });
 
     await tl.then();
     return true;
