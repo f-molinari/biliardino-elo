@@ -559,7 +559,7 @@ class LeaderboardPage extends Component {
         
         <!-- Avatar -->
         <div class="relative flex flex-col text-center">
-        ${renderPlayerAvatar({ initials, color, size: 'xl', playerId: p.id, playerClass: p.class })}
+        ${renderPlayerAvatar({ initials, color, size: 'base', playerId: p.id, playerClass: p.class })}
           <!-- Medal emoji -->
           <span class="-translate-y-1" style="font-size:28px; line-height:1">${medal}</span>
           </div>
@@ -583,9 +583,7 @@ class LeaderboardPage extends Component {
             <div style="font-family:var(--font-display); font-size:26px; color:${eloColor}; letter-spacing:0.1em; line-height:1">
               ${elo}
             </div>
-            <div style="font-family:var(--font-ui); font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:0.1em">
-              ELO RATING
-            </div>
+            <div style="font-family:var(--font-ui); font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:0.1em">ELO</div>
           </div>
             <div style="width:1px; background:rgba(255,255,255,0.15)"></div>
             <div>
@@ -666,9 +664,9 @@ class LeaderboardPage extends Component {
         </div>
 
         <!-- Mobile header -->
-        <div class="md:hidden grid gap-2 px-4 py-2.5 overflow-hidden rounded-t-xl"
+        <div class="md:hidden grid gap-3 px-4 py-2.5 overflow-hidden rounded-t-xl"
              style="
-               grid-template-columns: 36px 1fr 52px 48px;
+               grid-template-columns: auto 1fr 52px 48px;
                background: rgba(10,25,18,0.8);
                border-bottom: 1px solid rgba(255,215,0,0.2);
              ">
@@ -740,7 +738,7 @@ class LeaderboardPage extends Component {
 
     const avatarAndNameMobile = `
       <div class="flex items-center gap-5 min-w-0">
-        ${renderPlayerAvatar({ initials: getInitials(player.name), color, size: 'base', playerId: player.id, playerClass: player.class })}
+        ${renderPlayerAvatar({ initials: getInitials(player.name), color, size: 'sm', playerId: player.id, playerClass: player.class })}
         <div class="min-w-0">
           <div class="text-white group-hover:text-(--color-gold) transition-colors truncate"
                style="font-family:var(--font-ui); font-size:13px; font-weight:600">
@@ -786,8 +784,8 @@ class LeaderboardPage extends Component {
         </div>
 
         <!-- Mobile row -->
-        <div class="md:hidden grid gap-2 px-4 py-3 items-center transition-all duration-200 hover:bg-white/5"
-             style="grid-template-columns: 36px 1fr 52px 48px">
+        <div class="md:hidden grid gap-3 px-4 py-3 items-center transition-all duration-200 hover:bg-white/5"
+             style="grid-template-columns: auto 1fr 52px 48px">
           <div>${rankDisplay}</div>
           <div class="min-w-0">${avatarAndNameMobile}</div>
           <div>

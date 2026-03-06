@@ -3,6 +3,7 @@
  * Ported from Figma: PlayerAvatar.tsx
  */
 
+import { getPlayerById } from '../../services/player.service';
 import { html, rawHtml } from '../utils/html-template.util';
 import template from './player-avatar.component.html?raw';
 
@@ -44,7 +45,6 @@ interface AvatarOptions {
   /** When true, the class frame/crown overlay is suppressed entirely. */
   hideFrame?: boolean;
 }
-let m = Math.random() * 5 | 0; /* used to add some random variance to the default class frame when playerClass is not provided */
 /**
  * Returns an HTML string for a player avatar.
  * If `playerId` is provided, shows the player photo (public/avatars/{id}.webp)
@@ -52,11 +52,7 @@ let m = Math.random() * 5 | 0; /* used to add some random variance to the defaul
  */
 export function renderPlayerAvatar({ initials, color, size = 'md', online, playerId, playerClass = undefined, hideFrame = false }: AvatarOptions): string {
   const s = sizeMap[size];
-  const resolvedClass = hideFrame ? undefined : m++ % 5; /* playerClass !== undefined
-  /*
-    : (Number.isFinite(playerClass)
-        ? playerClass
-        : (playerId === undefined ? undefined : getPlayerById(playerId)?.class)); */
+  const resolvedClass = hideFrame ? undefined : (playerClass !== undefined ? playerClass : (playerId !== undefined ? getPlayerById(playerId)?.class : undefined));
   const classFrameSrc = resolvedClass !== undefined && resolvedClass >= 0
     ? `${BASE_PATH}class/${resolvedClass}.png`
     : undefined;

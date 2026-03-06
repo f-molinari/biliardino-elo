@@ -97,7 +97,7 @@ class BottomNavComponent {
       );
       return `
         <button id="${tab.id}"
-          class="relative flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-200 ${isActive ? 'text-(--color-gold)' : 'text-white/40 hover:text-white/60'}"
+          class="group relative flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-200 ${isActive ? 'text-(--color-gold)' : 'text-[#6b716e] hover:text-[#9ca19f]'}"
           style="font-family:var(--font-ui);font-size:9px;letter-spacing:0.08em${tab.adminOnly ? ';display:none' : ''}">
           <i data-lucide="${tab.icon}" style="width:20px;height:20px;transition:transform 0.2s ease"></i>
           <span>${tab.label.toUpperCase()}</span>
@@ -138,7 +138,7 @@ class BottomNavComponent {
       if (!btn) return;
       const isActive = tab.id === activeTabId;
       btn.classList.toggle('text-(--color-gold)', isActive);
-      btn.classList.toggle('text-white/40', !isActive);
+      btn.classList.toggle('text-[#6b716e]', !isActive);
 
       const icon = btn.querySelector<HTMLElement>('i[data-lucide]');
       if (icon) {

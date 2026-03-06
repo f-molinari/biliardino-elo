@@ -42,8 +42,6 @@ class MobileDrawerComponent {
   private isOpen = false;
   private handleRouteChange: (() => void) | null = null;
   private onAdminChange: (() => void) | null = null;
-  private touchStartY = 0;
-  private touchDragY = 0;
 
   /* ── Mount / Destroy ─────────────────────────────────────── */
 
@@ -67,30 +65,6 @@ class MobileDrawerComponent {
     this.updateAdminVisibility();
 
     this.backdropEl?.addEventListener('click', () => this.close());
-
-    this.drawerEl?.addEventListener('touchstart', (e: TouchEvent) => {
-      this.touchStartY = e.touches[0].clientY;
-      this.touchDragY = 0;
-    }, { passive: true });
-
-    this.drawerEl?.addEventListener('touchmove', (e: TouchEvent) => {
-      const deltaY = e.touches[0].clientY - this.touchStartY;
-      this.touchDragY = Math.max(0, Math.min(500, deltaY));
-      gsap.set(this.drawerEl, { y: this.touchDragY });
-      if (this.backdropEl) {
-        gsap.set(this.backdropEl, { opacity: Math.max(0, 1 - this.touchDragY / 300) });
-      }
-    }, { passive: true });
-
-    this.drawerEl?.addEventListener('touchend', () => {
-      if (this.touchDragY > 120) {
-        this.close();
-      } else {
-        gsap.to(this.drawerEl, { y: 0, duration: 0.5, ease: 'elastic.out(1,0.4)' });
-        gsap.to(this.backdropEl, { opacity: 1, duration: 0.25 });
-      }
-      this.touchDragY = 0;
-    });
 
     document.getElementById('drawer-user-strip')?.addEventListener('click', () => {
       this.close();
@@ -125,7 +99,11 @@ class MobileDrawerComponent {
   /* ── Toggle / Open / Close ───────────────────────────────── */
 
   toggle(): void {
-    if (this.isOpen) this.close(); else this.open();
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
   }
 
   open(): void {
@@ -190,9 +168,9 @@ class MobileDrawerComponent {
       return `
         <a href="${item.path}"
            ${item.adminOnly ? 'data-admin-only style="display:none"' : ''}
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive
+           class="group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive
               ? 'text-(--color-gold) bg-[rgba(255,215,0,0.1)]'
-              : 'text-white/70 hover:text-white hover:bg-white/[0.06]'}"
+              : 'text-[#9ca19f] hover:text-white hover:bg-white/6'}"
            style="font-family:var(--font-ui);font-size:14px;letter-spacing:0.07em">
           <i data-lucide="${item.icon}" style="width:18px;height:18px"></i>
           ${item.label}
@@ -216,7 +194,7 @@ class MobileDrawerComponent {
       const isActive = path === '/' ? currentPath === '/' : currentPath.startsWith(path);
       link.classList.toggle('text-(--color-gold)', isActive);
       link.classList.toggle('bg-[rgba(255,215,0,0.1)]', isActive);
-      link.classList.toggle('text-white/70', !isActive);
+      link.classList.toggle('text-[#9ca19f]', !isActive);
 
       const dot = link.querySelector<HTMLElement>('.bg-\\(--color-gold\\)');
       if (isActive && !dot) {
