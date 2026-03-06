@@ -10,6 +10,7 @@ import { Component } from './components/component.base';
 import { appState } from './state';
 import errorTemplate from './templates/router-error.html?raw';
 import { html } from './utils/html-template.util';
+import { trace } from './utils/trace';
 
 // ── Route definition ──────────────────────────────────────
 
@@ -89,16 +90,22 @@ class Router {
     if (!this.contentEl) {
       throw new Error('Router: #app-content element not found');
     }
+    trace('Router', 'init() — #app-content found');
 
     this.normalizeLegacyHashUrl();
 
-    window.addEventListener('popstate', () => this.onPathChange());
+    window.addEventListener('popstate', () => {
+      trace('Router', 'popstate event');
+      this.onPathChange();
+    });
     window.addEventListener('hashchange', () => {
+      trace('Router', 'hashchange event');
       this.normalizeLegacyHashUrl();
       void this.onPathChange();
     });
     document.addEventListener('click', event => this.onDocumentClick(event));
 
+    trace('Router', 'calling initial onPathChange()', { path: this.getCurrentPath() });
     // Initial navigation
     this.onPathChange();
   }
@@ -129,20 +136,29 @@ class Router {
   // ── Internals ─────────────────────────────────────────────
 
   private async onPathChange(): Promise<void> {
-    if (this.transitioning) return;
+    if (this.transitioning) {
+      trace('Router', 'onPathChange skipped — already transitioning');
+      return;
+    }
 
     const path = this.getCurrentPath();
+    trace('Router', 'onPathChange', { path });
     const match = this.matchRoute(path);
 
     if (!match) {
+      trace('Router', 'no route match → redirect to /');
       // 404: redirect to leaderboard
       this.navigate('/');
       return;
     }
 
+    trace('Router', 'route matched', { routePath: match.route.path, params: match.params });
+
     // Auth guard
     if (match.route.requireAdmin || match.route.requireAuth) {
+      trace('Router', 'checking auth', { requireAdmin: match.route.requireAdmin });
       const authorized = await this.checkAuth(match.route.requireAdmin ?? false);
+      trace('Router', 'auth check result', { authorized });
       if (!authorized) return;
     }
 
@@ -218,11 +234,14 @@ class Router {
   }
 
   private async checkAuth(requireAdmin: boolean): Promise<boolean> {
+    trace('Router', 'checkAuth start', { requireAdmin });
     try {
       const { withAuthentication } = await import('@/utils/auth.util');
+      trace('Router', 'auth.util loaded');
       return new Promise<boolean>((resolve) => {
         withAuthentication(
           () => {
+            trace('Router', 'withAuthentication callback — authorized');
             appState.isAuthenticated = true;
             if (requireAdmin) appState.isAdmin = true;
             resolve(true);
@@ -230,7 +249,8 @@ class Router {
           requireAdmin
         );
       });
-    } catch {
+    } catch (err) {
+      trace('Router', 'checkAuth threw error → redirect to /', { error: String(err) });
       this.navigate('/');
       return false;
     }
@@ -238,26 +258,34 @@ class Router {
 
   private async renderRoute(match: RouteMatch): Promise<void> {
     this.transitioning = true;
+    trace('Router', 'renderRoute start', { routePath: match.route.path });
 
     try {
       // 1. Destroy previous component
       if (this.currentComponent) {
         this.currentComponent.destroy();
+        trace('Router', 'previous component destroyed');
       }
 
       // 2. Fade out current content
       if (this.contentEl && this.contentEl.children.length > 0) {
         await gsap.to(this.contentEl, { opacity: 0, y: -10, duration: 0.15, ease: 'power2.in' });
+        trace('Router', 'fade-out done');
       }
 
       // 3. Load and instantiate new component
+      trace('Router', 'dynamic import start', { routePath: match.route.path });
       const module = await match.route.load();
+      trace('Router', 'dynamic import done');
       const PageComponent = module.default;
       const component = new PageComponent();
       component.setParams(match.params);
+      trace('Router', 'component instantiated');
 
       // 4. Render HTML
+      trace('Router', 'calling component.render()');
       const renderHtml = await component.render();
+      trace('Router', 'component.render() done');
       if (this.contentEl) {
         this.contentEl.innerHTML = renderHtml;
         this.contentEl.style.opacity = '0';
@@ -266,7 +294,9 @@ class Router {
 
       // 5. Mount (bind events)
       component.setElement(this.contentEl);
+      trace('Router', 'calling component.mount()');
       component.mount();
+      trace('Router', 'component.mount() done');
       this.currentComponent = component;
 
       // 6. Update page title
@@ -278,9 +308,12 @@ class Router {
       }
 
       // 8. Notify state
+      trace('Router', 'emitting route-change', { routePath: match.route.path });
       appState.emit('route-change', match.route.path);
+      trace('Router', 'renderRoute complete');
     } catch (error) {
       console.error('[Router] Error rendering route:', error);
+      trace('Router', 'renderRoute ERROR', { error: String(error), stack: error instanceof Error ? error.stack : undefined });
       if (this.contentEl) {
         this.contentEl.innerHTML = html(errorTemplate);
         this.contentEl.style.opacity = '1';
@@ -288,6 +321,7 @@ class Router {
       }
     } finally {
       this.transitioning = false;
+      trace('Router', 'transitioning = false');
     }
   }
 }

@@ -20,6 +20,7 @@ import { userDropdown } from './components/user-dropdown.component';
 import { initParticlesSystem } from './particles/particles-manager';
 import { router } from './router';
 import { appState } from './state';
+import { trace } from './utils/trace';
 
 declare global {
   interface Window {
@@ -67,16 +68,25 @@ function dismissBootOverlay(): void {
 }
 
 async function bootstrap(): Promise<void> {
+  trace('Bootstrap', 'start', { href: window.location.href });
+
   // 0. Normalize legacy hash-based URLs before first render
   if (window.location.hash.startsWith('#/')) {
     window.history.replaceState(null, '', window.location.hash.slice(1));
+    trace('Bootstrap', 'normalized hash URL', { newPath: window.location.pathname });
   }
 
   // 1. Hydrate auth state from localStorage
   appState.hydrateFromLocalStorage();
+  trace('Bootstrap', 'hydrateFromLocalStorage done', {
+    playerId: appState.currentPlayerId,
+    isAdmin: appState.isAdmin,
+    isAuthenticated: appState.isAuthenticated,
+  });
 
   // 1b. Initialize particles system
   initParticlesSystem();
+  trace('Bootstrap', 'particles initialized');
 
   // 2. Render the Layout shell
   const layout = new LayoutComponent();
@@ -86,27 +96,39 @@ async function bootstrap(): Promise<void> {
   // if (!appEl) throw new Error('Bootstrap: <body> element not found');
 
   appEl.innerHTML = layout.render();
+  trace('Bootstrap', 'layout rendered');
   layout.mount();
+  trace('Bootstrap', 'layout mounted');
 
   // 3. Mount the unified user dropdown (panel + backdrop appended to body)
   userDropdown.mount();
+  trace('Bootstrap', 'userDropdown mounted');
 
   // 4. Start the router (reads current hash, renders first page)
+  trace('Bootstrap', 'calling router.init()');
   router.init();
+  trace('Bootstrap', 'router.init() returned (async navigation in flight)');
 
   // 4b. Remove splash as soon as first route is ready (with tiny minimum display time)
   const onFirstRoute = (): void => {
+    trace('Bootstrap', 'first route-change received → dismissing splash');
     appState.off('route-change', onFirstRoute);
     tryDismissBootOverlay();
   };
   appState.on('route-change', onFirstRoute);
+  trace('Bootstrap', 'registered route-change listener for splash dismiss');
 
   // 4c. Safety: force-dismiss skeleton after 5s even if route-change never fires
-  window.setTimeout(() => tryDismissBootOverlay(), 5000);
+  window.setTimeout(() => {
+    trace('Bootstrap', '5s safety timeout fired → force-dismissing splash');
+    tryDismissBootOverlay();
+  }, 5000);
+  trace('Bootstrap', 'bootstrap() finished synchronously — waiting for router');
 }
 
 bootstrap().catch((error) => {
   console.error('[Bootstrap] Fatal error:', error);
+  trace('Bootstrap', 'FATAL ERROR in bootstrap()', { error: String(error) });
   dismissBootOverlay();
 
   const appContent = document.getElementById('app-content');

@@ -8,6 +8,7 @@
 import { isPlayerAdmin } from '@/config/admin.config';
 import type { ILobbyState } from '@/models/lobby.interface';
 import type { IRunningMatchDTO } from '@/models/match.interface';
+import { trace } from './utils/trace';
 
 type Listener = (...args: unknown[]) => void;
 
@@ -68,6 +69,7 @@ class AppState {
   }
 
   emit(event: string, ...args: unknown[]): void {
+    trace('State', `emit "${event}"`, args.length ? args : undefined);
     this.listeners.get(event)?.forEach(cb => cb(...args));
   }
 
@@ -82,6 +84,11 @@ class AppState {
       this.currentPlayerName = playerName;
       this.isAdmin = isPlayerAdmin(this.currentPlayerId);
     }
+    trace('State', 'hydrateFromLocalStorage', {
+      playerId: this.currentPlayerId,
+      playerName: this.currentPlayerName,
+      isAdmin: this.isAdmin,
+    });
   }
 }
 
