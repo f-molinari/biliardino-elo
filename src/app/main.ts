@@ -82,6 +82,8 @@ async function bootstrap(): Promise<void> {
   const layout = new LayoutComponent();
   const appEl = document.getElementById('app');
   if (!appEl) throw new Error('Bootstrap: #app element not found');
+  // const appEl = document.body;
+  // if (!appEl) throw new Error('Bootstrap: <body> element not found');
 
   appEl.innerHTML = layout.render();
   layout.mount();

@@ -160,7 +160,7 @@ export default class PlayerProfilePage extends Component {
     const avatarHtml = renderPlayerAvatar({
       initials: getInitials(player.name),
       color,
-      size: 'xl',
+      size: 'xxl',
       playerId: id,
       playerClass: player.class
     });

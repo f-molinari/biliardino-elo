@@ -118,7 +118,7 @@ class AddMatchPage extends Component {
         </div>
 
         <form id="add-match-form" class="p-4 md:p-5 space-y-5">
-          <!-- Team A (Red) -->
+          <!-- BIANCHI (Red) -->
           <div>
             <div class="flex items-center gap-2 mb-3">
               <div class="w-3 h-3 rounded-full" style="background:var(--color-team-red)"></div>
@@ -157,12 +157,12 @@ class AddMatchPage extends Component {
             <div class="flex-1 h-px" style="background:rgba(255,255,255,0.1)"></div>
           </div>
 
-          <!-- Team B (Blue) -->
+          <!-- ROSSI (Blue) -->
           <div>
             <div class="flex items-center gap-2 mb-3">
               <div class="w-3 h-3 rounded-full" style="background:var(--color-team-blue)"></div>
               <span class="font-ui" style="font-size:12px; color:var(--color-team-blue); letter-spacing:0.1em">
-                TEAM BLU
+                ROSSILU
               </span>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -367,7 +367,7 @@ class AddMatchPage extends Component {
 
     preview.innerHTML = `
       <div class="space-y-4">
-        <!-- Team A -->
+        <!-- BIANCHI -->
         <div class="p-3 rounded-lg" style="background:rgba(229,62,62,0.1); border:1px solid rgba(229,62,62,0.25)">
           <div class="font-ui text-xs mb-2" style="color:var(--color-team-red); letter-spacing:0.1em">TEAM ROSSO</div>
           <div class="space-y-2">
@@ -392,9 +392,9 @@ class AddMatchPage extends Component {
           </div>
         </div>
 
-        <!-- Team B -->
+        <!-- ROSSI -->
         <div class="p-3 rounded-lg" style="background:rgba(49,130,206,0.1); border:1px solid rgba(49,130,206,0.25)">
-          <div class="font-ui text-xs mb-2" style="color:var(--color-team-blue); letter-spacing:0.1em">TEAM BLU</div>
+          <div class="font-ui text-xs mb-2" style="color:var(--color-team-blue); letter-spacing:0.1em">ROSSILU</div>
           <div class="space-y-2">
             ${renderPlayer(bd, 'DIF')}
             ${renderPlayer(ba, 'ATT')}

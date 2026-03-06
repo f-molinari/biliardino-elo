@@ -196,7 +196,7 @@ override async render(): Promise<string> {
 | `elo.service.ts` | ELO formula, K-factor, expected score |
 | `stats.service.ts` | Win rate, best ELO, goal differential |
 | `message.service.ts` | Lobby chat messages |
-| `matchmaking.service.ts` | Team balancing algorithm |
+| `matchmaking.service.ts` | ROSSIalancing algorithm |
 | `repository.service.ts` | Dev/prod data source switch (see below) |
 
 ### Repository pattern

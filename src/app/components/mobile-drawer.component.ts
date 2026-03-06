@@ -31,12 +31,9 @@ interface DrawerNavItem {
 }
 
 const NAV_ITEMS: DrawerNavItem[] = [
-  { path: '/', label: 'Classifica', icon: 'trophy' },
-  { path: '/lobby', label: 'Lobby', icon: 'users' },
-  { path: '/stats', label: 'Statistiche', icon: 'bar-chart-3' },
   { path: '/matchmaking', label: 'Matchmaking', icon: 'swords', adminOnly: true },
   { path: '/add-match', label: 'Aggiungi Partita', icon: 'plus-circle', adminOnly: true },
-  { path: '/add-player', label: 'Aggiungi Giocatore', icon: 'user-plus', adminOnly: true },
+  { path: '/add-player', label: 'Aggiungi Giocatore', icon: 'user-plus', adminOnly: true }
 ];
 
 class MobileDrawerComponent {
@@ -45,6 +42,8 @@ class MobileDrawerComponent {
   private isOpen = false;
   private handleRouteChange: (() => void) | null = null;
   private onAdminChange: (() => void) | null = null;
+  private touchStartY = 0;
+  private touchDragY = 0;
 
   /* ── Mount / Destroy ─────────────────────────────────────── */
 
@@ -54,7 +53,7 @@ class MobileDrawerComponent {
       userAvatar: rawHtml(this.buildUserAvatar()),
       playerName: this.getPlayerName(),
       playerElo: this.getPlayerEloLabel(),
-      navLinks: rawHtml(this.renderNavLinks()),
+      navLinks: rawHtml(this.renderNavLinks())
     });
     // template produces backdrop + drawer as two sibling root elements
     while (wrapper.firstChild) {
@@ -68,6 +67,30 @@ class MobileDrawerComponent {
     this.updateAdminVisibility();
 
     this.backdropEl?.addEventListener('click', () => this.close());
+
+    this.drawerEl?.addEventListener('touchstart', (e: TouchEvent) => {
+      this.touchStartY = e.touches[0].clientY;
+      this.touchDragY = 0;
+    }, { passive: true });
+
+    this.drawerEl?.addEventListener('touchmove', (e: TouchEvent) => {
+      const deltaY = e.touches[0].clientY - this.touchStartY;
+      this.touchDragY = Math.max(0, Math.min(500, deltaY));
+      gsap.set(this.drawerEl, { y: this.touchDragY });
+      if (this.backdropEl) {
+        gsap.set(this.backdropEl, { opacity: Math.max(0, 1 - this.touchDragY / 300) });
+      }
+    }, { passive: true });
+
+    this.drawerEl?.addEventListener('touchend', () => {
+      if (this.touchDragY > 120) {
+        this.close();
+      } else {
+        gsap.to(this.drawerEl, { y: 0, duration: 0.5, ease: 'elastic.out(1,0.4)' });
+        gsap.to(this.backdropEl, { opacity: 1, duration: 0.25 });
+      }
+      this.touchDragY = 0;
+    });
 
     document.getElementById('drawer-user-strip')?.addEventListener('click', () => {
       this.close();
@@ -136,7 +159,7 @@ class MobileDrawerComponent {
   private getPlayerName(): string {
     const id = Number(localStorage.getItem(PLAYER_ID_KEY) ?? 0);
     const player = id ? getPlayerById(id) : null;
-    return player?.name ?? localStorage.getItem(PLAYER_NAME_KEY) ?? 'Guest';
+    return player?.name ?? localStorage.getItem(PLAYER_NAME_KEY) ?? '💀';
   }
 
   private getPlayerEloLabel(): string {
@@ -149,10 +172,10 @@ class MobileDrawerComponent {
   private buildUserAvatar(): string {
     const id = Number(localStorage.getItem(PLAYER_ID_KEY) ?? 0);
     const player = id ? getPlayerById(id) : null;
-    const name = player?.name ?? localStorage.getItem(PLAYER_NAME_KEY) ?? 'Guest';
+    const name = player?.name ?? localStorage.getItem(PLAYER_NAME_KEY) ?? '💀';
     const color = player ? (CLASS_COLORS[player.class] ?? '#E8A020') : '#E8A020';
     return renderPlayerAvatar({
-      initials: getInitials(name) || 'G',
+      initials: getInitials(name) || '💀',
       color,
       size: 'sm',
       playerId: player?.id,
@@ -162,14 +185,14 @@ class MobileDrawerComponent {
 
   private renderNavLinks(): string {
     const currentPath = router.getCurrentPath();
-    return NAV_ITEMS.map(item => {
+    return NAV_ITEMS.map((item) => {
       const isActive = item.path === '/' ? currentPath === '/' : currentPath.startsWith(item.path);
       return `
         <a href="${item.path}"
            ${item.adminOnly ? 'data-admin-only style="display:none"' : ''}
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive
-             ? 'text-(--color-gold) bg-[rgba(255,215,0,0.1)]'
-             : 'text-white/70 hover:text-white hover:bg-white/[0.06]'}"
+              ? 'text-(--color-gold) bg-[rgba(255,215,0,0.1)]'
+              : 'text-white/70 hover:text-white hover:bg-white/[0.06]'}"
            style="font-family:var(--font-ui);font-size:14px;letter-spacing:0.07em">
           <i data-lucide="${item.icon}" style="width:18px;height:18px"></i>
           ${item.label}
@@ -188,7 +211,7 @@ class MobileDrawerComponent {
 
   private updateActiveStates(): void {
     const currentPath = router.getCurrentPath();
-    this.drawerEl?.querySelectorAll<HTMLElement>('a[href]').forEach(link => {
+    this.drawerEl?.querySelectorAll<HTMLElement>('a[href]').forEach((link) => {
       const path = link.getAttribute('href') ?? '';
       const isActive = path === '/' ? currentPath === '/' : currentPath.startsWith(path);
       link.classList.toggle('text-(--color-gold)', isActive);
@@ -205,7 +228,7 @@ class MobileDrawerComponent {
   }
 
   private updateAdminVisibility(): void {
-    this.drawerEl?.querySelectorAll<HTMLElement>('[data-admin-only]').forEach(el => {
+    this.drawerEl?.querySelectorAll<HTMLElement>('[data-admin-only]').forEach((el) => {
       el.style.display = appState.isAdmin ? '' : 'none';
     });
   }

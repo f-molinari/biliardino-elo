@@ -91,7 +91,7 @@ export function renderMatchmakingPlayerList({
                     style="color:${classColor}; background:${classColor}22; border:1px solid ${classColor}33">
                 ${className.toUpperCase()}
               </span>
-              ${isConfirmed ? '<span class="confirmed-badge" title="Confermato dalla lobby"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>LIVE</span>' : ''}
+              ${isConfirmed ? '' : ''}
             </div>
             <div class="flex items-center gap-2 mt-0.5 flex-wrap">
               <div class="flex items-center gap-1">
@@ -106,13 +106,24 @@ export function renderMatchmakingPlayerList({
           </div>
         </div>
 
-        <button class="player-toggle-btn w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 ml-2"
-                data-player-id="${player.id}"
-                data-state="${state}"
-          style="${getToggleBtnStyle(state)}"
-                title="${state === 0 ? 'Non selezionato' : state === 1 ? 'Disponibile (click per priorita)' : 'Priorita (click per deselezionare)'}">
-          ${getToggleBtnIcon(state)}
-        </button>
+        <div class="flex flex-col items-center gap-0.5 shrink-0 ml-2">
+          ${isConfirmed
+            ? `<span class="confirmed-badge flex items-center gap-1 px-1.5 py-0.5 rounded-full font-ui text-[9px] tracking-[0.06em]"
+                 title="Confermato dalla lobby"
+                 style="background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);color:#4ADE80">
+                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                   stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                 API
+               </span>`
+            : '<span class="h-[18px]"></span>'}
+          <button class="player-toggle-btn w-9 h-9 rounded-full flex items-center justify-center transition-all"
+                  data-player-id="${player.id}"
+                  data-state="${state}"
+            style="${getToggleBtnStyle(state)}"
+                  title="${state === 0 ? 'Non selezionato' : state === 1 ? 'Disponibile (click per priorita)' : 'Priorita (click per deselezionare)'}">
+            ${getToggleBtnIcon(state)}
+          </button>
+        </div>
       </div>
     `;
   }).join('');

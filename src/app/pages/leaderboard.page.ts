@@ -76,7 +76,7 @@ class LeaderboardPage extends Component {
         ${this.renderReminderBanner()}
         ${this.renderIdentityBanner()}
         ${this.renderLiveMatch(runningMatch ?? null)}
-        ${hasMatch ? '' : this.renderPodiumOrSkeleton()}
+        ${hasMatch ? '' : this.renderPodium()}
         ${this.renderRankingTable()}
         ${this.renderRecentMatches()}
       </div>
@@ -123,7 +123,7 @@ class LeaderboardPage extends Component {
     gsap.from('.podium-card', { scale: 0.9, y: 12, stagger: 0.1, duration: 0.45, ease: 'back.out(1.4)', clearProps: 'transform' });
     gsap.from('.stat-card-new', { y: 15, stagger: 0.08, duration: 0.3, ease: 'power2.out', delay: 0.1 });
     gsap.from('.ranking-row', { x: -10, stagger: 0.03, duration: 0.25, ease: 'power2.out', delay: 0.3 });
-    gsap.from('.match-row', { x: -10, stagger: 0.03, duration: 0.25, ease: 'power2.out', delay: 0.4 });
+    gsap.from('.match-history-row', { x: -10, stagger: 0.03, duration: 0.25, ease: 'power2.out', delay: 0.4 });
   }
 
   override destroy(): void {
@@ -309,8 +309,8 @@ class LeaderboardPage extends Component {
         const roleLabel = isDef ? 'DIFENSORE' : 'ATTACCANTE';
         return `
           <a href="/profile/${p.id}" class="flex items-center gap-3 rounded-xl py-2 px-3 hover:bg-white/5 transition-colors">
-            <div class="relative shrink-0" style="width:56px;height:56px">
-              ${renderPlayerAvatar({ initials: getInitials(p.name), color, size: 'md', playerId: p.id, playerClass: p.class })}
+            <div class="relative shrink-0">
+              ${renderPlayerAvatar({ initials: getInitials(p.name), color, size: 'lg', playerId: p.id, playerClass: p.class })}
             </div>
             <div class="min-w-0 flex-1">
               <div class="text-white font-ui truncate" style="font-size:15px;font-weight:600">${p.name}</div>
@@ -339,9 +339,9 @@ class LeaderboardPage extends Component {
         const roleIcon = isDef ? 'shield' : 'swords';
         const roleLabel = isDef ? 'DIFENSORE' : 'ATTACCANTE';
         return `
-          <a href="/profile/${p.id}" class="flex items-center gap-3 rounded-xl py-2 px-3 hover:bg-white/5 transition-colors flex-row-reverse">
-            <div class="relative shrink-0" style="width:56px;height:56px">
-              ${renderPlayerAvatar({ initials: getInitials(p.name), color, size: 'md', playerId: p.id, playerClass: p.class })}
+          <a href="/profile/${p.id}" class="flex items-center gap-5 rounded-xl py-2 px-3 hover:bg-white/5 transition-colors flex-row-reverse">
+            <div class="relative shrink-0">
+              ${renderPlayerAvatar({ initials: getInitials(p.name), color, size: 'lg', playerId: p.id, playerClass: p.class })}
             </div>
             <div class="min-w-0 flex-1 text-right">
               <div class="text-white font-ui truncate" style="font-size:15px;font-weight:600">${p.name}</div>
@@ -407,10 +407,10 @@ class LeaderboardPage extends Component {
             <!-- Desktop layout: side by side -->
             <div class="hidden md:flex gap-6 items-start">
 
-              <!-- Team A (left) -->
+              <!-- BIANCHI (left) -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-3 mb-2">
-                  <span class="font-display" style="font-size:18px;color:#4ade80;letter-spacing:0.12em">TEAM A</span>
+                  <span class="font-display" style="font-size:18px;color:rgba(255,255,255,0.75);letter-spacing:0.12em">BIANCHI</span>
                   <span class="font-ui" style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.08em">AVG</span>
                   <span class="font-display text-white" style="font-size:16px">${avgEloA}</span>
                 </div>
@@ -422,10 +422,10 @@ class LeaderboardPage extends Component {
 
               ${vsDivider}
 
-              <!-- Team B (right) -->
+              <!-- ROSSI (right) -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-3 mb-2 justify-end">
-                  <span class="font-display" style="font-size:18px;color:#60a5fa;letter-spacing:0.12em">TEAM B</span>
+                  <span class="font-display" style="font-size:18px;color:rgba(229,62,62,0.9);letter-spacing:0.12em">ROSSI</span>
                   <span class="font-ui" style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.08em">AVG</span>
                   <span class="font-display text-white" style="font-size:16px">${avgEloB}</span>
                 </div>
@@ -438,10 +438,10 @@ class LeaderboardPage extends Component {
 
             <!-- Mobile layout: stacked -->
             <div class="md:hidden">
-              <!-- Team A -->
+              <!-- BIANCHI -->
               <div class="mb-2">
                 <div class="flex items-center gap-3 mb-1">
-                  <span class="font-display" style="font-size:16px;color:#4ade80;letter-spacing:0.12em">TEAM A</span>
+                  <span class="font-display" style="font-size:16px;color:rgba(255,255,255,0.75);letter-spacing:0.12em">BIANCHI</span>
                   <span class="font-ui" style="font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:0.08em">AVG</span>
                   <span class="font-display text-white" style="font-size:14px">${avgEloA}</span>
                 </div>
@@ -451,10 +451,10 @@ class LeaderboardPage extends Component {
 
               ${vsDividerMobile}
 
-              <!-- Team B -->
+              <!-- ROSSI -->
               <div class="mt-2">
                 <div class="flex items-center gap-3 mb-1">
-                  <span class="font-display" style="font-size:16px;color:#60a5fa;letter-spacing:0.12em">TEAM B</span>
+                  <span class="font-display" style="font-size:16px;color:rgba(229,62,62,0.9);letter-spacing:0.12em">ROSSI</span>
                   <span class="font-ui" style="font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:0.08em">AVG</span>
                   <span class="font-display text-white" style="font-size:14px">${avgEloB}</span>
                 </div>
@@ -466,13 +466,13 @@ class LeaderboardPage extends Component {
             <!-- Team Win Rate Bar -->
             <div class="mt-5 px-2">
               <div class="flex items-center justify-between mb-1.5">
-                <span class="font-display" style="font-size:15px;color:#4ade80">${winPctA}%</span>
+                <span class="font-display" style="font-size:15px;color:#ffffff">${winPctA}%</span>
                 <span class="font-ui" style="font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:0.12em">TEAM WIN RATE</span>
-                <span class="font-display" style="font-size:15px;color:#60a5fa">${winPctB}%</span>
+                <span class="font-display" style="font-size:15px;color:rgba(229,62,62,0.9)">${winPctB}%</span>
               </div>
               <div class="flex rounded-full overflow-hidden h-2" style="background:rgba(255,255,255,0.06)">
-                <div class="h-full rounded-l-full" style="width:${winPctA}%;background:linear-gradient(to right,#4ade80,#34d399)"></div>
-                <div class="h-full rounded-r-full" style="width:${winPctB}%;background:linear-gradient(to right,#3b82f6,#60a5fa)"></div>
+                <div class="h-full rounded-l-full" style="width:${winPctA}%;background:linear-gradient(to right,#f3f4f6,#efefef)"></div>
+                <div class="h-full rounded-r-full" style="width:${winPctB}%;background:linear-gradient(to left,#dc143c,#ef4444)"></div>
               </div>
             </div>
           </div>
@@ -515,68 +515,7 @@ class LeaderboardPage extends Component {
     this.liveTimerInterval = setInterval(update, 1000);
   }
 
-  // ── Podium (fedele al React Figma) ──────────────────────────
-
-  private renderPodiumOrSkeleton(): string {
-    const players = this.getAllRankedPlayers()
-      .sort((a, b) => getRank(a.id) - getRank(b.id));
-
-    const top3 = players.filter(p => getRank(p.id) <= 3).slice(0, 3);
-    if (top3.length < 3) {
-      // Se non ci sono 3 giocatori, mostra lo skeleton
-      return this.renderPodiumSkeleton();
-    }
-
-    return this.renderPodium();
-  }
-
-  private renderPodiumSkeleton(): string {
-    const skeletonCard = (): string => `
-      <div class="podium-card group flex flex-col items-center p-4 md:p-5 gap-2 md:gap-3 rounded-xl animate-pulse"
-           style="
-             min-height: 287px;
-             background: rgba(255,255,255,0.04);
-             border: 1px solid rgba(255,255,255,0.08);
-             backdrop-filter: blur(8px);
-           "
-      >
-        <!-- Avatar skeleton -->
-        <div class="relative mb-7 w-16 h-16 rounded-full bg-gray-600/30"></div>
-        
-        <!-- Name skeleton -->
-        <div class="w-28 h-4 rounded bg-gray-600/30"></div>
-        
-        <!-- ELO skeleton -->
-        <div class="mt-2 w-20 h-8 rounded bg-gray-600/30"></div>
-        <div class="w-20 h-3 rounded bg-gray-600/20 mt-1"></div>
-        
-        <!-- Stats skeleton -->
-        <div class="flex gap-4 text-center mt-3 w-full justify-center">
-          <div class="w-12 h-5 rounded bg-gray-600/30"></div>
-          <div class="w-0.5 h-5 bg-gray-600/20"></div>
-          <div class="w-12 h-5 rounded bg-gray-600/30"></div>
-        </div>
-      </div>
-    `;
-
-    return `
-      <!-- Mobile: #1 in cima, #2/#3 affiancati -->
-      <div class="flex flex-col gap-3 sm:hidden">
-        ${skeletonCard()}
-        <div class="grid grid-cols-2 gap-3">
-          ${skeletonCard()}
-          ${skeletonCard()}
-        </div>
-      </div>
-
-      <!-- Desktop: #2 | #1 | #3 -->
-      <div class="hidden sm:grid grid-cols-3 gap-4 items-end">
-        ${skeletonCard()}
-        ${skeletonCard()}
-        ${skeletonCard()}
-      </div>
-    `;
-  }
+  // ── Podium ──────────────────────────
 
   private renderPodium(): string {
     const players = this.getAllRankedPlayers()
@@ -585,9 +524,7 @@ class LeaderboardPage extends Component {
     const top3 = players.filter(p => getRank(p.id) <= 3).slice(0, 3);
     if (top3.length < 3) return '';
 
-    const first = top3.find(p => getRank(p.id) === 1)!;
-    const second = top3.find(p => getRank(p.id) === 2)!;
-    const third = top3.find(p => getRank(p.id) === 3)!;
+    const [first, second, third] = top3;
 
     const card = (p: IPlayer, rank: number, elevated = false): string => {
       const elo = getDisplayElo(p);
@@ -599,7 +536,7 @@ class LeaderboardPage extends Component {
       const medal = MEDALS[rank];
       const color = CLASS_COLORS[p.class] ?? '#8B7D6B';
       const initials = getInitials(p.name);
-      const elevatedClass = elevated ? 'podium-card-elevated' : '';
+      const elevatedClass = elevated ? 'transform-[translateY(-10px)]' : '';
       // Card bg: 15% white base gives ~50 RGB unit contrast over the dark field
       // (#0F2A20 → #1F5C3A); previous 8% was below perceptible threshold.
       // Medal gradient on top adds gold/silver/bronze identity.
@@ -611,9 +548,8 @@ class LeaderboardPage extends Component {
 
       return `
         <a href="/profile/${p.id}"
-           class="podium-card ${elevatedClass} group flex flex-col items-center p-4 md:p-5 gap-2 md:gap-3 rounded-xl"
+           class="podium-card ${elevatedClass} group flex flex-col items-center p-4 md:p-5 gap-2 md:gap-3 rounded-xl md:!max-h-[265.33px]"
            style="
-             min-height: 290px;
              background: ${bg};
              border: 1px solid ${border};
              box-shadow: ${shadow};
@@ -622,10 +558,10 @@ class LeaderboardPage extends Component {
         >
         
         <!-- Avatar -->
-        <div class="relative mb-7">
-        ${renderPlayerAvatar({ initials, color, size: 'lg', playerId: p.id, playerClass: p.class })}
+        <div class="relative flex flex-col text-center">
+        ${renderPlayerAvatar({ initials, color, size: 'xl', playerId: p.id, playerClass: p.class })}
           <!-- Medal emoji -->
-          <span class="absolute -bottom-7 left-1/2 -translate-x-1/2" style="font-size:28px; line-height:1">${medal}</span>
+          <span class="-translate-y-1" style="font-size:28px; line-height:1">${medal}</span>
           </div>
             
           <!-- Name -->
@@ -636,8 +572,14 @@ class LeaderboardPage extends Component {
             </div>
           </div>
 
-          <!-- ELO -->
-          <div class="text-center">
+          <!-- Stats: WR | ELO | Matches -->
+          <div class="flex gap-4 text-center">
+            <div>
+              <div style="font-family:var(--font-ui); font-size:14px; color:white">${winRate}%</div>
+              <div style="font-size:10px; color:rgba(255,255,255,0.4); font-family:var(--font-ui)">WIN RATE</div>
+            </div>
+            <div style="width:1px; background:rgba(255,255,255,0.15)"></div>
+             <div class="text-center">
             <div style="font-family:var(--font-display); font-size:26px; color:${eloColor}; letter-spacing:0.1em; line-height:1">
               ${elo}
             </div>
@@ -645,13 +587,6 @@ class LeaderboardPage extends Component {
               ELO RATING
             </div>
           </div>
-
-          <!-- Stats: WR | Matches -->
-          <div class="flex gap-4 text-center">
-            <div>
-              <div style="font-family:var(--font-ui); font-size:14px; color:white">${winRate}%</div>
-              <div style="font-size:10px; color:rgba(255,255,255,0.4); font-family:var(--font-ui)">WIN RATE</div>
-            </div>
             <div style="width:1px; background:rgba(255,255,255,0.15)"></div>
             <div>
               <div style="font-family:var(--font-ui); font-size:14px; color:white">${p.matches}</div>
@@ -804,7 +739,7 @@ class LeaderboardPage extends Component {
     `;
 
     const avatarAndNameMobile = `
-      <div class="flex items-center gap-1.5 min-w-0">
+      <div class="flex items-center gap-5 min-w-0">
         ${renderPlayerAvatar({ initials: getInitials(player.name), color, size: 'base', playerId: player.id, playerClass: player.class })}
         <div class="min-w-0">
           <div class="text-white group-hover:text-(--color-gold) transition-colors truncate"
@@ -854,7 +789,7 @@ class LeaderboardPage extends Component {
         <div class="md:hidden grid gap-2 px-4 py-3 items-center transition-all duration-200 hover:bg-white/5"
              style="grid-template-columns: 36px 1fr 52px 48px">
           <div>${rankDisplay}</div>
-          <div class="min-w-0 overflow-hidden">${avatarAndNameMobile}</div>
+          <div class="min-w-0">${avatarAndNameMobile}</div>
           <div>
             <span style="font-family:var(--font-display); font-size:17px; color:${eloColor}">${elo}</span>${todayBadge}
           </div>

@@ -349,6 +349,8 @@ class StatsPage extends Component {
       `;
     }).filter(Boolean).join('');
 
+    if (!rows.length) return '';
+
     return `
       <div class="glass-card rounded-xl overflow-hidden">
         <div class="px-4 md:px-5 py-3 flex items-center gap-2"

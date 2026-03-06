@@ -6,6 +6,7 @@
  * che gestisce identità, notifiche e login admin.
  */
 
+import gsap from 'gsap';
 import { LobbyService } from '../../services/lobby.service';
 import { getPlayerById } from '../../services/player.service';
 import { refreshIcons } from '../icons';
@@ -14,8 +15,6 @@ import { appState } from '../state';
 import { html, rawHtml } from '../utils/html-template.util';
 import { Component } from './component.base';
 import template from './header.component.html?raw';
-import { mobileDrawer } from './mobile-drawer.component';
-import { CLASS_COLORS, getInitials, renderPlayerAvatar } from './player-avatar.component';
 import { userDropdown } from './user-dropdown.component';
 
 interface NavItem {
@@ -37,24 +36,19 @@ const navItems: NavItem[] = [
 const LOBBY_POLL_MS = 50_000;
 
 export class HeaderComponent extends Component {
-  private adminActive = false;
   private handleRouteChange: (() => void) | null = null;
   private handleLobbyChange: (() => void) | null = null;
+  private desktopSliderEl: HTMLElement | null = null;
 
   override render(): string {
     const currentPath = router.getCurrentPath();
-    const playerName = appState.currentPlayerName ?? 'Guest';
+    const playerName = appState.currentPlayerName ?? '😵‍💫';
 
     const playerId = appState.currentPlayerId ?? undefined;
     const player = playerId ? getPlayerById(playerId) : null;
-    const initials = getInitials(player?.name ?? playerName) || 'G';
-    const color = player ? (CLASS_COLORS[player.class] ?? '#E8A020') : '#E8A020';
-    const avatarHtml = renderPlayerAvatar({ initials, color, size: 'xs', playerId: player?.id, playerClass: player?.class });
 
     return html(template, {
       desktopNav: rawHtml(this.renderDesktopNav(currentPath)),
-      userAvatarDesktop: rawHtml(avatarHtml),
-      userAvatarMobile: rawHtml(avatarHtml),
       playerName
     });
   }
@@ -82,19 +76,23 @@ export class HeaderComponent extends Component {
 
   override mount(): void {
     refreshIcons();
+    this.desktopSliderEl = document.getElementById('desktop-nav-slider');
     // Gestione visibilità admin
     this.updateAdminVisibility();
     window.addEventListener('user-dropdown:login-success', this._onAdminLoginSuccess);
     window.addEventListener('user-dropdown:logout', this._onAdminLogout);
 
-    /* ── User pill / avatar → open dropdown ─── */
+    /* ── User pill / avatar → open profile/notifications dropdown ─── */
     document.getElementById('user-pill')?.addEventListener('click', () => userDropdown.toggle());
-    document.getElementById('user-pill-mobile')?.addEventListener('click', () => mobileDrawer.open());
+    document.getElementById('user-pill-mobile')?.addEventListener('click', () => userDropdown.toggle());
 
     /* ── Active state on route change ─── */
     this.handleRouteChange = () => this.updateActiveStates();
     window.addEventListener('popstate', this.handleRouteChange);
     appState.on('route-change', this.handleRouteChange);
+
+    /* ── Desktop nav slider — initial position ─── */
+    this.animateDesktopSlider(true);
 
     /* ── Lobby active indicator ─── */
     this.handleLobbyChange = () => this.updateLobbyIndicator();
@@ -119,7 +117,7 @@ export class HeaderComponent extends Component {
 
   private updateAdminVisibility(): void {
     document.querySelectorAll('[data-admin-only]').forEach((el) => {
-      (el as HTMLElement).style.display = this.adminActive ? '' : 'none';
+      (el as HTMLElement).style.display = appState.isAdmin ? '' : 'none';
     });
   }
 
@@ -144,6 +142,28 @@ export class HeaderComponent extends Component {
       if (isActive) link.classList.remove('text-white/90');
       else link.classList.remove('text-(--color-gold)');
     });
+    this.animateDesktopSlider();
+  }
+
+  private animateDesktopSlider(instant = false): void {
+    if (!this.desktopSliderEl) return;
+    const nav = document.getElementById('desktop-nav');
+    if (!nav) return;
+    const currentPath = router.getCurrentPath();
+    const activeLink = Array.from(nav.querySelectorAll<HTMLElement>('.nav-link')).find((link) => {
+      const href = link.getAttribute('href');
+      return href ? this.isActive(href, currentPath) : false;
+    });
+    if (!activeLink || activeLink.style.display === 'none') {
+      gsap.to(this.desktopSliderEl, { opacity: 0, duration: instant ? 0 : 0.2 });
+      return;
+    }
+    const targetX = activeLink.offsetLeft + activeLink.offsetWidth / 2 - 16;
+    if (instant) {
+      gsap.set(this.desktopSliderEl, { x: targetX, opacity: 1 });
+    } else {
+      gsap.to(this.desktopSliderEl, { x: targetX, opacity: 1, duration: 0.3, ease: 'power2.inOut' });
+    }
   }
 
   private isActive(itemPath: string, currentPath: string): boolean {

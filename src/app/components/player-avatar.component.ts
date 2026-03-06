@@ -3,14 +3,12 @@
  * Ported from Figma: PlayerAvatar.tsx
  */
 
-import { getPlayerById } from '../../services/player.service';
 import { html, rawHtml } from '../utils/html-template.util';
 import template from './player-avatar.component.html?raw';
 
 const BASE_PATH = import.meta.env.BASE_URL;
-let avatarRenderSequence = 0;
 
-export type AvatarSize = 'xs' | 'sm' | 'md' | 'base' | 'lg' | 'xl';
+export type AvatarSize = 'xs' | 'sm' | 'md' | 'base' | 'lg' | 'xl' | 'xxl';
 
 export const CLASS_COLORS: Record<number, string> = {
   0: '#FFD700', 1: '#4A90D9', 2: '#27AE60', 3: '#C0C0C0', 4: '#8B7D6B'
@@ -22,15 +20,16 @@ const sizeMap: Record<AvatarSize, { container: string; text: string; dot: string
   md: { container: 'w-[52px] h-[52px]', text: 'text-sm', dot: 'w-3 h-3', coreInsetClass: 'inset-[8%]' },
   base: { container: 'w-[57px] h-[57px]', text: 'text-base', dot: 'w-3 h-3', coreInsetClass: 'inset-[8%]' },
   lg: { container: 'w-[76px] h-[76px]', text: 'text-lg', dot: 'w-3.5 h-3.5', coreInsetClass: 'inset-[8%]' },
-  xl: { container: 'w-[114px] h-[114px]', text: 'text-2xl', dot: 'w-4 h-4', coreInsetClass: 'inset-[8%]' }
+  xl: { container: 'w-[114px] h-[114px]', text: 'text-2xl', dot: 'w-4 h-4', coreInsetClass: 'inset-[8%]' },
+  xxl: { container: 'w-[152px] h-[152px]', text: 'text-4xl', dot: 'w-5 h-5', coreInsetClass: 'inset-[8%]' }
 };
 
 const frameTransformMap: Record<number, { translateX: number; translateY: number; scale: number; origin: string }> = {
-  0: { translateX: -1, translateY: 0.2, scale: 1.5, origin: '50% 50%' },
-  1: { translateX: 0, translateY: -0.2, scale: 1.4, origin: '50% 50%' },
-  2: { translateX: 0, translateY: -0.4, scale: 1.5, origin: '50% 50%' },
-  3: { translateX: 0, translateY: 0, scale: 1.4, origin: '50% 50%' },
-  4: { translateX: 0, translateY: -0.1, scale: 1.5, origin: '50% 50%' }
+  0: { translateX: 0, translateY: -11, scale: 1.4, origin: '50% 50%' },
+  1: { translateX: 0, translateY: 0, scale: 1.56, origin: '50% 50%' },
+  2: { translateX: 0, translateY: 0.9, scale: 1.26, origin: '50% 50%' },
+  3: { translateX: 0, translateY: 0, scale: 1.5, origin: '50% 50%' },
+  4: { translateX: 0, translateY: -0.1, scale: 1.35, origin: '50% 50%' }
 };
 
 interface AvatarOptions {
@@ -42,22 +41,25 @@ interface AvatarOptions {
   playerId?: number;
   /** Player class/rank bucket (0-4). If omitted and playerId exists, it is auto-resolved from players map. */
   playerClass?: number;
+  /** When true, the class frame/crown overlay is suppressed entirely. */
+  hideFrame?: boolean;
 }
-
+let m = Math.random() * 5 | 0; /* used to add some random variance to the default class frame when playerClass is not provided */
 /**
  * Returns an HTML string for a player avatar.
  * If `playerId` is provided, shows the player photo (public/avatars/{id}.webp)
  * with the initials circle as fallback when the image is missing.
  */
-export function renderPlayerAvatar({ initials, color, size = 'md', online, playerId, playerClass = __DEV_MODE__ ? Math.random() * 5 | 0 : undefined }: AvatarOptions): string {
+export function renderPlayerAvatar({ initials, color, size = 'md', online, playerId, playerClass = undefined, hideFrame = false }: AvatarOptions): string {
   const s = sizeMap[size];
-  const resolvedClass = Number.isFinite(playerClass)
-    ? playerClass
-    : (playerId === undefined ? undefined : getPlayerById(playerId)?.class);
+  const resolvedClass = hideFrame ? undefined : m++ % 5; /* playerClass !== undefined
+  /*
+    : (Number.isFinite(playerClass)
+        ? playerClass
+        : (playerId === undefined ? undefined : getPlayerById(playerId)?.class)); */
   const classFrameSrc = resolvedClass !== undefined && resolvedClass >= 0
     ? `${BASE_PATH}class/${resolvedClass}.png`
     : undefined;
-  const filterId = `avatar-chroma-key-${++avatarRenderSequence}`;
 
   const statusDot = online === undefined
     ? ''
@@ -75,28 +77,12 @@ export function renderPlayerAvatar({ initials, color, size = 'md', online, playe
     ? initialsSpan
     : `<img src="${BASE_PATH}avatars/${playerId}.webp" alt="${initials}" class="absolute inset-0 w-full h-full object-contain rounded-full" loading="lazy" onerror="this.style.display='none'" />${initialsSpan}`;
 
-  const frameDefs = classFrameSrc === undefined
-    ? ''
-    : `<svg class="absolute w-0 h-0 pointer-events-none" aria-hidden="true" focusable="false">
-        <defs>
-          <filter id="${filterId}" color-interpolation-filters="sRGB">
-            <feColorMatrix in="SourceGraphic" type="matrix"
-              values="1 0 0 0 0
-                      0 1 0 0 0
-                      0 0 1 0 0
-                      1 -1 1 0 0.2" result="alphaRaw" />
-            <feComponentTransfer in="alphaRaw" result="alphaMask">
-              <feFuncA type="linear" slope="3" intercept="-0.7" />
-            </feComponentTransfer>
-            <feComposite in="SourceGraphic" in2="alphaMask" operator="in" />
-          </filter>
-        </defs>
-      </svg>`;
+  const frameDefs = '';
 
   const frameOverlay = classFrameSrc === undefined
     ? ''
     : `<img src="${classFrameSrc}" alt="" class="absolute object-cover pointer-events-none"
-         style="top:0;left:0;width:100%;height:100%;filter:url(#${filterId});transform-origin:${frameTransform?.origin ?? '50% 50%'};transform:translate(${frameTransform?.translateX ?? 0}%,${frameTransform?.translateY ?? 0}%) scale(${frameTransform?.scale ?? 1.07})"
+         style="top:0;left:0;width:100%;height:100%;transform-origin:${frameTransform?.origin ?? '50% 50%'};transform:translate(${frameTransform?.translateX ?? 0}%,${frameTransform?.translateY ?? 0}%) scale(${frameTransform?.scale ?? 1.07})"
          loading="lazy" />`;
 
   return html(template, {

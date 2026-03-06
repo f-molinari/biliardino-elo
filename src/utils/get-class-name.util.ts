@@ -12,5 +12,5 @@ export function getClassName(classNumber: number): string {
     3: 'Spigola',
     4: 'Sogliola'
   };
-  return classNames[classNumber] || 'Sconosciuto';
+  return classNames[classNumber] || 'Non classificato';
 }

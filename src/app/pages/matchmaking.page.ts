@@ -257,7 +257,7 @@ class MatchmakingPage extends Component {
           </div>
 
           <div class="p-4 md:p-5 space-y-4">
-            <!-- Team A -->
+            <!-- BIANCHI -->
             ${this.renderTeamCard('A', match.teamA.defence, match.teamA.attack, avgEloA, winProbA)}
 
             <!-- VS Divider -->
@@ -271,7 +271,7 @@ class MatchmakingPage extends Component {
               <div class="flex-1 h-px" style="background:rgba(255,255,255,0.1)"></div>
             </div>
 
-            <!-- Team B -->
+            <!-- ROSSI -->
             ${this.renderTeamCard('B', match.teamB.defence, match.teamB.attack, avgEloB, winProbB)}
 
             <!-- Win probabilities -->
@@ -300,7 +300,7 @@ class MatchmakingPage extends Component {
               <div class="flex items-center justify-center gap-4">
                 <div class="text-center">
                   <div class="font-ui mb-1" style="font-size:10px; color:var(--color-team-red, #E53E3E); letter-spacing:0.1em">
-                    TEAM A
+                    BIANCHI
                   </div>
                   <input id="score-team-a" type="number" min="0" max="8"
                          class="w-16 h-16 rounded-xl text-center font-display bg-white/5 text-white outline-none
@@ -311,7 +311,7 @@ class MatchmakingPage extends Component {
                 <span class="font-display text-white/30" style="font-size:28px; margin-top:16px">-</span>
                 <div class="text-center">
                   <div class="font-ui mb-1" style="font-size:10px; color:var(--color-team-blue, #3182CE); letter-spacing:0.1em">
-                    TEAM B
+                    ROSSI
                   </div>
                   <input id="score-team-b" type="number" min="0" max="8"
                          class="w-16 h-16 rounded-xl text-center font-display bg-white/5 text-white outline-none

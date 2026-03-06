@@ -158,6 +158,17 @@ class UserDropdownComponent {
     this.showingPlayerList = false;
     this.loginError = '';
 
+    /* Align panel to the user-pill on desktop */
+    const pill = document.getElementById('user-pill');
+    if (pill && window.innerWidth >= 768) {
+      const pillRect = pill.getBoundingClientRect();
+      this.panelEl.style.right = `${window.innerWidth - pillRect.right}px`;
+      this.panelEl.style.left = 'auto';
+    } else {
+      this.panelEl.style.right = '';
+      this.panelEl.style.left = '';
+    }
+
     /* Render fresh content */
     this.panelEl.innerHTML = this.renderPanelContent();
 
@@ -524,7 +535,7 @@ class UserDropdownComponent {
       el.textContent = name;
     });
 
-    const avatarHtml = renderPlayerAvatar({ initials, color, size: 'xs', playerId: player?.id, playerClass: player?.class });
+    const avatarHtml = renderPlayerAvatar({ initials, color, size: 'xs', playerId: player?.id, hideFrame: true });
     ['user-avatar-desktop', 'user-avatar-mobile', 'user-avatar-mobile-menu'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = avatarHtml;
@@ -541,7 +552,7 @@ class UserDropdownComponent {
     return html(panelTemplate, {
       identitySection: rawHtml(this.renderIdentitySection()),
       notifSection: rawHtml(this.renderNotifSection()),
-      adminSection: rawHtml(this.renderAdminSection()),
+      adminSection: rawHtml(this.renderAdminSection())
     });
   }
 
@@ -598,7 +609,7 @@ class UserDropdownComponent {
       return `
         <button class="dd-player-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 hover:bg-white/[0.07] active:scale-[0.98]"
                 data-action="select-player" data-id="${p.id}">
-          ${renderPlayerAvatar({ initials, color, size: 'xs', playerId: p.id, playerClass: p.class })}
+          ${renderPlayerAvatar({ initials, color, size: 'xs', playerId: p.id, hideFrame: true })}
           <div class="flex-1 text-left min-w-0">
             <div class="font-ui text-xs text-white truncate">${p.name}</div>
           </div>

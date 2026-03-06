@@ -395,13 +395,13 @@ class LobbyPage extends Component {
             </div>
           </div>
 
-          <!-- Team Blue -->
+          <!-- ROSSIlue -->
           <div class="team-card p-4 md:p-5">
             <div class="flex items-center gap-2 mb-3">
               <div class="w-3 h-3 rounded-full" style="background:var(--color-team-blue, #3182CE)"></div>
               <span class="font-display"
                     style="font-size:17px; color:var(--color-team-blue, #3182CE); letter-spacing:0.15em">
-                TEAM BLU
+                ROSSILU
               </span>
             </div>
             <div class="space-y-2">
