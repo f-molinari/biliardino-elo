@@ -144,18 +144,36 @@ export default class PlayerProfilePage extends Component {
     // ── Radar chart data ───────────────────────────────────
     const stats = getPlayerStats(id);
     const activePlayers = getAllPlayers().filter(p => p.matches > 0);
+
+    // Per-match goal rates (for cross-player normalization)
     const maxGPM = Math.max(...activePlayers.map(p => p.goalsFor / p.matches), 1);
+    const maxGAM = Math.max(...activePlayers.map(p => p.goalsAgainst / p.matches), 1);
 
-    const radarWinRate = stats.matches > 0 ? (stats.wins / stats.matches) * 100 : 0;
-    const radarAttack = stats.matchesAsAttack > 0 ? (stats.winsAsAttack / stats.matchesAsAttack) * 100 : 0;
-    const radarDefence = stats.matchesAsDefence > 0 ? (stats.winsAsDefence / stats.matchesAsDefence) * 100 : 0;
-    const radarGoals = stats.matches > 0 ? Math.min((stats.totalGoalsFor / stats.matches) / maxGPM * 100, 100) : 0;
-    const radarSolidity = (stats.totalGoalsFor + stats.totalGoalsAgainst) > 0
-      ? (1 - stats.totalGoalsAgainst / (stats.totalGoalsFor + stats.totalGoalsAgainst)) * 100
-      : 50;
-    const radarStreak = Math.min(stats.bestWinStreak / 10 * 100, 100);
+    // ELO range across all active players
+    const allElos = activePlayers.map(p => p.elo);
+    const minElo = Math.min(...allElos);
+    const maxElo = Math.max(...allElos);
 
-    this.radarData = [radarWinRate, radarAttack, radarGoals, radarStreak, radarSolidity, radarDefence];
+    // Quality of wins: proportion of wins where opponent team ELO was higher
+    let winsVsWeaker = 0;
+    let totalWins = 0;
+    for (const m of stats.history) {
+      const teamIdx = (m.teamA.defence === id || m.teamA.attack === id) ? 0 : 1;
+      if (m.deltaELO[teamIdx] > 0) {
+        totalWins++;
+        if (m.teamELO[teamIdx ^ 1] < m.teamELO[teamIdx]) winsVsWeaker++;
+      }
+    }
+
+    const radarGoalsFatti  = stats.matches > 0 ? Math.min((stats.totalGoalsFor / stats.matches) / maxGPM * 100, 100) : 0;
+    const radarGoalsSubiti = stats.matches > 0 ? Math.max((1 - (stats.totalGoalsAgainst / stats.matches) / maxGAM) * 100, 0) : 50;
+    const radarAttack      = stats.matchesAsAttack > 0 ? (stats.winsAsAttack / stats.matchesAsAttack) * 100 : 0;
+    const radarDefence     = stats.matchesAsDefence > 0 ? (stats.winsAsDefence / stats.matchesAsDefence) * 100 : 0;
+    const radarCostanza    = Math.max(100 - stats.worstLossStreak * 10, 0);
+    const radarElo         = maxElo > minElo ? ((stats.elo - minElo) / (maxElo - minElo)) * 100 : 50;
+    const radarQualityWins = totalWins > 0 ? Math.max((1 - winsVsWeaker / totalWins) * 100, 0) : 50;
+
+    this.radarData = [radarGoalsFatti, radarGoalsSubiti, radarAttack, radarDefence, radarCostanza, radarElo, radarQualityWins];
 
     const avatarHtml = renderPlayerAvatar({
       initials: getInitials(player.name),
@@ -561,7 +579,7 @@ export default class PlayerProfilePage extends Component {
         this.radarChart = new Chart(rCtx, {
           type: 'radar',
           data: {
-            labels: ['Win Rate', 'Attacco', 'Gol Fatti', 'Costanza', 'Solidità', 'Difesa'],
+            labels: ['Gol Fatti', 'Gol Subiti', 'Attacco', 'Difesa', 'Costanza', 'ELO', 'Qualità Win'],
             datasets: [{
               label: player.name,
               data: this.radarData,
