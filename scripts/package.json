@@ -1,0 +1,14 @@
+{
+  "name": "firestore-backup-scripts",
+  "version": "1.0.0",
+  "description": "Daily Firestore backup script",
+  "type": "module",
+  "main": "backup.js",
+  "scripts": {
+    "backup": "node backup.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "firebase-admin": "^13.7.0"
+  }
+}
