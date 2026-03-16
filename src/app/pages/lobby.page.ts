@@ -101,7 +101,7 @@ class LobbyPage extends Component {
 
     // Fetch lobby state via LobbyService (single source of truth)
     try {
-      const state = await LobbyService.init();
+      const state = await LobbyService.acquire();
       this.applyLobbyState(state);
     } catch {
       // fail-open -- render skeleton, LobbyService will retry via SSE/polling

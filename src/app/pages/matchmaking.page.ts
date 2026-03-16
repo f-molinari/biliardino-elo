@@ -972,7 +972,7 @@ class MatchmakingPage extends Component {
   private startConfirmationsPolling(): void {
     this.lobbyStateListener = (state: ILobbyState) => this.applyConfirmations(state);
     LobbyService.onStateChange(this.lobbyStateListener);
-    LobbyService.init().then(() => {
+    LobbyService.acquire().then(() => {
       const state = LobbyService.getState();
       if (state) this.applyConfirmations(state);
     });

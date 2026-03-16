@@ -7,7 +7,6 @@
  */
 
 import gsap from 'gsap';
-import { LobbyService } from '../../services/lobby.service';
 import { getPlayerById } from '../../services/player.service';
 import { refreshIcons } from '../icons';
 import { router } from '../router';
@@ -95,8 +94,7 @@ export class HeaderComponent extends Component {
     /* ── Lobby active indicator ─── */
     this.handleLobbyChange = () => this.updateLobbyIndicator();
     appState.on('lobby-change', this.handleLobbyChange);
-    // Initialize LobbyService (lazy — first consumer triggers WS + fetch)
-    LobbyService.init().then(() => this.updateLobbyIndicator());
+    this.updateLobbyIndicator();
   }
 
   override destroy(): void {
@@ -110,7 +108,6 @@ export class HeaderComponent extends Component {
     if (this.handleLobbyChange) {
       appState.off('lobby-change', this.handleLobbyChange);
     }
-    LobbyService.release();
   }
 
   private updateAdminVisibility(): void {

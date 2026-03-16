@@ -63,7 +63,6 @@ export async function refreshCurrentView(source = 'pull-to-refresh'): Promise<vo
 
 async function fallbackRefresh(path: string): Promise<void> {
   if (path === '/lobby' || path === '/matchmaking') {
-    await LobbyService.init();
     await LobbyService.refresh();
     return;
   }

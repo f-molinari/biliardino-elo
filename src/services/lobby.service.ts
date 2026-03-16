@@ -17,8 +17,8 @@ type LobbyStateListener = (state: ILobbyState) => void;
 
 // ── Constants ────────────────────────────────────────────────────
 
-const POLL_ACTIVE_MS = 10_000;   // lobby exists
-const POLL_IDLE_MS   = 30_000;   // no active lobby
+const POLL_ACTIVE_MS = 10_000; // lobby exists
+const POLL_IDLE_MS = 30_000; // no active lobby
 const MAX_BACKOFF_MS = 60_000;
 
 // ── Default empty state ─────────────────────────────────────────
@@ -42,6 +42,8 @@ class LobbyServiceImpl {
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private consumerCount = 0;
   private consecutiveErrors = 0;
+  private activeFetchController: AbortController | null = null;
+  private lifecycleVersion = 0;
 
   // ── Public API ─────────────────────────────────────────────
 
@@ -50,8 +52,6 @@ class LobbyServiceImpl {
    * Safe to call multiple times (idempotent).
    */
   async init(): Promise<ILobbyState> {
-    this.consumerCount++;
-
     if (!this.initialized) {
       this.initialized = true;
       document.addEventListener('visibilitychange', this.handleVisibilityChange);
@@ -63,20 +63,46 @@ class LobbyServiceImpl {
   }
 
   /**
+   * Register a page-level consumer. When the last consumer releases,
+   * the service fully tears down and stops polling.
+   */
+  async acquire(): Promise<ILobbyState> {
+    this.consumerCount++;
+    return this.init();
+  }
+
+  /**
    * Fetch fresh state from the unified /api/lobby endpoint.
    */
   async refresh(): Promise<ILobbyState> {
+    const lifecycleVersion = this.lifecycleVersion;
+    const controller = new AbortController();
+    this.activeFetchController = controller;
+
     try {
-      const res = await fetch(`${API_BASE_URL}/lobby`);
+      const res = await fetch(`${API_BASE_URL}/lobby`, { signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: ILobbyState = await res.json();
+
+      if (controller.signal.aborted || lifecycleVersion !== this.lifecycleVersion) {
+        return this.state;
+      }
+
       this.consecutiveErrors = 0;
       this.updateState(data);
       return this.state;
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return this.state;
+      }
+
       console.error('[LobbyService] Fetch error:', err);
       this.consecutiveErrors++;
       return this.state;
+    } finally {
+      if (this.activeFetchController === controller) {
+        this.activeFetchController = null;
+      }
     }
   }
 
@@ -114,12 +140,21 @@ class LobbyServiceImpl {
    */
   release(): void {
     this.consumerCount = Math.max(0, this.consumerCount - 1);
+
+    if (this.consumerCount === 0) {
+      this.destroy();
+    }
   }
 
   /**
    * Full teardown: stop polling, clear state.
    */
   destroy(): void {
+    const hadLobbyState = this.state.exists || appState.lobbyExists;
+
+    this.lifecycleVersion++;
+    this.activeFetchController?.abort();
+    this.activeFetchController = null;
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     this.stopPoll();
     this.consumerCount = 0;
@@ -127,6 +162,11 @@ class LobbyServiceImpl {
     this.listeners.clear();
     this.state = { ...EMPTY_STATE };
     this.consecutiveErrors = 0;
+
+    appState.resetLobbyState();
+    if (hadLobbyState) {
+      appState.emit('lobby-change');
+    }
   }
 
   // ── State management ──────────────────────────────────────
