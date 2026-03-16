@@ -32,6 +32,34 @@ declare global {
 
 let splashDismissed = false;
 
+function isInsidePWA(): boolean {
+  return window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function initPWAExperience(): void {
+  if (!isInsidePWA()) return;
+
+  // Add PWA class to body for PWA-specific styling
+  document.body.classList.add('pwa');
+
+  // Prevent default context menu for immersive experience
+  document.addEventListener('contextmenu', (e) => {
+    if (e.shiftKey) return; // Allow context menu with shift key
+
+    const target = e.target as HTMLElement;
+    // Allow context menu on interactive elements
+    if (target.matches('a, img, video, audio, textarea:not([disabled]), input[type="text"]:not([disabled])')) {
+      return;
+    }
+
+    // Allow context menu on selected text
+    const selection = window.getSelection();
+    if (selection?.toString().length ?? 0 > 0) return;
+
+    e.preventDefault();
+  });
+}
+
 function initFoosballCursor(): void {
   // Skip on touch-only devices (no mouse)
   if (window.matchMedia('(pointer: coarse)').matches) return;
@@ -97,6 +125,10 @@ function dismissBootOverlay(): void {
 
 async function bootstrap(): Promise<void> {
   trace('Bootstrap', 'start', { href: window.location.href });
+
+  // 0a. Initialize PWA-specific experience
+  initPWAExperience();
+  trace('Bootstrap', 'PWA experience initialized');
 
   // 0. Normalize legacy hash-based URLs before first render
   if (window.location.hash.startsWith('#/')) {

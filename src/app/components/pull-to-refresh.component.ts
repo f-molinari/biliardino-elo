@@ -1,6 +1,9 @@
 import { refreshCurrentView } from '@/services/app-refresh.service';
+import haptics from '@/utils/haptics.util';
+import gsap from 'gsap';
 import { appState } from '../state';
-import { html } from '../utils/html-template.util';
+import { html, rawHtml } from '../utils/html-template.util';
+import kickPlayerSVG from './brodcast-kick.svg?raw';
 import { Component } from './component.base';
 import template from './pull-to-refresh.component.html?raw';
 
@@ -11,16 +14,36 @@ const ARM_THRESHOLD_PX = 68;
 const MAX_PULL_PX = 96;
 const HOLD_VISIBLE_PX = 74;
 const SUCCESS_VISIBLE_MS = 920;
+const SVG_ROTATION_ORIGIN = '62 88';
+
+// Haptic feedback patterns
+const HAPTIC_PATTERNS = {
+  pulling: { duration: 10 },
+  armed: { duration: 20 },
+  refreshing: { duration: 30 },
+  success: [{ duration: 50 }, { duration: 100, delay: 50 }],
+  error: [{ duration: 100 }, { duration: 50, delay: 100 }]
+};
+
+// Check if prefers-reduced-motion is enabled
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 class PullToRefreshComponent extends Component {
   private shellEl: HTMLElement | null = null;
   private labelEl: HTMLElement | null = null;
   private hintEl: HTMLElement | null = null;
+  private kickerEl: HTMLElement | null = null;
+  private kickerBodyEl: HTMLElement | null = null;
+  private ballEl: HTMLElement | null = null;
+  private kickTimeline: gsap.core.Timeline | null = null;
 
   private state: PullRefreshState = 'idle';
   private startY = 0;
+  private lastMoveY = 0;
+  private lastMoveTs = 0;
   private activeTouchId: number | null = null;
   private pullDistance = 0;
+  private kickPower = 0.65;
   private tracking = false;
   private isRefreshing = false;
   private resetTimer: number | null = null;
@@ -34,10 +57,39 @@ class PullToRefreshComponent extends Component {
   private onRefreshSuccessBound = (): void => this.showResultState('success');
   private onRefreshErrorBound = (): void => this.showResultState('error');
 
+  private triggerHaptic(pattern: any): void {
+    if ('vibrate' in navigator) {
+      try {
+        if (Array.isArray(pattern)) {
+          navigator.vibrate(pattern);
+        } else {
+          navigator.vibrate(pattern.duration);
+        }
+      } catch (e) {
+        // Silently fail if vibration is not available
+      }
+    }
+    // Try WebHaptics as fallback
+    try {
+      if (Array.isArray(pattern)) {
+        pattern.forEach((p: any) =>
+          setTimeout(() => haptics.light(), p.delay ?? 0)
+        );
+      } else {
+        haptics.light();
+      }
+    } catch (e) {
+      // Silently fail if haptics unavailable
+    }
+  }
+
   override render(): string {
+    const pullKickSvg = kickPlayerSVG.replace('id="kick-player-body"', 'id="ptr-kick-player-body"');
+
     return html(template, {
       label: 'Tira per aggiornare',
-      hint: 'Nuovi dati senza ricaricare la pagina'
+      hint: 'Nuovi dati senza ricaricare la pagina',
+      kickPlayerSvg: rawHtml(pullKickSvg)
     });
   }
 
@@ -53,6 +105,11 @@ class PullToRefreshComponent extends Component {
     this.shellEl = this.$('#pull-refresh-shell');
     this.labelEl = this.$('#pull-refresh-label');
     this.hintEl = this.$('#pull-refresh-hint');
+    this.kickerEl = this.$('#ptr-kick-player');
+    this.kickerBodyEl = this.$('#ptr-kick-player-body');
+    this.ballEl = this.$('#ptr-ball');
+
+    this.resetKickScene();
 
     this.syncHeaderOffset();
     this.setState('idle');
@@ -88,11 +145,16 @@ class PullToRefreshComponent extends Component {
       this.resetTimer = null;
     }
 
+    this.killKickAnimation();
+
     this.el?.remove();
     this.el = null;
     this.shellEl = null;
     this.labelEl = null;
     this.hintEl = null;
+    this.kickerEl = null;
+    this.kickerBodyEl = null;
+    this.ballEl = null;
   }
 
   private onTouchStart(event: TouchEvent): void {
@@ -109,7 +171,10 @@ class PullToRefreshComponent extends Component {
     this.tracking = true;
     this.activeTouchId = touch.identifier;
     this.startY = touch.clientY;
+    this.lastMoveY = touch.clientY;
+    this.lastMoveTs = performance.now();
     this.pullDistance = 0;
+    this.kickPower = 0.65;
     this.setState('pulling');
   }
 
@@ -121,6 +186,18 @@ class PullToRefreshComponent extends Component {
     if (!touch) return;
 
     const deltaY = touch.clientY - this.startY;
+    const now = performance.now();
+    const moveDelta = touch.clientY - this.lastMoveY;
+    const moveDt = now - this.lastMoveTs;
+    if (moveDt > 0) {
+      const velocity = Math.max(0, moveDelta / moveDt);
+      const velocityPower = Math.min(1, velocity / 1.1);
+      const distancePower = Math.min(1, this.pullDistance / ARM_THRESHOLD_PX);
+      this.kickPower = Math.max(this.kickPower * 0.75, velocityPower * 0.55 + distancePower * 0.45);
+    }
+    this.lastMoveY = touch.clientY;
+    this.lastMoveTs = now;
+
     if (deltaY <= 0) {
       this.pullDistance = 0;
       this.updateVisualState();
@@ -139,6 +216,8 @@ class PullToRefreshComponent extends Component {
     this.activeTouchId = null;
 
     if (this.state === 'armed') {
+      const distancePower = Math.min(1, this.pullDistance / MAX_PULL_PX);
+      this.kickPower = Math.max(0.4, Math.min(1, this.kickPower * 0.7 + distancePower * 0.6));
       void refreshCurrentView();
       return;
     }
@@ -151,6 +230,7 @@ class PullToRefreshComponent extends Component {
     this.isRefreshing = true;
     this.pullDistance = HOLD_VISIBLE_PX;
     this.setState('refreshing');
+    this.playKickAnimation();
   }
 
   private showResultState(state: 'success' | 'error'): void {
@@ -165,7 +245,24 @@ class PullToRefreshComponent extends Component {
   }
 
   private setState(nextState: PullRefreshState): void {
+    if (this.state === nextState) return;
+
+    const prevState = this.state;
     this.state = nextState;
+
+    // Trigger haptic feedback on state transitions (unless user prefers reduced motion)
+    if (!prefersReducedMotion) {
+      if (nextState === 'armed' && prevState === 'pulling') {
+        this.triggerHaptic(HAPTIC_PATTERNS.armed);
+      }
+      if (nextState === 'success') {
+        this.triggerHaptic(HAPTIC_PATTERNS.success);
+      }
+      if (nextState === 'error') {
+        this.triggerHaptic(HAPTIC_PATTERNS.error);
+      }
+    }
+
     this.updateVisualState();
   }
 
@@ -184,6 +281,22 @@ class PullToRefreshComponent extends Component {
 
     this.shellEl.style.setProperty('--ptr-offset', `${visibleOffset}px`);
     this.shellEl.style.setProperty('--ptr-progress', progress.toString());
+
+    if (this.state === 'pulling' || this.state === 'armed') {
+      this.applyPullPose(progress);
+    }
+
+    if (this.state === 'idle') {
+      this.resetKickScene();
+    }
+
+    if (this.state === 'success') {
+      this.playResultPulse(false);
+    }
+
+    if (this.state === 'error') {
+      this.playResultPulse(true);
+    }
 
     switch (this.state) {
       case 'armed':
@@ -258,6 +371,148 @@ class PullToRefreshComponent extends Component {
       window.clearTimeout(this.resetTimer);
       this.resetTimer = null;
     }
+  }
+
+  private applyPullPose(progress: number): void {
+    if (!this.kickerEl || !this.kickerBodyEl || !this.ballEl) return;
+    if (this.kickTimeline) return;
+
+    const clamped = Math.max(0, Math.min(1, progress));
+    const bob = Math.sin(clamped * Math.PI) * 1.8;
+
+    gsap.set(this.kickerEl, {
+      x: 18 - clamped * 16,
+      y: -bob,
+      opacity: 0.62 + clamped * 0.38
+    });
+
+    gsap.set(this.kickerBodyEl, {
+      rotation: 8 - clamped * 36,
+      svgOrigin: SVG_ROTATION_ORIGIN
+    });
+
+    gsap.set(this.ballEl, {
+      x: clamped * 1.8,
+      y: -Math.sin(clamped * Math.PI * 0.8) * 1.2,
+      scale: 0.94 + clamped * 0.12,
+      rotate: clamped * 20
+    });
+  }
+
+  private playKickAnimation(): void {
+    if (!this.kickerEl || !this.kickerBodyEl || !this.ballEl) return;
+
+    this.killKickAnimation();
+
+    const power = Math.max(0.4, Math.min(1, this.kickPower));
+    const kickRotation = 54 + power * 24;
+    const flightX = -12 - power * 14;
+    const flightY = -4 - power * 5;
+    const settleX = -7 - power * 3;
+    const initialKickDuration = 0.19 - power * 0.04;
+    const flightDuration = 0.24 - power * 0.05;
+
+    gsap.set(this.kickerEl, { x: 0.6, y: 0, opacity: 1 });
+    gsap.set(this.kickerBodyEl, { rotation: -20, svgOrigin: SVG_ROTATION_ORIGIN });
+    gsap.set(this.ballEl, { x: 0, y: 0, scale: 1, rotate: 0 });
+
+    this.kickTimeline = gsap.timeline({
+      onComplete: () => {
+        this.kickTimeline = null;
+      }
+    });
+
+    this.kickTimeline
+      .to(this.kickerBodyEl, {
+        rotation: -34,
+        duration: 0.12,
+        ease: 'power2.out',
+        svgOrigin: SVG_ROTATION_ORIGIN
+      })
+      .to(this.ballEl, {
+        scaleX: 0.86,
+        scaleY: 1.12,
+        duration: 0.06,
+        ease: 'power1.out'
+      }, '-=0.06')
+      .to(this.kickerBodyEl, {
+        rotation: kickRotation,
+        duration: initialKickDuration,
+        ease: 'power2.inOut',
+        svgOrigin: SVG_ROTATION_ORIGIN
+      })
+      .to(this.ballEl, {
+        x: flightX,
+        y: flightY,
+        rotate: 170 + power * 150,
+        scaleX: 1,
+        scaleY: 1,
+        duration: flightDuration,
+        ease: 'power2.out'
+      }, '-=0.12')
+      .to(this.ballEl, {
+        x: settleX,
+        y: 0,
+        rotate: 230 + power * 150,
+        duration: 0.22,
+        ease: 'sine.inOut'
+      })
+      .to(this.kickerBodyEl, {
+        rotation: 12,
+        duration: 0.18,
+        ease: 'power2.out',
+        svgOrigin: SVG_ROTATION_ORIGIN
+      }, '-=0.18');
+  }
+
+  private playResultPulse(isError: boolean): void {
+    if (!this.ballEl) return;
+
+    gsap.killTweensOf(this.ballEl);
+
+    if (isError) {
+      gsap.fromTo(this.ballEl,
+        { x: -8 },
+        {
+          x: -4,
+          duration: 0.06,
+          repeat: 3,
+          yoyo: true,
+          ease: 'power1.inOut'
+        }
+      );
+      return;
+    }
+
+    gsap.fromTo(this.ballEl,
+      { scale: 0.94 },
+      {
+        scale: 1.06,
+        duration: 0.18,
+        repeat: 1,
+        yoyo: true,
+        ease: 'power2.inOut'
+      }
+    );
+  }
+
+  private resetKickScene(): void {
+    if (!this.kickerEl || !this.kickerBodyEl || !this.ballEl) return;
+
+    this.killKickAnimation();
+    gsap.set(this.kickerEl, { x: 18, y: 0, opacity: 0.62 });
+    gsap.set(this.kickerBodyEl, { rotation: 8, svgOrigin: SVG_ROTATION_ORIGIN });
+    gsap.set(this.ballEl, { x: 0, y: 0, scale: 0.95, rotate: 0 });
+    this.kickPower = 0.65;
+  }
+
+  private killKickAnimation(): void {
+    this.kickTimeline?.kill();
+    this.kickTimeline = null;
+
+    if (this.kickerEl) gsap.killTweensOf(this.kickerEl);
+    if (this.kickerBodyEl) gsap.killTweensOf(this.kickerBodyEl);
+    if (this.ballEl) gsap.killTweensOf(this.ballEl);
   }
 }
 

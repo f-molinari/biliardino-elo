@@ -560,7 +560,7 @@ class LeaderboardPage extends Component {
           </div>
 
           <!-- Stats: WR | ELO | Matches -->
-          <div class="flex gap-4 sm:gap-1 text-center">
+          <div class="flex gap-2 md:gap-4  text-center">
             <div>
               <div style="font-family:var(--font-ui); font-size:14px; color:white">${winRate}%</div>
               <div style="font-size:10px; color:rgba(255,255,255,0.4); font-family:var(--font-ui)">WIN RATE</div>
