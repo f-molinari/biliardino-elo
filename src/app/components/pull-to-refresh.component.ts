@@ -1,3 +1,4 @@
+import { refreshCurrentView } from '@/services/app-refresh.service';
 import haptics from '@/utils/haptics.util';
 import { appState } from '../state';
 import { html } from '../utils/html-template.util';
@@ -7,16 +8,29 @@ import template from './pull-to-refresh.component.html?raw';
 const PREFLIGHT_HAPTIC = { duration: 20 };
 const SUCCESS_HAPTIC = [{ duration: 50 }, { duration: 100, delay: 50 }];
 const ERROR_HAPTIC = [{ duration: 100 }, { duration: 50, delay: 100 }];
+const ARM_THRESHOLD_PX = 72;
+const MAX_PULL_PX = 120;
+const IDLE_BAR = 'linear-gradient(90deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.95))';
+const SUCCESS_BAR = 'linear-gradient(90deg, rgba(74, 222, 128, 0.3), rgba(74, 222, 128, 0.95))';
+const ERROR_BAR = 'linear-gradient(90deg, rgba(248, 113, 113, 0.3), rgba(248, 113, 113, 0.95))';
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 class LoadingBarComponent extends Component {
   private barEl: HTMLElement | null = null;
   private isRefreshing = false;
+  private isTrackingPull = false;
+  private activeTouchId: number | null = null;
+  private startY = 0;
+  private pullDistance = 0;
+  private hasArmedHaptic = false;
 
   private onRefreshStartBound = (): void => this.showLoading();
   private onRefreshSuccessBound = (): void => this.showSuccess();
   private onRefreshErrorBound = (): void => this.showError();
+  private onTouchStartBound = (event: TouchEvent): void => this.onTouchStart(event);
+  private onTouchMoveBound = (event: TouchEvent): void => this.onTouchMove(event);
+  private onTouchEndBound = (): void => this.onTouchEnd();
   private hideTimer: number | null = null;
 
   override render(): string {
@@ -24,19 +38,16 @@ class LoadingBarComponent extends Component {
   }
 
   override mount(): void {
-    // Create and append container to DOM
     const host = document.createElement('div');
     host.innerHTML = this.render();
     document.body.appendChild(host);
     this.el = host;
 
-    // Get elements from the template
     this.barEl = this.$id('loading-bar');
     const containerEl = this.$id('loading-bar-container');
 
     if (!this.barEl || !containerEl) return;
 
-    // Apply styles to container
     containerEl.style.cssText = `
       position: fixed;
       top: 56px;
@@ -48,44 +59,36 @@ class LoadingBarComponent extends Component {
       overflow: hidden;
     `;
 
-    // Apply styles to bar
     this.barEl.style.cssText = `
       width: 0%;
       height: 100%;
-      background: linear-gradient(90deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.95));
+      opacity: 0;
+      background: ${IDLE_BAR};
       transition: width 0.3s ease;
       box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
     `;
 
-    // Inject CSS for shake animation
-    if (!document.getElementById('loading-bar-styles')) {
-      const style = document.createElement('style');
-      style.id = 'loading-bar-styles';
-      style.textContent = `
-        @keyframes loading-bar-shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-2px); }
-          75% { transform: translateX(2px); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          @keyframes loading-bar-shake {
-            0%, 100% { transform: translateX(0); }
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    // Listen to refresh events
     appState.on('app-refresh:start', this.onRefreshStartBound);
     appState.on('app-refresh:success', this.onRefreshSuccessBound);
     appState.on('app-refresh:error', this.onRefreshErrorBound);
+
+    if (this.shouldHandlePullGesture()) {
+      window.addEventListener('touchstart', this.onTouchStartBound, { passive: true });
+      window.addEventListener('touchmove', this.onTouchMoveBound, { passive: false });
+      window.addEventListener('touchend', this.onTouchEndBound, { passive: true });
+      window.addEventListener('touchcancel', this.onTouchEndBound, { passive: true });
+    }
   }
 
   override destroy(): void {
     appState.off('app-refresh:start', this.onRefreshStartBound);
     appState.off('app-refresh:success', this.onRefreshSuccessBound);
     appState.off('app-refresh:error', this.onRefreshErrorBound);
+
+    window.removeEventListener('touchstart', this.onTouchStartBound);
+    window.removeEventListener('touchmove', this.onTouchMoveBound);
+    window.removeEventListener('touchend', this.onTouchEndBound);
+    window.removeEventListener('touchcancel', this.onTouchEndBound);
 
     if (this.hideTimer !== null) {
       window.clearTimeout(this.hideTimer);
@@ -103,7 +106,13 @@ class LoadingBarComponent extends Component {
     if ('vibrate' in navigator) {
       try {
         if (Array.isArray(pattern)) {
-          navigator.vibrate(pattern);
+          navigator.vibrate(pattern.flatMap((pulse: { duration: number; delay?: number }) => {
+            const sequence = [pulse.duration];
+            if (typeof pulse.delay === 'number' && pulse.delay > 0) {
+              sequence.push(pulse.delay);
+            }
+            return sequence;
+          }));
         } else {
           navigator.vibrate(pattern.duration);
         }
@@ -114,33 +123,137 @@ class LoadingBarComponent extends Component {
 
     try {
       if (Array.isArray(pattern)) {
-        pattern.forEach((p: any) =>
-          setTimeout(() => haptics.light(), p.delay ?? 0)
-        );
+        haptics.trigger(pattern, { intensity: 1 });
       } else {
-        haptics.light();
+        haptics.trigger([{ duration: pattern.duration }], { intensity: 1 });
       }
     } catch (e) {
       // Silently fail
     }
   }
 
-  private showLoading(): void {
-    if (!this.barEl) return;
+  private shouldHandlePullGesture(): boolean {
+    return document.body.classList.contains('pwa') && 'ontouchstart' in window;
+  }
 
-    this.isRefreshing = true;
+  private onTouchStart(event: TouchEvent): void {
+    if (this.isRefreshing || this.isTrackingPull) return;
+    if (event.touches.length !== 1) return;
+    if (this.getScrollTop() > 2) return;
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    this.isTrackingPull = true;
+    this.activeTouchId = touch.identifier;
+    this.startY = touch.clientY;
+    this.pullDistance = 0;
+    this.hasArmedHaptic = false;
+
     if (this.hideTimer !== null) {
       window.clearTimeout(this.hideTimer);
       this.hideTimer = null;
     }
 
-    this.triggerHaptic(PREFLIGHT_HAPTIC);
+    this.resetBarVisuals();
+  }
 
-    // Indeterminate progress animation
+  private onTouchMove(event: TouchEvent): void {
+    if (!this.isTrackingPull || this.activeTouchId === null || !this.barEl) return;
+
+    const touch = this.findTouch(event.touches, this.activeTouchId)
+      ?? this.findTouch(event.changedTouches, this.activeTouchId);
+    if (!touch) return;
+
+    const deltaY = touch.clientY - this.startY;
+    if (deltaY <= 0) {
+      this.pullDistance = 0;
+      this.updatePullPreview();
+      return;
+    }
+
+    event.preventDefault();
+    this.pullDistance = Math.min(MAX_PULL_PX, deltaY * 0.6);
+
+    if (this.pullDistance >= ARM_THRESHOLD_PX && !this.hasArmedHaptic) {
+      this.hasArmedHaptic = true;
+      this.triggerHaptic(PREFLIGHT_HAPTIC);
+    }
+
+    this.updatePullPreview();
+  }
+
+  private onTouchEnd(): void {
+    if (!this.isTrackingPull) return;
+
+    const shouldRefresh = this.pullDistance >= ARM_THRESHOLD_PX;
+
+    this.isTrackingPull = false;
+    this.activeTouchId = null;
+    this.hasArmedHaptic = false;
+
+    if (shouldRefresh) {
+      void refreshCurrentView();
+      return;
+    }
+
+    this.pullDistance = 0;
+    this.resetBar();
+  }
+
+  private updatePullPreview(): void {
+    if (!this.barEl || this.isRefreshing) return;
+
+    const progress = Math.max(0, Math.min(1, this.pullDistance / ARM_THRESHOLD_PX));
+    const width = 16 + (progress * 52);
+
+    this.barEl.style.transition = 'width 0.08s linear, opacity 0.12s ease';
+    this.barEl.style.opacity = progress > 0 ? '1' : '0';
+    this.barEl.style.width = `${width}%`;
+  }
+
+  private resetBarVisuals(): void {
+    if (!this.barEl) return;
+
+    this.barEl.style.width = '0%';
+    this.barEl.style.opacity = '0';
+    this.barEl.style.transition = 'none';
+    this.barEl.style.background = IDLE_BAR;
+  }
+
+  private findTouch(touchList: TouchList, touchId: number): Touch | null {
+    for (let index = 0; index < touchList.length; index += 1) {
+      const touch = touchList.item(index);
+      if (touch?.identifier === touchId) {
+        return touch;
+      }
+    }
+
+    return null;
+  }
+
+  private getScrollTop(): number {
+    return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+  }
+
+  private showLoading(): void {
+    if (!this.barEl) return;
+
+    this.isRefreshing = true;
+    this.isTrackingPull = false;
+    this.activeTouchId = null;
+    this.pullDistance = 0;
+    this.hasArmedHaptic = false;
+    if (this.hideTimer !== null) {
+      window.clearTimeout(this.hideTimer);
+      this.hideTimer = null;
+    }
+
+    this.barEl.style.background = IDLE_BAR;
+    this.barEl.style.opacity = '1';
     this.barEl.style.width = '30%';
     this.barEl.style.transition = 'width 0.5s ease';
 
-    // Stagger animation
     this.hideTimer = window.setTimeout(() => {
       if (this.barEl) {
         this.barEl.style.width = '60%';
@@ -159,12 +272,10 @@ class LoadingBarComponent extends Component {
       this.hideTimer = null;
     }
 
-    // Complete the bar with green
-    this.barEl.style.background = 'linear-gradient(90deg, rgba(74, 222, 128, 0.3), rgba(74, 222, 128, 0.95))';
+    this.barEl.style.background = SUCCESS_BAR;
     this.barEl.style.transition = 'width 0.2s ease';
     this.barEl.style.width = '100%';
 
-    // Fade out
     this.hideTimer = window.setTimeout(() => {
       if (this.barEl) {
         this.barEl.style.transition = 'opacity 0.3s ease';
@@ -185,18 +296,12 @@ class LoadingBarComponent extends Component {
       this.hideTimer = null;
     }
 
-    // Show error state in red
-    this.barEl.style.background = 'linear-gradient(90deg, rgba(248, 113, 113, 0.3), rgba(248, 113, 113, 0.95))';
-    this.barEl.style.transition = 'none';
+    this.barEl.style.background = ERROR_BAR;
+    this.barEl.style.transition = 'width 0.2s ease';
     this.barEl.style.width = '100%';
 
-    // Shake animation
-    this.barEl.style.animation = 'loading-bar-shake 0.4s ease-in-out';
-
-    // Fade out
     this.hideTimer = window.setTimeout(() => {
       if (this.barEl) {
-        this.barEl.style.animation = 'none';
         this.barEl.style.transition = 'opacity 0.3s ease';
         this.barEl.style.opacity = '0';
         this.resetBar();
@@ -210,10 +315,9 @@ class LoadingBarComponent extends Component {
     this.hideTimer = window.setTimeout(() => {
       if (this.barEl) {
         this.barEl.style.width = '0%';
-        this.barEl.style.opacity = '1';
+        this.barEl.style.opacity = '0';
         this.barEl.style.transition = 'width 0.3s ease';
-        this.barEl.style.background = 'linear-gradient(90deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.95))';
-        this.barEl.style.animation = 'none';
+        this.barEl.style.background = IDLE_BAR;
       }
       this.hideTimer = null;
     }, 100);

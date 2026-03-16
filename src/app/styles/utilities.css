@@ -3,6 +3,12 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── PWA Enhancements ──────────────────────────────────────── */
+:root,
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
 /* Remove tap highlight on interactive elements (PWA-specific) */
 button,
 a,
@@ -15,7 +21,6 @@ body.pwa {
   user-select: none;
   -webkit-user-select: none;
   overscroll-behavior-y: none;
-
 }
 
 body.pwa .allow-pwa-select,
