@@ -8,6 +8,7 @@ import template from './pull-to-refresh.component.html?raw';
 const PREFLIGHT_HAPTIC = { duration: 20 };
 const SUCCESS_HAPTIC = [{ duration: 50 }, { duration: 100, delay: 50 }];
 const ERROR_HAPTIC = [{ duration: 100 }, { duration: 50, delay: 100 }];
+const PULL_HAPTIC_STEPS = [8, 12, 16];
 const ARM_THRESHOLD_PX = 72;
 const MAX_PULL_PX = 120;
 const IDLE_BAR = 'linear-gradient(90deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.95))';
@@ -23,6 +24,7 @@ class LoadingBarComponent extends Component {
   private activeTouchId: number | null = null;
   private startY = 0;
   private pullDistance = 0;
+  private lastPullHapticStep = 0;
   private hasArmedHaptic = false;
 
   private onRefreshStartBound = (): void => this.showLoading();
@@ -45,12 +47,13 @@ class LoadingBarComponent extends Component {
 
     this.barEl = this.$id('loading-bar');
     const containerEl = this.$id('loading-bar-container');
+    const headerEl = this.$id('app-header-inner');
 
     if (!this.barEl || !containerEl) return;
 
     containerEl.style.cssText = `
       position: fixed;
-      top: 56px;
+      top: ${headerEl?.offsetHeight ?? 56}px;
       left: 0;
       right: 0;
       height: 2px;
@@ -148,6 +151,7 @@ class LoadingBarComponent extends Component {
     this.activeTouchId = touch.identifier;
     this.startY = touch.clientY;
     this.pullDistance = 0;
+    this.lastPullHapticStep = 0;
     this.hasArmedHaptic = false;
 
     if (this.hideTimer !== null) {
@@ -175,6 +179,19 @@ class LoadingBarComponent extends Component {
     event.preventDefault();
     this.pullDistance = Math.min(MAX_PULL_PX, deltaY * 0.6);
 
+    const pullStep = Math.min(
+      PULL_HAPTIC_STEPS.length,
+      Math.floor((this.pullDistance / ARM_THRESHOLD_PX) * PULL_HAPTIC_STEPS.length)
+    );
+
+    if (pullStep > this.lastPullHapticStep && pullStep <= PULL_HAPTIC_STEPS.length) {
+      this.lastPullHapticStep = pullStep;
+      const duration = PULL_HAPTIC_STEPS[pullStep - 1];
+      if (duration) {
+        this.triggerHaptic({ duration });
+      }
+    }
+
     if (this.pullDistance >= ARM_THRESHOLD_PX && !this.hasArmedHaptic) {
       this.hasArmedHaptic = true;
       this.triggerHaptic(PREFLIGHT_HAPTIC);
@@ -190,6 +207,7 @@ class LoadingBarComponent extends Component {
 
     this.isTrackingPull = false;
     this.activeTouchId = null;
+    this.lastPullHapticStep = 0;
     this.hasArmedHaptic = false;
 
     if (shouldRefresh) {
@@ -243,6 +261,7 @@ class LoadingBarComponent extends Component {
     this.isTrackingPull = false;
     this.activeTouchId = null;
     this.pullDistance = 0;
+    this.lastPullHapticStep = 0;
     this.hasArmedHaptic = false;
     if (this.hideTimer !== null) {
       window.clearTimeout(this.hideTimer);
