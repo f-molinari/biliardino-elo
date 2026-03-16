@@ -59,8 +59,6 @@ const RECENT_MATCHES_COUNT = 30;
 class LeaderboardPage extends Component {
   private sortKey: SortKey = 'rank';
   private sortAsc = false;
-  private liveTimerInterval: ReturnType<typeof setInterval> | null = null;
-  private liveMatchStart: number | null = null;
   private matchHistoryCleanup: (() => void) | null = null;
 
   async render(): Promise<string> {
@@ -110,9 +108,6 @@ class LeaderboardPage extends Component {
     }
     this.updateSortIndicators();
 
-    // Start live match timer
-    this.startLiveTimer();
-
     const root = this.$('#leaderboard-page') ?? this.el;
     if (root) {
       this.matchHistoryCleanup = attachMatchHistoryInteractions(root);
@@ -131,11 +126,6 @@ class LeaderboardPage extends Component {
     if (this.matchHistoryCleanup) {
       this.matchHistoryCleanup();
       this.matchHistoryCleanup = null;
-    }
-
-    if (this.liveTimerInterval) {
-      clearInterval(this.liveTimerInterval);
-      this.liveTimerInterval = null;
     }
   }
 
@@ -396,18 +386,13 @@ class LeaderboardPage extends Component {
                     box-shadow:0 0 40px rgba(255,215,0,0.06)">
 
           <!-- Header -->
-          <div class="flex items-center justify-between px-5 md:px-6"
+          <div class="flex items-center px-5 md:px-6"
                style="height:52px; background:rgba(10,25,18,0.8); border-bottom:1px solid rgba(255,215,0,0.15)">
             <div class="flex items-center gap-2">
               ${isLive ? '<div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>' : ''}
               <span class="font-display" style="font-size:14px; color:#ef4444; letter-spacing:0.15em">
                 ${isLive ? 'LIVE MATCH' : 'PROSSIMA PARTITA'}
               </span>
-            </div>
-            <div class="flex items-center gap-2">
-              <i data-lucide="zap" style="width:12px;height:12px;color:#FFD700"></i>
-              <span class="font-display text-white" style="font-size:18px;letter-spacing:0.1em"
-                    id="live-match-timer">--:--</span>
             </div>
           </div>
 
@@ -506,23 +491,6 @@ class LeaderboardPage extends Component {
       { start: 18 * 60, end: 20 * 60 }
     ];
     return windows.some(w => minutes >= w.start && minutes < w.end);
-  }
-
-  private startLiveTimer(): void {
-    const timerEl = this.$('#live-match-timer');
-    if (!timerEl) return;
-
-    this.liveMatchStart = Date.now();
-    const update = (): void => {
-      if (!this.liveMatchStart) return;
-      const elapsed = Math.floor((Date.now() - this.liveMatchStart) / 1000);
-      const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
-      const ss = String(elapsed % 60).padStart(2, '0');
-      const el = this.$('#live-match-timer');
-      if (el) el.textContent = `${mm}:${ss}`;
-    };
-    update();
-    this.liveTimerInterval = setInterval(update, 1000);
   }
 
   // ── Podium ──────────────────────────
@@ -657,7 +625,7 @@ class LeaderboardPage extends Component {
                background: rgba(10,25,18,0.8);
                border-bottom: 1px solid rgba(255,215,0,0.2);
              ">
-          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
+          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors text-center"
                data-sort-key="rank"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">#</div>
           <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
@@ -666,15 +634,15 @@ class LeaderboardPage extends Component {
           <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
                data-sort-key="elo"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">ELO</div>
-          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
+          <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors text-center"
                data-sort-key="matches"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">MATCH</div>
           <div style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">V / S</div>
           <div class="sort-header cursor-pointer hover:text-(--color-gold) transition-colors"
                data-sort-key="winrate"
                style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">WIN RATE</div>
-          <div style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">RUOLO</div>
-          <div style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">G/S</div>
+          <div class="text-center" style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">RUOLO</div>
+          <div class="text-center" style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">G/S</div>
           <div style="font-family:var(--font-ui); font-size:11px; letter-spacing:0.12em; color:rgba(255,215,0,0.7)">FORMA</div>
         </div>
 
@@ -726,6 +694,9 @@ class LeaderboardPage extends Component {
       else if (rounded < 0) todayBadge = `<span class="font-body text-xs" style="color:var(--color-loss)"> ${rounded}</span>`;
       else todayBadge = `<span class="font-body text-xs" style="color:rgba(255,255,255,0.3)"> =</span>`;
     }
+    const mobileTodayBadge = todayBadge
+      ? `<div style="line-height:1;margin-top:2px">${todayBadge}</div>`
+      : '';
 
     // ── Rank delta — icona freccia, no box ───────────────
     const rankDelta = rankDeltas.get(player.id);
@@ -755,7 +726,7 @@ class LeaderboardPage extends Component {
     const goalRatioPct = totalGoals > 0 ? Math.round((player.goalsFor / totalGoals) * 100) : 0;
     const goalRatioColor = goalRatioPct >= 55 ? '#4ADE80' : goalRatioPct >= 45 ? '#FFD700' : '#F87171';
     const goalsCell = `
-      <div class="flex flex-col gap-0.5">
+      <div class="flex flex-col gap-0.5 text-center">
         <span style="font-family:var(--font-display);font-size:15px;color:${goalRatioColor};letter-spacing:0.05em;line-height:1">${goalRatioPct}%</span>
         <span style="font-family:var(--font-ui);font-size:9px;color:rgba(255,255,255,0.3)">${player.goalsFor}/${player.goalsAgainst}</span>
       </div>
@@ -850,10 +821,10 @@ class LeaderboardPage extends Component {
              style="grid-template-columns: 52px 1fr 100px 70px 90px 90px 70px 65px 88px">
           <div class="flex justify-center">${rankDisplay}</div>
           <div>${avatarAndNameDesktop}</div>
-          <div>
+          <div class="flex gap-1">
             <span style="font-family:var(--font-display); font-size:20px; color:${eloColor}; letter-spacing:0.05em">${elo}</span>${todayBadge}
           </div>
-          <div style="font-family:var(--font-ui); font-size:14px; color:rgba(255,255,255,0.7)">${player.matches}</div>
+          <div class="text-center" style="font-family:var(--font-ui); font-size:14px; color:rgba(255,255,255,0.7)">${player.matches}</div>
           <div>${winLoss}</div>
           <div>${winRateBar}</div>
           <div class="flex justify-center">${roleCell}</div>
@@ -866,8 +837,9 @@ class LeaderboardPage extends Component {
              style="grid-template-columns: auto 1fr 52px 48px">
           <div class="flex justify-center">${rankDisplay}</div>
           <div class="min-w-0">${avatarAndNameMobile}</div>
-          <div>
-            <span style="font-family:var(--font-display); font-size:17px; color:${eloColor}">${elo}</span>${todayBadge}
+          <div class="flex flex-col items-start">
+            <span style="font-family:var(--font-display); font-size:17px; color:${eloColor}; line-height:1">${elo}</span>
+            ${mobileTodayBadge}
           </div>
           <div>
             <div style="font-family:var(--font-ui); font-size:13px; color:${wrColor}">${winRate}%</div>

@@ -25,6 +25,8 @@ interface RouteDefinition {
   requireAuth?: boolean;
   /** Requires admin role (implies requireAuth). */
   requireAdmin?: boolean;
+  /** Scroll the page to the top after navigation. */
+  scrollToTop?: boolean;
 }
 
 interface RouteMatch {
@@ -43,7 +45,8 @@ const routes: RouteDefinition[] = [
   {
     path: '/profile/:id',
     load: () => import('./pages/player-profile.page'),
-    title: 'Profilo'
+    title: 'Profilo',
+    scrollToTop: true
   },
   {
     path: '/matchmaking',
@@ -54,12 +57,14 @@ const routes: RouteDefinition[] = [
   {
     path: '/stats',
     load: () => import('./pages/stats.page'),
-    title: 'Statistiche'
+    title: 'Statistiche',
+    scrollToTop: true
   },
   {
     path: '/lobby',
     load: () => import('./pages/lobby.page'),
-    title: 'Lobby'
+    title: 'Lobby',
+    scrollToTop: true
   },
   {
     path: '/add-match',
@@ -304,6 +309,11 @@ class Router {
 
       // 6. Update page title
       document.title = `${match.route.title} — CAlcio biliardino`;
+
+      // 6b. Scroll to top if the route requests it
+      if (match.route.scrollToTop) {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
 
       // 7. Fade in
       if (this.contentEl) {

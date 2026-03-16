@@ -11,6 +11,7 @@
 import { getPlayerById } from '@/services/player.service';
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
+import haptics from '@/utils/haptics.util';
 import gsap from 'gsap';
 import { refreshIcons } from '../icons';
 import { router } from '../router';
@@ -67,8 +68,13 @@ class MobileDrawerComponent {
     this.backdropEl?.addEventListener('click', () => this.close());
 
     document.getElementById('drawer-user-strip')?.addEventListener('click', () => {
+      haptics.trigger('selection');
       this.close();
       setTimeout(() => userDropdown.open(), 260);
+    });
+
+    this.drawerEl?.querySelectorAll<HTMLElement>('[data-drawer-link]').forEach((link) => {
+      link.addEventListener('click', () => haptics.trigger('selection'));
     });
 
     this.handleRouteChange = () => {
@@ -166,7 +172,7 @@ class MobileDrawerComponent {
     return NAV_ITEMS.map((item) => {
       const isActive = item.path === '/' ? currentPath === '/' : currentPath.startsWith(item.path);
       return `
-        <a href="${item.path}"
+        <a href="${item.path}" data-drawer-link
            ${item.adminOnly ? 'data-admin-only style="display:none"' : ''}
            class="group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive
               ? 'text-(--color-gold) bg-[rgba(255,215,0,0.1)]'

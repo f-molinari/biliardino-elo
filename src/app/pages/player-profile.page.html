@@ -4,58 +4,97 @@
   {{pageHeader}}
 
   <!-- ── Hero Card ───────────────────────────────────────── -->
-  <div id="hero-card" class="glass-card rounded-xl p-5 md:p-6"
+  <div id="hero-card" class="glass-card rounded-2xl p-5 md:p-6 lg:p-10 relative overflow-visible"
     style="border-color: {{playerColor}}33; box-shadow: 0 0 40px {{playerColor}}15, var(--shadow-card)">
-    <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
 
-      <!-- Avatar -->
-      <div class="hero-avatar relative flex-shrink-0">
-        {{avatar}}
-        {{rankBadge}}
-      </div>
+    <!-- Rank watermark background -->
+    <span
+      class="pointer-events-none select-none absolute inset-0 flex items-start justify-end font-display overflow-hidden"
+      style="z-index: 0;
+             background: linear-gradient(180deg, {{playerColor}}15 0%, {{playerColor}}08 40%, transparent 85%);
+             -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+             font-size: clamp(18rem, 40vw, 32rem); line-height: 0.8; padding: 0.02em">
+      #{{rank}}
+    </span>
 
-      <!-- Identity + Stats -->
-      <div class="flex-1 min-w-0 text-center md:text-left">
-        <div class="flex flex-col md:flex-row items-center md:items-baseline gap-2 mb-1">
-          <h2 class="font-display text-3xl md:text-4xl tracking-wide" style="color:#fff; line-height:1">
-            {{playerName}}
-          </h2>
-          {{onlineBadge}}
+    <div class="relative z-10 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 md:gap-10 items-center">
+
+      <!-- Left: identity + stats -->
+      <div class="flex flex-col items-center md:items-start gap-4">
+
+        <!-- Avatar + Identity row -->
+        <div class="flex flex-col sm:flex-row gap-9 items-center sm:items-start w-full">
+
+          <!-- Avatar (overflow-visible for crown) -->
+          <div class="hero-avatar relative shrink-0 -mt-3 sm:-mt-4 z-20">
+            {{avatar}}
+            {{rankBadge}}
+          </div>
+
+          <!-- Identity -->
+          <div class="flex-1 min-w-0 text-center sm:text-left">
+            <div class="flex flex-col sm:flex-row items-center sm:items-baseline gap-2 mb-1">
+              <h2 class="font-display text-3xl md:text-4xl tracking-wide" style="color:#fff; line-height:1">
+                {{playerName}}
+              </h2>
+              {{onlineBadge}}
+            </div>
+            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span class="font-ui text-xs" style="color:{{playerColor}}; letter-spacing:0.1em">
+                {{className}}
+              </span>
+              <span style="color:rgba(255,255,255,0.3)">·</span>
+              <span class="font-body text-xs" style="color:var(--color-text-muted)">RANK #{{rank}}</span>
+            </div>
+          </div>
         </div>
-        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-4">
-          <span class="font-ui text-xs" style="color:{{playerColor}}; letter-spacing:0.1em">
-            {{className}}
-          </span>
-          <span style="color:rgba(255,255,255,0.3)">·</span>
-          <span class="font-body text-xs" style="color:var(--color-text-muted)">RANK #{{rank}}</span>
-        </div>
+
+        <!-- Divider -->
+        <div class="w-full h-px" style="background: linear-gradient(to right, {{playerColor}}20, transparent)"></div>
 
         <!-- Quick Stats -->
-        <div class="hero-stats flex flex-wrap items-end justify-center md:justify-start gap-x-6 gap-y-3">
-          <div class="elo-block">
-            <p class="font-display text-4xl md:text-5xl stat-elo" style="color:var(--color-gold); line-height:1.1">
+        <div class="hero-stats grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-4 gap-y-2 w-full">
+          <div class="text-center sm:text-left">
+            <p class="font-display text-3xl md:text-3xl stat-elo" style="color:{{playerColor}}; line-height:1.1">
               {{displayElo}}</p>
-            <p class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-text-muted)">ELO ATTUALE
+            <p class="font-ui text-[10px] uppercase tracking-widest mt-0.5" style="color:var(--color-text-muted)">
+              ELO ATTUALE</p>
+          </div>
+          <div class="text-center sm:text-left">
+            <p class="font-display text-xl stat-matches" style="color:#fff; line-height:1.1">{{matches}}</p>
+            <p class="font-ui text-[10px] uppercase tracking-widest mt-0.5" style="color:var(--color-text-muted)">
+              PARTITE</p>
+          </div>
+          <div class="text-center sm:text-left">
+            <p class="font-display text-xl stat-wins" style="color:var(--color-win); line-height:1.1">{{wins}}</p>
+            <p class="font-ui text-[10px] uppercase tracking-widest mt-0.5" style="color:var(--color-text-muted)">
+              VITTORIE</p>
+          </div>
+          <div class="text-center sm:text-left">
+            <p class="font-display text-xl stat-losses" style="color:var(--color-loss); line-height:1.1">{{losses}}
             </p>
+            <p class="font-ui text-[10px] uppercase tracking-widest mt-0.5" style="color:var(--color-text-muted)">
+              SCONFITTE</p>
           </div>
-          <div class="stat-item text-center">
-            <p class="font-display text-2xl stat-matches" style="color:#fff; line-height:1.1">{{matches}}</p>
-            <p class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-text-muted)">PARTITE</p>
-          </div>
-          <div class="stat-item text-center">
-            <p class="font-display text-2xl stat-wins" style="color:var(--color-win); line-height:1.1">{{wins}}</p>
-            <p class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-text-muted)">VITTORIE</p>
-          </div>
-          <div class="stat-item text-center">
-            <p class="font-display text-2xl stat-losses" style="color:var(--color-loss); line-height:1.1">{{losses}}</p>
-            <p class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-text-muted)">SCONFITTE</p>
-          </div>
-          <div class="stat-item text-center">
-            <p class="font-display text-2xl stat-winrate" style="color:#fff; line-height:1.1">{{winRate}}%</p>
-            <p class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-text-muted)">WIN RATE</p>
+          <div class="text-center sm:text-left col-span-2 sm:col-span-1">
+            <p class="font-display text-xl stat-winrate" style="color:#fff; line-height:1.1">{{winRate}}%</p>
+            <p class="font-ui text-[10px] uppercase tracking-widest mt-0.5" style="color:var(--color-text-muted)">
+              WIN RATE</p>
           </div>
         </div>
       </div>
+
+      <!-- Right: Radar chart -->
+      <div class="radar-section flex flex-col items-center justify-center shrink-0
+                  pt-2 md:pt-0 md:pl-4 md:border-l" style="border-color: rgba(255,255,255,0.06)">
+        <p class="font-ui text-[10px] uppercase tracking-widest mb-3" style="color:var(--color-text-muted)">
+          RADAR STATS
+        </p>
+        <div style="width:240px; height:240px; position:relative">
+          <canvas id="radar-chart"></canvas>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -130,7 +169,7 @@
       <div>
         <div class="flex justify-between mb-1">
           <span class="font-body text-xs flex gap-1" style="color:rgba(255,255,255,0.7)">
-            <i data-lucide="swords" class="w-3.5 h-3.5" style="color:var(--color-gold)"></i> Attaccante</span>
+            <i data-lucide="sword" class="w-3.5 h-3.5" style="color:var(--color-gold)"></i> Attaccante</span>
           <span class="font-body text-xs" style="color:rgba(255,255,255,0.5)">{{matchesAsAttack}}
             ({{attackRolePct}}%)</span>
         </div>
@@ -145,21 +184,21 @@
     <div class="glass-card rounded-xl p-4">
       <div class="flex items-center gap-2 mb-4">
         <i data-lucide="trophy" class="w-3.5 h-3.5" style="color:var(--color-gold)"></i>
-        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">🏆 VITTORIE PER
+        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">VITTORIE PER
           RUOLO</span>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="rounded-lg p-3 text-center"
           style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.04)">
           <p class="font-display text-xl" style="color:#4ADE80">{{winsAsAttack}}V - {{lossesAsAttack}}S</p>
-          <p class="font-ui text-[10px] uppercase tracking-widest mt-1" style="color:var(--color-text-muted)">⚔️ ATTACCO
+          <p class="font-ui text-[10px] uppercase tracking-widest mt-1" style="color:var(--color-text-muted)">ATTACCO
           </p>
           <p class="font-body text-xs mt-1" style="color:rgba(255,255,255,0.5)">{{attackWinRate}}%</p>
         </div>
         <div class="rounded-lg p-3 text-center"
           style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.04)">
           <p class="font-display text-xl" style="color:#4ADE80">{{winsAsDefence}}V - {{lossesAsDefence}}S</p>
-          <p class="font-ui text-[10px] uppercase tracking-widest mt-1" style="color:var(--color-text-muted)">🛡️ DIFESA
+          <p class="font-ui text-[10px] uppercase tracking-widest mt-1" style="color:var(--color-text-muted)">DIFESA
           </p>
           <p class="font-body text-xs mt-1" style="color:rgba(255,255,255,0.5)">{{defenceWinRate}}%</p>
         </div>
@@ -171,7 +210,7 @@
   <div class="glass-card rounded-xl p-4">
     <div class="flex items-center gap-2 mb-4">
       <i data-lucide="target" class="w-3.5 h-3.5" style="color:var(--color-gold)"></i>
-      <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">⚽ STATISTICHE
+      <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">STATISTICHE
         GOAL</span>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -212,7 +251,7 @@
     <div class="glass-card rounded-xl p-4">
       <div class="flex items-center gap-2 mb-2">
         <i data-lucide="zap" class="w-3.5 h-3.5" style="color:var(--color-win)"></i>
-        <span class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-gold)">🔥 MIGLIORE
+        <span class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-gold)">MIGLIORE
           STRISCIA VITTORIE</span>
       </div>
       <p class="font-display text-3xl" style="color:var(--color-win)">{{bestWinStreak}}</p>
@@ -221,7 +260,7 @@
     <div class="glass-card rounded-xl p-4">
       <div class="flex items-center gap-2 mb-2">
         <i data-lucide="trending-down" class="w-3.5 h-3.5" style="color:var(--color-loss)"></i>
-        <span class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-gold)">💔 PEGGIORE
+        <span class="font-ui text-[10px] uppercase tracking-widest" style="color:var(--color-gold)">PEGGIORE
           STRISCIA SCONFITTE</span>
       </div>
       <p class="font-display text-3xl" style="color:var(--color-loss)">{{worstLossStreak}}</p>
@@ -233,7 +272,7 @@
   <div class="glass-card rounded-xl p-4">
     <div class="flex items-center gap-2 mb-4">
       <i data-lucide="users" class="w-3.5 h-3.5" style="color:var(--color-gold)"></i>
-      <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">👥 COMPAGNI &amp;
+      <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">COMPAGNI &amp;
         AVVERSARI</span>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -245,7 +284,7 @@
   <div class="glass-card rounded-xl p-4">
     <div class="flex items-center gap-2 mb-4">
       <i data-lucide="medal" class="w-3.5 h-3.5" style="color:var(--color-gold)"></i>
-      <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">🏅 MIGLIORI &amp;
+      <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">MIGLIORI &amp;
         PEGGIORI PARTITE</span>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -258,7 +297,7 @@
     <div class="flex items-center justify-between p-4 pb-3">
       <div class="flex items-center gap-2">
         <i data-lucide="scroll-text" class="w-3.5 h-3.5" style="color:var(--color-gold)"></i>
-        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">📜 STORICO
+        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">STORICO
           PARTITE</span>
       </div>
       <span class="font-body text-[10px]" style="color:var(--color-text-dim)">{{matchCount}} partite</span>

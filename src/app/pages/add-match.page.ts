@@ -20,7 +20,7 @@ import type { IMatch, ITeam } from '@/models/match.interface';
 import type { IPlayer } from '@/models/player.interface';
 
 const CLASS_COLORS: Record<number, string> = {
-  0: '#FFD700',
+  0: '#4A90D9',
   1: '#4A90D9',
   2: '#27AE60',
   3: '#C0C0C0',

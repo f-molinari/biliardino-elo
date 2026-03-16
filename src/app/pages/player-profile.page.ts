@@ -9,7 +9,7 @@
 import { IMatch } from '@/models/match.interface';
 import { IPlayer } from '@/models/player.interface';
 import { getAllMatches } from '@/services/match.service';
-import { getPlayerById, getRank } from '@/services/player.service';
+import { getAllPlayers, getPlayerById, getRank } from '@/services/player.service';
 import { getPlayerStats, PlayerStats } from '@/services/stats.service';
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
@@ -22,15 +22,19 @@ import { refreshIcons } from '../icons';
 import { html, rawHtml } from '../utils/html-template.util';
 import template from './player-profile.page.html?raw';
 
-// ── Player color palette ──────────────────────────────────────
+const CLASS_COLORS: Record<number, string> = {
+  0: '#12d9ff', // Squalo
+  1: '#008fff', // Barracuda
+  2: '#FFD700', // Tonno
+  3: '#C0C0C0', // Spigola
+  4: '#8B7D6B' // Sogliola
+};
 
-const PLAYER_COLORS = [
-  '#E8A020', '#4A90D9', '#50C878', '#E74C3C', '#9B59B6',
-  '#1ABC9C', '#E67E22', '#3498DB', '#2ECC71', '#E91E63'
-];
-
-function getPlayerColor(id: number): string {
-  return PLAYER_COLORS[id % 10];
+function getPlayerColor(player: IPlayer): string {
+  if (player.class >= 0 && CLASS_COLORS[player.class]) {
+    return CLASS_COLORS[player.class];
+  }
+  return '#FFFFFF'; // Default color if class is not defined
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -56,6 +60,8 @@ function formatFullDate(ms: number): string {
 
 export default class PlayerProfilePage extends Component {
   private chart: Chart | null = null;
+  private radarChart: Chart | null = null;
+  private radarData: number[] = [];
   private gsapCtx: gsap.Context | null = null;
 
   override render(): string {
@@ -77,7 +83,7 @@ export default class PlayerProfilePage extends Component {
       `;
     }
 
-    const color = getPlayerColor(player.id);
+    const color = getPlayerColor(player);
     const rank = getRank(player.id);
     const displayElo = getDisplayElo(player);
     const stats = getPlayerStats(id);
@@ -106,6 +112,34 @@ export default class PlayerProfilePage extends Component {
     const defenceWinRate = stats.matchesAsDefence > 0
       ? Math.round((stats.winsAsDefence / stats.matchesAsDefence) * 100)
       : 0;
+
+    // ── Radar chart data ──────────────────────────────────
+    const activePlayers = getAllPlayers().filter(p => p.matches > 0);
+    const maxGPM = Math.max(...activePlayers.map(p => p.goalsFor / p.matches), 1);
+    const maxGAM = Math.max(...activePlayers.map(p => p.goalsAgainst / p.matches), 1);
+    const allElos = activePlayers.map(p => p.elo);
+    const minElo = Math.min(...allElos);
+    const maxElo = Math.max(...allElos);
+
+    let winsVsWeaker = 0;
+    let totalWins = 0;
+    for (const m of stats.history) {
+      const teamIdx = (m.teamA.defence === id || m.teamA.attack === id) ? 0 : 1;
+      if (m.deltaELO[teamIdx] > 0) {
+        totalWins++;
+        if (m.teamELO[teamIdx ^ 1] < m.teamELO[teamIdx]) winsVsWeaker++;
+      }
+    }
+
+    const radarGoalsFatti = stats.matches > 0 ? Math.min((stats.totalGoalsFor / stats.matches) / maxGPM * 100, 100) : 0;
+    const radarGoalsSubiti = stats.matches > 0 ? Math.max((1 - (stats.totalGoalsAgainst / stats.matches) / maxGAM) * 100, 0) : 50;
+    const radarAttack = stats.matchesAsAttack > 0 ? (stats.winsAsAttack / stats.matchesAsAttack) * 100 : 0;
+    const radarDefence = stats.matchesAsDefence > 0 ? (stats.winsAsDefence / stats.matchesAsDefence) * 100 : 0;
+    const radarCostanza = Math.max(100 - stats.worstLossStreak * 10, 0);
+    const radarElo = maxElo > minElo ? ((stats.elo - minElo) / (maxElo - minElo)) * 100 : 50;
+    const radarQualityWins = totalWins > 0 ? Math.max((1 - winsVsWeaker / totalWins) * 100, 0) : 50;
+
+    this.radarData = [radarGoalsFatti, radarGoalsSubiti, radarAttack, radarDefence, radarCostanza, radarElo, radarQualityWins];
 
     // Match history (newest first)
     const playerMatches = stats.history.slice().reverse();
@@ -483,6 +517,7 @@ export default class PlayerProfilePage extends Component {
     refreshIcons();
 
     this.mountEloChart(id, player);
+    this.mountRadarChart(id, player);
     this.mountAnimations(player);
   }
 
@@ -566,6 +601,67 @@ export default class PlayerProfilePage extends Component {
     });
   }
 
+  private mountRadarChart(id: number, player: IPlayer): void {
+    const radarCanvas = this.$id('radar-chart') as HTMLCanvasElement | null;
+    if (!radarCanvas) return;
+
+    const rCtx = radarCanvas.getContext('2d');
+    if (!rCtx) return;
+
+    const color = getPlayerColor(player);
+    this.radarChart = new Chart(rCtx, {
+      type: 'radar',
+      data: {
+        labels: ['Gol Fatti', 'Gol Subiti', 'Attacco', 'Difesa', 'Costanza', 'ELO', 'Qualità Win'],
+        datasets: [{
+          label: player.name,
+          data: this.radarData,
+          backgroundColor: `${color}33`,
+          borderColor: color,
+          borderWidth: 2,
+          pointBackgroundColor: color,
+          pointBorderColor: color,
+          pointRadius: 3,
+          pointHoverRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 42, 32, 0.95)',
+            titleFont: { family: 'Oswald', size: 11 },
+            bodyFont: { family: 'Inter', size: 12 },
+            titleColor: 'rgba(255,255,255,0.5)',
+            bodyColor: color,
+            borderColor: `${color}33`,
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+            callbacks: {
+              label: ctx => `${ctx.parsed.r.toFixed(1)}`
+            }
+          }
+        },
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 100,
+            ticks: { stepSize: 20, display: false },
+            grid: { color: 'rgba(255,255,255,0.08)' },
+            angleLines: { color: 'rgba(255,255,255,0.08)' },
+            pointLabels: {
+              font: { family: 'Oswald', size: 11 },
+              color: 'rgba(255,255,255,0.6)'
+            }
+          }
+        }
+      }
+    });
+  }
+
   private mountAnimations(player: IPlayer): void {
     const stats = getPlayerStats(Number(this.params.id));
     const defPct = player.matches > 0 ? Math.round((stats.matchesAsDefence / player.matches) * 100) : 0;
@@ -589,6 +685,10 @@ export default class PlayerProfilePage extends Component {
     if (this.chart) {
       this.chart.destroy();
       this.chart = null;
+    }
+    if (this.radarChart) {
+      this.radarChart.destroy();
+      this.radarChart = null;
     }
     if (this.gsapCtx) {
       this.gsapCtx.revert();

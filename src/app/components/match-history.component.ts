@@ -16,8 +16,9 @@ const CLASS_COLORS: Record<number, string> = {
   4: '#8B7D6B'
 };
 
-const MATCH_AVATAR_SIZE = 112;
-const MATCH_AVATAR_STACK_OFFSET = 88;
+const CLOSED_AVATAR_SIZE = 43;
+const OPEN_AVATAR_SIZE = 76;
+const AVATAR_STACK_OFFSET = 40;
 
 export interface MatchHistoryOptions {
   matches: IMatch[];
@@ -71,10 +72,9 @@ export function renderMatchHistory(options: MatchHistoryOptions): string {
   if (matches.length === 0) return '';
 
   const buckets = splitTodayAndOlder(matches);
-  const defaultExpandedId = buckets.today[0] ? getMatchId(buckets.today[0]) : '';
   const todayCards = buckets.today
     .map(m => renderMatchCard(m, selectedPlayerId, {
-      expanded: expandable && getMatchId(m) === defaultExpandedId,
+      expanded: false,
       expandable
     }))
     .join('');
@@ -89,7 +89,7 @@ export function renderMatchHistory(options: MatchHistoryOptions): string {
 
   if (buckets.today.length > 0) {
     body += `
-      ${renderSectionHeader('OGGI', buckets.today.length, true)}
+      ${renderSectionHeader('OGGI', true)}
       <div class="flex flex-col gap-3">
         ${todayCards}
       </div>
@@ -98,7 +98,7 @@ export function renderMatchHistory(options: MatchHistoryOptions): string {
 
   if (buckets.older.length > 0) {
     body += `
-      ${renderSectionHeader('PRECEDENTI', buckets.older.length, false)}
+      ${renderSectionHeader('PRECEDENTI', false)}
       <div class="flex flex-col gap-3">
         ${olderCards}
       </div>
@@ -183,6 +183,8 @@ export function renderMatchCard(
     matchId: data.id,
     expandedAttr: state.expanded ? 'true' : 'false',
     ariaExpanded: state.expanded ? 'true' : 'false',
+    expandableAttr: state.expandable ? 'true' : 'false',
+    cardCursor: state.expandable ? 'pointer' : 'default',
     borderGradient,
     avgElo: Math.round((data.leftElo + data.rightElo) / 2),
     deltaBg,
@@ -203,7 +205,7 @@ export function renderMatchCard(
 
 function buildMatchCardDetails(data: MatchCardData): string {
   return `
-    <div class="rounded-[10px] flex items-center justify-center gap-3"
+    <div class="rounded-[10px] flex items-center justify-center gap-3 m-3"
          style="height:31px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.05)">
       <div class="flex items-center gap-1.5">
         <div class="rounded-sm" style="width:6px;height:6px;background:rgba(255,255,255,0.7)"></div>
@@ -217,14 +219,14 @@ function buildMatchCardDetails(data: MatchCardData): string {
         <div class="rounded-sm" style="width:6px;height:6px;background:#e53e3e"></div>
       </div>
     </div>
-    <div class="grid grid-cols-2 gap-4 mt-3">
+    <div class="grid grid-cols-2 gap-4 m-4">
       <div class="flex items-center justify-evenly rounded-xl" style="background:rgba(0,0,0,0.15);padding:6px">
-        ${renderDetailPlayer(data.leftDef)}
-        ${renderDetailPlayer(data.leftAtt)}
+        ${renderDetailPlayer(data.leftDef, 0)}
+        ${renderDetailPlayer(data.leftAtt, 1)}
       </div>
       <div class="flex items-center justify-evenly rounded-xl" style="background:rgba(0,0,0,0.15);padding:6px">
-        ${renderDetailPlayer(data.rightDef)}
-        ${renderDetailPlayer(data.rightAtt)}
+        ${renderDetailPlayer(data.rightDef, 2)}
+        ${renderDetailPlayer(data.rightAtt, 3)}
       </div>
     </div>
   `;
@@ -237,11 +239,9 @@ export function attachMatchHistoryInteractions(root: HTMLElement): () => void {
     const playerLink = target?.closest('[data-player-link]') as HTMLElement | null;
     if (playerLink) return;
 
-    const toggle = target?.closest('[data-match-toggle]') as HTMLElement | null;
-    if (!toggle) return;
-
-    const card = toggle.closest('[data-match-card]') as HTMLElement | null;
+    const card = target?.closest('[data-match-card]') as HTMLElement | null;
     if (!card) return;
+    if (card.dataset.expandable !== 'true') return;
 
     const container = card.closest('[data-match-history]') as HTMLElement | null;
     const alreadyExpanded = card.dataset.expanded === 'true';
@@ -264,7 +264,7 @@ export function attachMatchHistoryInteractions(root: HTMLElement): () => void {
 }
 
 export function renderMatchPlayerAvatar(player: IPlayer | undefined): string {
-  if (!player) return `<div style="width:${MATCH_AVATAR_SIZE}px;height:${MATCH_AVATAR_SIZE}px"></div>`;
+  if (!player) return `<div style="width:${CLOSED_AVATAR_SIZE}px;height:${CLOSED_AVATAR_SIZE}px"></div>`;
 
   const color = CLASS_COLORS[player.class] ?? '#8B7D6B';
   return renderPlayerAvatar({
@@ -284,14 +284,17 @@ function renderTeamAvatars(
   options: TeamAvatarOptions
 ): string {
   const originClass = options.side === 'left' ? 'origin-left' : 'origin-right';
+  const stackW = AVATAR_STACK_OFFSET + CLOSED_AVATAR_SIZE;
+  const stackH = CLOSED_AVATAR_SIZE;
 
   return `
     <div class="relative shrink-0 ${originClass} scale-[0.82] sm:scale-100 transition-transform duration-300"
          data-avatar-stack
-         data-side="${options.side}">
+         data-side="${options.side}"
+         style="width:${stackW}px;height:${stackH}px">
       <div class="absolute transition-all duration-300 ease-out"
            data-avatar-slot="back"
-         style="left:${MATCH_AVATAR_STACK_OFFSET}px;top:0px">
+         style="left:${AVATAR_STACK_OFFSET}px;top:0px">
         ${renderProfileAvatarLink(p2)}
       </div>
       <div class="absolute transition-all duration-300 ease-out"
@@ -351,15 +354,27 @@ function getMatchCardData(match: IMatch, selectedPlayerId: number): MatchCardDat
   };
 }
 
-function renderDetailPlayer(player: IPlayer | undefined): string {
+function renderDetailPlayer(player: IPlayer | undefined, index: number): string {
   if (!player) return '<div style="width:110px"></div>';
+
+  const color = CLASS_COLORS[player.class] ?? '#8B7D6B';
+  const avatarHtml = renderPlayerAvatar({
+    initials: getInitials(player.name),
+    color,
+    size: 'lg',
+    playerId: player.id,
+    playerClass: player.class
+  });
 
   return `
     <a href="/profile/${player.id}" data-player-link="${player.id}" class="flex flex-col items-center gap-1 min-w-0"
-       style="width:110px;transition:transform 220ms ease"
-       onmouseenter="this.style.transform='translateY(-2px)'"
-       onmouseleave="this.style.transform='translateY(0)'">
-      <div data-avatar-target="${player.id}" style="width:${MATCH_AVATAR_SIZE}px;height:${MATCH_AVATAR_SIZE}px"></div>
+       style="width:110px;transition:translate 220ms ease"
+       onmouseenter="this.style.translate='0 -2px'"
+       onmouseleave="this.style.translate='0 0'">
+      <div data-detail-avatar="${player.id}" data-avatar-index="${index}"
+           style="width:${OPEN_AVATAR_SIZE}px;height:${OPEN_AVATAR_SIZE}px;transform:scale(0);opacity:0">
+        ${avatarHtml}
+      </div>
       <div class="font-ui truncate text-center" style="font-size:12px;color:rgba(255,255,255,0.85);max-width:100%">${player.name}</div>
       <div class="font-display" style="font-size:16px;color:rgba(255,215,0,0.9)">${Math.round(player.elo)}</div>
     </a>
@@ -386,21 +401,17 @@ function splitTodayAndOlder(matches: IMatch[]): MatchBuckets {
   return { today: todayMatches, older: olderMatches };
 }
 
-function renderSectionHeader(label: string, count: number, isToday: boolean): string {
+function renderSectionHeader(label: string, isToday: boolean): string {
   const dotBg = isToday ? '#ffd700' : 'rgba(255,215,0,0.2)';
   const dotShadow = isToday ? '0 0 6px rgba(255,215,0,0.4)' : 'none';
-  const labelColor = isToday ? '#ffd700' : 'rgba(255,215,0,0.35)';
+  const labelColor = isToday ? '#ffd700' : 'rgb(255,215,0)';
   const gradFrom = isToday ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.05)';
-  const partite = count === 1 ? '1 PARTITA' : `${count} PARTITE`;
 
   return `
     <div class="flex items-center gap-2 px-1">
       <div class="shrink-0 rounded-sm" style="width:6px;height:6px;background:${dotBg};box-shadow:${dotShadow}"></div>
-      <span class="font-ui shrink-0" style="font-size:9px;font-weight:600;letter-spacing:1.08px;color:${labelColor}">
+      <span class="font-ui shrink-0" style="font-size:12px;font-weight:600;letter-spacing:1.08px;color:${labelColor}">
         ${label}
-      </span>
-      <span class="font-ui shrink-0" style="font-size:8px;letter-spacing:0.48px;color:rgba(255,255,255,0.15)">
-        ${partite}
       </span>
       <div class="flex-1 min-w-0" style="height:1px;background:linear-gradient(to right,${gradFrom},transparent)"></div>
     </div>
@@ -414,8 +425,6 @@ function getMatchId(match: IMatch): string {
 function setCardExpanded(card: HTMLElement, expanded: boolean): void {
   card.dataset.expanded = expanded ? 'true' : 'false';
 
-  animateMatchDetails(card, expanded);
-
   const toggle = card.querySelector<HTMLElement>('[data-match-toggle]');
   if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
 
@@ -424,115 +433,134 @@ function setCardExpanded(card: HTMLElement, expanded: boolean): void {
     chevron.classList.toggle('rotate-180', expanded);
     gsap.to(chevron, {
       rotate: expanded ? 180 : 0,
-      duration: 0.28,
-      ease: 'power2.out',
+      duration: expanded ? 0.34 : 0.28,
+      ease: 'power3.out',
       overwrite: true
     });
   }
 
-  requestAnimationFrame(() => {
-    animateFloatingAvatars(card, expanded);
-  });
+  animateCardTransition(card, expanded);
 }
 
 function renderProfileAvatarLink(player: IPlayer | undefined): string {
-  if (!player) return `<div style="width:${MATCH_AVATAR_SIZE}px;height:${MATCH_AVATAR_SIZE}px"></div>`;
+  if (!player) return `<div style="width:${CLOSED_AVATAR_SIZE}px;height:${CLOSED_AVATAR_SIZE}px"></div>`;
 
   return `
     <a href="/profile/${player.id}" data-player-link="${player.id}" data-floating-avatar="${player.id}" class="block relative"
-       style="width:${MATCH_AVATAR_SIZE}px;height:${MATCH_AVATAR_SIZE}px;transition:transform 220ms ease"
-       onmouseenter="this.style.transform='translateY(-2px)'"
-       onmouseleave="this.style.transform='translateY(0)'">
+       style="width:${CLOSED_AVATAR_SIZE}px;height:${CLOSED_AVATAR_SIZE}px;transition:translate 220ms ease"
+       onmouseenter="this.style.translate='0 -2px'"
+       onmouseleave="this.style.translate='0 0'">
       ${renderMatchPlayerAvatar(player)}
     </a>
   `;
 }
 
-function animateMatchDetails(card: HTMLElement, expanded: boolean): void {
-  const details = card.querySelector<HTMLElement>('[data-match-details]');
-  if (!details) return;
+interface MatchHistoryAnimatedCard extends HTMLElement {
+  _matchHistoryTimeline?: gsap.core.Timeline;
+}
 
-  gsap.killTweensOf(details);
+function animateCardTransition(card: HTMLElement, expanded: boolean): void {
+  const details = card.querySelector<HTMLElement>('[data-match-details]');
+  const topAvatars = Array.from(card.querySelectorAll<HTMLElement>('[data-floating-avatar]'));
+  const detailAvatars = Array.from(card.querySelectorAll<HTMLElement>('[data-detail-avatar]'))
+    .sort((a, b) => Number(a.dataset.avatarIndex) - Number(b.dataset.avatarIndex));
+  const animatedCard = card as MatchHistoryAnimatedCard;
+
+  animatedCard._matchHistoryTimeline?.kill();
+  gsap.killTweensOf([details, ...topAvatars, ...detailAvatars].filter(Boolean));
+
+  if (!details) return;
 
   if (expanded) {
     details.style.display = 'block';
     gsap.set(details, { height: 'auto' });
-    const targetHeight = details.offsetHeight;
 
-    gsap.fromTo(
-      details,
-      { height: 0, opacity: 0, overflow: 'hidden' },
-      {
-        height: targetHeight,
-        opacity: 1,
-        duration: 0.34,
-        ease: 'power2.out',
-        overwrite: true,
-        onComplete: () => {
-          details.style.height = 'auto';
-          details.style.overflow = 'visible';
-        }
+    gsap.set(details, { height: 0, opacity: 0, y: -8, overflow: 'hidden' });
+    gsap.set(detailAvatars, { scale: 0.88, opacity: 0, y: 8 });
+
+    const timeline = gsap.timeline({
+      defaults: { overwrite: true },
+      onComplete: () => {
+        details.style.height = 'auto';
+        details.style.overflow = 'visible';
+        details.style.transform = '';
+        animatedCard._matchHistoryTimeline = undefined;
       }
-    );
+    });
+
+    timeline
+      .to(topAvatars, {
+        scale: 0,
+        opacity: 0,
+        duration: 0.22,
+        ease: 'power2.inOut',
+        stagger: 0.025
+      }, 0)
+      .to(details, {
+        height: 'auto',
+        opacity: 1,
+        y: 0,
+        duration: 0.44,
+        ease: 'power3.out'
+      }, 0.03)
+      .to(detailAvatars, {
+        scale: 1,
+        opacity: 1,
+        y: 0,
+        duration: 0.34,
+        ease: 'power3.out',
+        stagger: 0.05
+      }, 0.14);
+
+    animatedCard._matchHistoryTimeline = timeline;
     return;
   }
 
   const startHeight = details.offsetHeight;
   if (startHeight === 0) {
     details.style.display = 'none';
+    gsap.set(topAvatars, { scale: 1, opacity: 1 });
+    gsap.set(detailAvatars, { scale: 0.88, opacity: 0, y: 8 });
     return;
   }
 
-  gsap.fromTo(
-    details,
-    { height: startHeight, opacity: 1, overflow: 'hidden' },
-    {
+  gsap.set(details, { height: startHeight, opacity: 1, y: 0, overflow: 'hidden' });
+
+  const timeline = gsap.timeline({
+    defaults: { overwrite: true },
+    onComplete: () => {
+      details.style.display = 'none';
+      details.style.height = '';
+      details.style.opacity = '';
+      details.style.overflow = '';
+      details.style.transform = '';
+      gsap.set(detailAvatars, { scale: 0.88, opacity: 0, y: 8 });
+      animatedCard._matchHistoryTimeline = undefined;
+    }
+  });
+
+  timeline
+    .to(detailAvatars, {
+      scale: 0.9,
+      opacity: 0,
+      y: 4,
+      duration: 0.16,
+      ease: 'power1.out',
+      stagger: { each: 0.02, from: 'end' }
+    }, 0)
+    .to(details, {
       height: 0,
       opacity: 0,
-      duration: 0.26,
-      ease: 'power2.in',
-      overwrite: true,
-      onComplete: () => {
-        details.style.display = 'none';
-        details.style.height = '';
-        details.style.opacity = '';
-        details.style.overflow = '';
-      }
-    }
-  );
-}
+      duration: 0.32,
+      ease: 'power3.inOut'
+    }, 0.03)
+    .to(topAvatars, {
+      scale: 1,
+      opacity: 1,
+      duration: 0.22,
+      ease: 'power3.out',
+      stagger: 0.025
+    }, 0.1);
 
-function animateFloatingAvatars(card: HTMLElement, expanded: boolean): void {
-  const avatars = card.querySelectorAll<HTMLElement>('[data-floating-avatar]');
-  avatars.forEach((avatar) => {
-    const playerId = avatar.dataset.floatingAvatar;
-    if (!playerId) return;
-
-    if (!expanded) {
-      gsap.to(avatar, {
-        x: 0,
-        y: 0,
-        duration: 0.35,
-        ease: 'power2.inOut',
-        overwrite: true
-      });
-      return;
-    }
-
-    const target = card.querySelector<HTMLElement>(`[data-avatar-target="${playerId}"]`);
-    if (!target) return;
-
-    const sourceRect = avatar.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const deltaX = targetRect.left - sourceRect.left;
-    const deltaY = targetRect.top - sourceRect.top;
-
-    gsap.to(avatar, {
-      x: deltaX,
-      y: deltaY,
-      duration: 0.45,
-      ease: 'power2.out',
-      overwrite: true
-    });
-  });
+  animatedCard._matchHistoryTimeline = timeline;
 }

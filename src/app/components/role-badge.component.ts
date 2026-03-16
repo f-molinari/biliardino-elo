@@ -40,23 +40,23 @@ const DEFENCE: RoleStyle = {
   color: '#60a5fa',
   bg: 'rgba(96,165,250,0.12)',
   border: 'rgba(96,165,250,0.25)',
-  label: 'DIFENSORE',
+  label: 'DIFENSORE'
 };
 
 const ATTACK: RoleStyle = {
-  icon: 'swords',
+  icon: 'sword',
   color: '#f87171',
   bg: 'rgba(248,113,113,0.12)',
   border: 'rgba(248,113,113,0.25)',
-  label: 'ATTACCANTE',
+  label: 'ATTACCANTE'
 };
 
 const BALANCED: RoleStyle = {
-  icon: 'zap',
+  icon: 'scale',
   color: '#FFD700',
   bg: 'rgba(255,215,0,0.10)',
   border: 'rgba(255,215,0,0.25)',
-  label: 'BILANCIATO',
+  label: 'BILANCIATO'
 };
 
 function resolveRole(opts: RoleBadgeOptions): { style: RoleStyle; pct: string } {
@@ -91,7 +91,7 @@ function resolveRole(opts: RoleBadgeOptions): { style: RoleStyle; pct: string } 
 const SIZE_CONFIG = {
   sm: { icon: 7, font: 7, px: 'px-1', py: 'py-px', gap: 'gap-0.5', rounded: 'rounded' },
   base: { icon: 12, font: 11, px: 'px-2', py: 'py-1.5', gap: 'gap-1.5', rounded: 'rounded-md' },
-  lg: { icon: 9, font: 9, px: 'px-1.5', py: 'py-px', gap: 'gap-1', rounded: 'rounded' },
+  lg: { icon: 9, font: 9, px: 'px-1.5', py: 'py-px', gap: 'gap-1', rounded: 'rounded' }
 };
 
 /**

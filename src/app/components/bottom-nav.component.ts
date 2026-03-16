@@ -10,6 +10,7 @@
  */
 
 import gsap from 'gsap';
+import haptics from '../../utils/haptics.util';
 import { refreshIcons } from '../icons';
 import { router } from '../router';
 import { appState } from '../state';
@@ -109,6 +110,7 @@ class BottomNavComponent {
   private bindClicks(): void {
     TABS.forEach((tab) => {
       document.getElementById(tab.id)?.addEventListener('click', () => {
+        haptics.trigger('selection');
         if (tab.path === null) {
           mobileDrawer.toggle();
         } else {
