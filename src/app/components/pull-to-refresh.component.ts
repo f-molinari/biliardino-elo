@@ -15,8 +15,6 @@ const FOOTBALL_EMOJIS: EmojiOption[] = [
   { emoji: '⚽', canFlip: false }
 ];
 
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 class PullToRefreshComponent extends Component {
@@ -25,6 +23,7 @@ class PullToRefreshComponent extends Component {
   private startY = 0;
   private pullDistance = 0;
   private lastBurstStep = 0;
+  private lastSpawnTime = 0;
   private armed = false;
 
   private onTouchStartBound = (e: TouchEvent): void => this.onTouchStart(e);
@@ -81,6 +80,7 @@ class PullToRefreshComponent extends Component {
     this.startY = touch.clientY;
     this.pullDistance = 0;
     this.lastBurstStep = 0;
+    this.lastSpawnTime = 0;
     this.armed = false;
   }
 
@@ -100,11 +100,17 @@ class PullToRefreshComponent extends Component {
     event.preventDefault();
     this.pullDistance = Math.min(ARM_THRESHOLD_PX * 1.4, rawDelta * PULL_RESISTANCE);
 
+    // Continuously spawn particles every 100ms while pulling
+    const now = Date.now();
+    if (now - this.lastSpawnTime > 100) {
+      this.spawnBurst(1);
+      this.lastSpawnTime = now;
+    }
+
+    // Vibrate on step changes (discrete intervals)
     const currentStep = Math.floor(this.pullDistance / STEP_PX);
     if (currentStep > this.lastBurstStep) {
-      const burstCount = currentStep - this.lastBurstStep;
       this.lastBurstStep = currentStep;
-      this.spawnBurst(burstCount);
       this.vibrate(currentStep);
     }
 
@@ -133,8 +139,6 @@ class PullToRefreshComponent extends Component {
   // ── Particles ─────────────────────────────────────────────────────────────
 
   private spawnBurst(count: number): void {
-    if (prefersReducedMotion) return;
-
     const headerEl = document.getElementById('app-header-inner');
     const headerBottom = (headerEl?.offsetTop ?? 0) + (headerEl?.offsetHeight ?? 56);
     const y = headerBottom + 8;
@@ -149,16 +153,19 @@ class PullToRefreshComponent extends Component {
   // ── Haptics ───────────────────────────────────────────────────────────────
 
   /**
-   * step 99 = strong single bump when threshold is crossed.
-   * lower steps = short buzz that scales with pull depth.
+   * Trigger haptic feedback. Intensity scales with step but is clamped to [0, 1].
+   * step 99 = strong intensity (0.9).
+   * lower steps = proportional intensity scaled down.
    */
   private vibrate(step: number): void {
-    if (prefersReducedMotion) return;
+    if (step === 0) return;
 
     const duration = step >= 99 ? 80 : Math.min(10 + step * 8, 60);
+    // Intensity: 0.1 at step 1, scales up, clamped at max 1.0
+    const intensity = Math.max(0, Math.min(1, step * 0.1));
 
     try {
-      haptics.trigger([{ duration }], { intensity: 1 });
+      haptics.trigger([{ duration }], { intensity });
     } catch {
       // not supported
     }
