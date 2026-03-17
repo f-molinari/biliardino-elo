@@ -153,19 +153,36 @@ class PullToRefreshComponent extends Component {
   // ── Haptics ───────────────────────────────────────────────────────────────
 
   /**
-   * Trigger haptic feedback. Intensity scales with step but is clamped to [0, 1].
-   * step 99 = strong intensity (0.9).
-   * lower steps = proportional intensity scaled down.
+   * Trigger multi-step haptic feedback scaled by pull step.
+   * More steps = more impulses in the pattern.
    */
   private vibrate(step: number): void {
     if (step === 0) return;
 
-    const duration = step >= 99 ? 80 : Math.min(10 + step * 8, 60);
-    // Intensity: 0.1 at step 1, scales up, clamped at max 1.0
-    const intensity = Math.max(0, Math.min(1, step * 0.1));
-
     try {
-      haptics.trigger([{ duration }], { intensity });
+      const baseIntensity = Math.min(0.3 + step * 0.08, 0.9);
+      const pattern: Array<{ duration: number; intensity: number; delay?: number }> = [];
+
+      // Add impulses based on step count (1 impulse per step, up to 5)
+      const impulseCount = Math.min(step, 5);
+      for (let i = 0; i < impulseCount; i++) {
+        if (i === 0) {
+          // First impulse, no delay
+          pattern.push({
+            duration: 40,
+            intensity: baseIntensity * 0.7
+          });
+        } else {
+          // Subsequent impulses with delay between them
+          pattern.push({
+            delay: 40,
+            duration: 40,
+            intensity: baseIntensity * (0.7 + i * 0.05)
+          });
+        }
+      }
+
+      haptics.trigger(pattern);
     } catch {
       // not supported
     }
