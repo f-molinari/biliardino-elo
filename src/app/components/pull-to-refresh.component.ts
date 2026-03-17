@@ -1,4 +1,5 @@
 import { createParticles, EmojiOption } from '@/app/particles/particles-manager';
+import haptics from '@/utils/haptics.util';
 import { Component } from './component.base';
 
 // Each step = how many px of pull triggers a new burst + haptic
@@ -153,17 +154,13 @@ class PullToRefreshComponent extends Component {
    */
   private vibrate(step: number): void {
     if (prefersReducedMotion) return;
-    if (!('vibrate' in navigator)) return;
+
+    const duration = step >= 99 ? 80 : Math.min(10 + step * 8, 60);
 
     try {
-      if (step >= 99) {
-        navigator.vibrate(80);
-      } else {
-        // 10ms at step 1, grows ~8ms per step, capped at 60ms
-        navigator.vibrate(Math.min(10 + step * 8, 60));
-      }
+      haptics.trigger([{ duration }], { intensity: 1 });
     } catch {
-      // vibration not supported — silently ignore
+      // not supported
     }
   }
 }
