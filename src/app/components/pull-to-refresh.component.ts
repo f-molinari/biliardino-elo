@@ -161,28 +161,22 @@ class PullToRefreshComponent extends Component {
 
     try {
       const baseIntensity = Math.min(0.3 + step * 0.08, 0.9);
-      const pattern: Array<{ duration: number; intensity: number; delay?: number }> = [];
+      const pattern: Array<{ duration: number; delay?: number }> = [];
 
       // Add impulses based on step count (1 impulse per step, up to 5)
       const impulseCount = Math.min(step, 5);
       for (let i = 0; i < impulseCount; i++) {
         if (i === 0) {
           // First impulse, no delay
-          pattern.push({
-            duration: 40,
-            intensity: baseIntensity * 0.7
-          });
+          pattern.push({ duration: 40 });
         } else {
           // Subsequent impulses with delay between them
-          pattern.push({
-            delay: 40,
-            duration: 40,
-            intensity: baseIntensity * (0.7 + i * 0.05)
-          });
+          pattern.push({ delay: 40, duration: 40 });
         }
       }
 
-      haptics.trigger(pattern);
+      // Intensity goes in the second parameter (options)
+      haptics.trigger(pattern, { intensity: baseIntensity });
     } catch {
       // not supported
     }
