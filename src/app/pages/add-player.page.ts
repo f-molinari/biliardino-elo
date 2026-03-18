@@ -11,6 +11,7 @@ import { savePlayer } from '@/services/repository.service';
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import gsap from 'gsap';
+import { animateVisible } from '@/utils/animate-visible.util';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
 import { refreshIcons } from '../icons';
@@ -26,6 +27,7 @@ const CLASS_COLORS: Record<number, string> = {
 };
 
 class AddPlayerPage extends Component {
+  private cleanupObserver: (() => void) | null = null;
   async render(): Promise<string> {
     const players = [...getAllPlayers()].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -55,10 +57,17 @@ class AddPlayerPage extends Component {
 
     // GSAP animations
     gsap.from('.form-card', { y: 20, duration: 0.4, ease: 'power2.out' });
-    gsap.from('.player-row', { x: -10, stagger: 0.03, duration: 0.25, ease: 'power2.out', delay: 0.2 });
+    this.cleanupObserver = animateVisible({
+      selector: '.player-row',
+      vars: { x: -10, duration: 0.25, ease: 'power2.out', delay: 0.2 },
+      stagger: 0.03,
+    });
   }
 
-  override destroy(): void { }
+  override destroy(): void {
+    this.cleanupObserver?.();
+    this.cleanupObserver = null;
+  }
 
   // ── Section Renderers ──────────────────────────────────────
 

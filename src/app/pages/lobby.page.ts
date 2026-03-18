@@ -93,32 +93,22 @@ class LobbyPage extends Component {
   private lobbyStateListener: ((state: ILobbyState) => void) | null = null;
   // Last confirmations for fish sync
   private lastConfirmations: IConfirmationWithFish[] = [];
+  // True once the first server response (or cached state) has been applied
+  private serverResponded = false;
 
   // ── Render ───────────────────────────────────────────────────
 
   override async render(): Promise<string> {
     this.myPlayerId = Number(localStorage.getItem('biliardino_player_id')) || null;
 
-    // Fetch lobby state via LobbyService (single source of truth)
-    try {
-      const state = await LobbyService.acquire();
-      this.applyLobbyState(state);
-    } catch {
-      // fail-open -- render skeleton, LobbyService will retry via SSE/polling
-    }
-
-    // Resolve player objects for the teams
-    if (this.lobbyData) {
-      const ids = [
-        this.lobbyData.teamA.defence,
-        this.lobbyData.teamA.attack,
-        this.lobbyData.teamB.defence,
-        this.lobbyData.teamB.attack
-      ];
-      for (const id of ids) {
-        const p = getPlayerById(id);
-        if (p) this.players.set(id, p);
-      }
+    // Don't await server — render immediately with whatever cached state exists.
+    // The actual data will arrive via LobbyService polling/SSE and trigger
+    // onLobbyStateChange() which updates the DOM.
+    if (LobbyService.isInitialized()) {
+      const cached = LobbyService.getState();
+      this.applyLobbyState(cached);
+      this.resolvePlayers();
+      this.serverResponded = true;
     }
 
     return `
@@ -132,6 +122,23 @@ class LobbyPage extends Component {
   }
 
   // ── Main content layout (confirmed vs unconfirmed) ───────────
+
+  /** Resolve IPlayer objects for team members from the local cache. */
+  private resolvePlayers(): void {
+    if (!this.lobbyData) return;
+    const ids = [
+      this.lobbyData.teamA.defence,
+      this.lobbyData.teamA.attack,
+      this.lobbyData.teamB.defence,
+      this.lobbyData.teamB.attack
+    ];
+    for (const id of ids) {
+      if (!this.players.has(id)) {
+        const p = getPlayerById(id);
+        if (p) this.players.set(id, p);
+      }
+    }
+  }
 
   private renderMain(): string {
     if (this.isMyPresenceConfirmed) {
@@ -223,6 +230,9 @@ class LobbyPage extends Component {
     // Subscribe to LobbyService state changes for real-time updates
     this.lobbyStateListener = (state: ILobbyState) => this.onLobbyStateChange(state);
     LobbyService.onStateChange(this.lobbyStateListener);
+
+    // Kick off server fetch (non-blocking). Once resolved, onLobbyStateChange updates the UI.
+    LobbyService.acquire().catch(() => { /* fail-open: polling/SSE will retry */ });
 
     // Start fish animation
     this.startFishAnimation();
@@ -326,6 +336,29 @@ class LobbyPage extends Component {
 
   private renderTeams(): string {
     if (!this.lobbyData) {
+      if (!this.serverResponded) {
+        // Still waiting for first server response — show loading card
+        return `
+          <div class="team-card glass-card rounded-xl p-6 text-center">
+            <i data-lucide="loader" class="mx-auto mb-3 animate-spin"
+               style="width:28px;height:28px;color:var(--color-gold)"></i>
+            <p class="font-display text-xl text-(--color-gold) mb-2"
+               style="letter-spacing:0.12em">
+              CARICAMENTO LOBBY
+            </p>
+            <p class="font-body text-sm" style="color:rgba(255,255,255,0.4)">
+              Connessione al server in corso…
+            </p>
+            <div class="mt-3">
+              <span class="inline-block px-3 py-1 rounded-full font-ui"
+                    style="font-size:10px; letter-spacing:0.1em; color:var(--color-gold);
+                           background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.2)">
+                IN ATTESA DEL SERVER
+              </span>
+            </div>
+          </div>
+        `;
+      }
       if (appState.lobbyActive) {
         return this.renderConfirmKickCard();
       } else if (appState.isAdmin) {
@@ -685,6 +718,7 @@ class LobbyPage extends Component {
   private applyLobbyState(state: ILobbyState): void {
     // Lobby metadata
     this.lobbyExists = state.exists;
+    this.serverResponded = true;
     if (state.match) this.lobbyData = state.match as IRunningMatchDTO;
     if (state.exists && state.ttl > 0) {
       // Only sync TTL if server differs significantly (avoid jitter)
@@ -730,13 +764,15 @@ class LobbyPage extends Component {
     const wasConfirmed = this.isMyPresenceConfirmed;
     const hadLobby = !!this.lobbyData;
     const hadLobbyExists = this.lobbyExists;
+    const wasServerResponded = this.serverResponded;
 
     this.applyLobbyState(state);
 
     const isNowConfirmed = this.isMyPresenceConfirmed;
     const layoutChanged = (!hadLobby && this.lobbyData)
       || (!hadLobbyExists && this.lobbyExists)
-      || (wasConfirmed !== isNowConfirmed);
+      || (wasConfirmed !== isNowConfirmed)
+      || (!wasServerResponded && this.serverResponded);
 
     if (layoutChanged) {
       // Full re-render of main content when layout needs to change

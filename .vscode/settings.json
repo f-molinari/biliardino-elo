@@ -25,5 +25,8 @@
   "workbench.colorCustomizations": {
     "titleBar.activeBackground": "#FFFF00",
     "titleBar.activeForeground": "#1E1E1E"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "npx vite": true
   }
 }

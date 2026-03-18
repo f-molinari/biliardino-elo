@@ -15,6 +15,7 @@ import { getAllPlayers, getPlayerById, getRank } from '@/services/player.service
 import { getClassName } from '@/utils/get-class-name.util';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import gsap from 'gsap';
+import { animateVisible } from '@/utils/animate-visible.util';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
 import { refreshIcons } from '../icons';
@@ -30,6 +31,7 @@ const CLASS_COLORS: Record<number, string> = {
 };
 
 class StatsPage extends Component {
+  private cleanupObservers: (() => void)[] = [];
   async render(): Promise<string> {
     const allPlayers = getAllPlayers();
     const allMatches = getAllMatches();
@@ -46,15 +48,20 @@ class StatsPage extends Component {
     `;
   }
 
-  mount(): void {
+  override mount(): void {
     refreshIcons();
     gsap.from('.stat-card-new', { y: 15, stagger: 0.07, duration: 0.3, ease: 'power2.out' });
-    gsap.from('.hof-card', { scale: 0.94, stagger: 0.06, duration: 0.35, ease: 'back.out(1.3)', delay: 0.1 });
-    gsap.from('.pair-row', { x: -10, stagger: 0.04, duration: 0.25, ease: 'power2.out', delay: 0.2 });
-    gsap.from('.class-bar-wrap', { x: -10, stagger: 0.06, duration: 0.3, ease: 'power2.out', delay: 0.3 });
+    this.cleanupObservers.push(
+      animateVisible({ selector: '.hof-card', vars: { scale: 0.94, duration: 0.35, ease: 'back.out(1.3)', delay: 0.1 }, stagger: 0.06 }),
+      animateVisible({ selector: '.pair-row', vars: { x: -10, duration: 0.25, ease: 'power2.out', delay: 0.2 }, stagger: 0.04 }),
+      animateVisible({ selector: '.class-bar-wrap', vars: { x: -10, duration: 0.3, ease: 'power2.out', delay: 0.3 }, stagger: 0.06 })
+    );
   }
 
-  destroy(): void { }
+  override destroy(): void {
+    for (const cleanup of this.cleanupObservers) cleanup();
+    this.cleanupObservers = [];
+  }
 
   // ── Page Header ───────────────────────────────────────────
 

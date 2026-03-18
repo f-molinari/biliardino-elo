@@ -17,6 +17,7 @@ import { getAllPlayers, getBonusK, getPlayerById, getRank } from '@/services/pla
 import { fetchRunningMatch } from '@/services/repository.service';
 import { getDisplayElo } from '@/utils/get-display-elo.util';
 import gsap from 'gsap';
+import { animateVisible } from '@/utils/animate-visible.util';
 import { Component } from '../components/component.base';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
 import { renderRoleBadge } from '../components/role-badge.component';
@@ -64,6 +65,7 @@ class LeaderboardPage extends Component {
   private unregisterRefreshHandler: (() => void) | null = null;
   private isDestroyed = false;
   private heroContent: 'podium' | 'live-match' = 'podium';
+  private cleanupObservers: (() => void)[] = [];
 
   async render(): Promise<string> {
     return `
@@ -143,8 +145,10 @@ class LeaderboardPage extends Component {
         }
         this.updateSortIndicators();
 
-        // Animate table rows in
-        gsap.from('.ranking-row', { x: -10, stagger: 0.03, duration: 0.25, ease: 'power2.out', delay: 0.1 });
+        // Animate table rows in (only visible ones)
+        this.cleanupObservers.push(
+          animateVisible({ selector: '.ranking-row', vars: { x: -10, duration: 0.25, ease: 'power2.out', delay: 0.1 }, stagger: 0.03 })
+        );
       }
 
       // Render match history
@@ -153,8 +157,10 @@ class LeaderboardPage extends Component {
         historySlot.innerHTML = this.renderRecentMatches();
         refreshIcons();
 
-        // Animate history rows in
-        gsap.from('.match-history-row', { x: -10, stagger: 0.03, duration: 0.25, ease: 'power2.out', delay: 0.15 });
+        // Animate history rows in (only visible ones)
+        this.cleanupObservers.push(
+          animateVisible({ selector: '.match-history-row', vars: { x: -10, duration: 0.25, ease: 'power2.out', delay: 0.15 }, stagger: 0.03 })
+        );
       }
     };
 
@@ -176,6 +182,8 @@ class LeaderboardPage extends Component {
       this.unregisterRefreshHandler();
       this.unregisterRefreshHandler = null;
     }
+    for (const cleanup of this.cleanupObservers) cleanup();
+    this.cleanupObservers = [];
   }
 
   // ── Helpers ───────────────────────────────────────────────
