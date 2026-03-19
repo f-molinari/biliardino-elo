@@ -33,6 +33,7 @@ const PLAYER_ID_KEY = 'biliardino_player_id';
 const PLAYER_NAME_KEY = 'biliardino_player_name';
 const SUBSCRIPTION_KEY = 'biliardino_subscription';
 const SUBSCRIPTION_VERIFIED_KEY = 'biliardino_subscription_verified';
+const ADMIN_TOKEN_KEY = 'biliardino_admin_token';
 
 /* ── Stato notifiche ───────────────────────────────────────── */
 type NotifState
@@ -77,7 +78,9 @@ class UserDropdownComponent {
   private isAuthenticated = false;
   private isLoadingNotif = false;
   private showingPlayerList = false;
+  private showingAdminTokenForm = false;
   private loginError = '';
+  private adminTokenFeedback = '';
 
   private authUnsubscribe: (() => void) | null = null;
   private onEsc: ((e: KeyboardEvent) => void) | null = null;
@@ -159,6 +162,7 @@ class UserDropdownComponent {
     if (!this.panelEl || !this.backdropEl) return;
     this.isOpen = true;
     this.showingPlayerList = false;
+    this.showingAdminTokenForm = false;
     this.loginError = '';
 
     /* Align panel to the user-pill on desktop */
@@ -410,6 +414,8 @@ class UserDropdownComponent {
       const { login } = await import('@/utils/firebase.util');
       await login(email, password);
       this.loginError = '';
+      this.adminTokenFeedback = '';
+      this.showingAdminTokenForm = false;
       this.collapseLoginForm();
       this.updateAdminSection();
       window.dispatchEvent(new CustomEvent('user-dropdown:login-success'));
@@ -433,8 +439,25 @@ class UserDropdownComponent {
       try { await signOut(AUTH); } catch { /* ignore */ }
     }
     this.isAuthenticated = false;
+    this.showingAdminTokenForm = false;
+    this.adminTokenFeedback = '';
     this.updateAdminSection();
     this.updateHeader();
+  }
+
+  private saveAdminToken(rawToken: string): void {
+    const token = rawToken.trim();
+    if (!token) {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      this.adminTokenFeedback = 'Token rimosso';
+      this.showingAdminTokenForm = false;
+      this.updateAdminSection();
+      return;
+    }
+    localStorage.setItem(ADMIN_TOKEN_KEY, token);
+    this.adminTokenFeedback = 'Token API salvato';
+    this.showingAdminTokenForm = false;
+    this.updateAdminSection();
   }
 
   /* ── Event delegation ───────────────────────────────────────── */
@@ -479,16 +502,28 @@ class UserDropdownComponent {
       case 'admin-logout':
         void this.handleLogout();
         break;
+      case 'toggle-admin-token-form':
+        this.showingAdminTokenForm = !this.showingAdminTokenForm;
+        this.adminTokenFeedback = '';
+        this.updateAdminSection();
+        break;
     }
   }
 
   private handleSubmit(e: Event): void {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
-    if (form.id !== 'dd-login-form-inner') return;
-    const email = (document.getElementById('dd-email') as HTMLInputElement)?.value ?? '';
-    const password = (document.getElementById('dd-password') as HTMLInputElement)?.value ?? '';
-    void this.submitLogin(email, password);
+    if (form.id === 'dd-login-form-inner') {
+      const email = (document.getElementById('dd-email') as HTMLInputElement)?.value ?? '';
+      const password = (document.getElementById('dd-password') as HTMLInputElement)?.value ?? '';
+      void this.submitLogin(email, password);
+      return;
+    }
+
+    if (form.id === 'dd-admin-token-form') {
+      const token = (document.getElementById('dd-admin-token') as HTMLInputElement)?.value ?? '';
+      this.saveAdminToken(token);
+    }
   }
 
   /* ── Section updaters ──────────────────────────────────────── */
@@ -743,17 +778,66 @@ class UserDropdownComponent {
 
   private renderAdminSection(): string {
     if (this.isAuthenticated) {
+      const hasToken = !!localStorage.getItem(ADMIN_TOKEN_KEY);
+      const placeholder = hasToken ? 'Nuovo token per aggiornare' : 'Incolla token admin API';
+      const tokenButtonLabel = hasToken ? 'Aggiorna token' : 'Aggiungi token';
       return `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span style="color:#4ADE80">${SHIELD_SVG}</span>
-            <span class="font-ui text-xs" style="color:rgba(255,255,255,0.7);letter-spacing:0.08em">ADMIN ATTIVO</span>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span style="color:#4ADE80">${SHIELD_SVG}</span>
+              <span class="font-ui text-xs" style="color:rgba(255,255,255,0.7);letter-spacing:0.08em">ADMIN ATTIVO</span>
+            </div>
+            <button data-action="admin-logout"
+                    class="px-2.5 py-1 rounded-lg font-ui text-xs transition-all hover:bg-white/10"
+                    style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.07em;border:1px solid rgba(255,255,255,0.08)">
+              Esci
+            </button>
           </div>
-          <button data-action="admin-logout"
-                  class="px-2.5 py-1 rounded-lg font-ui text-xs transition-all hover:bg-white/10"
-                  style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.07em;border:1px solid rgba(255,255,255,0.08)">
-            Esci
-          </button>
+
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span style="color:${hasToken ? '#4ADE80' : 'rgba(255,255,255,0.35)'}">${CHECK_CIRCLE_SVG}</span>
+              <span class="font-ui text-xs truncate" style="color:rgba(255,255,255,0.7);letter-spacing:0.08em">
+                ${hasToken ? 'TOKEN API ATTIVO' : 'TOKEN API NON IMPOSTATO'}
+              </span>
+            </div>
+            <button data-action="toggle-admin-token-form"
+                    class="px-2.5 py-1 rounded-lg font-ui text-xs transition-all hover:bg-white/10 shrink-0"
+                    style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.07em;border:1px solid rgba(255,255,255,0.08)">
+              ${tokenButtonLabel}
+            </button>
+          </div>
+
+          ${this.showingAdminTokenForm
+            ? `
+            <form id="dd-admin-token-form" class="space-y-2">
+              <label for="dd-admin-token" class="font-ui text-xs block"
+                     style="color:rgba(255,255,255,0.5);letter-spacing:0.07em">
+                TOKEN API NOTIFICHE
+              </label>
+              <div class="flex items-center gap-2">
+                <input type="password" id="dd-admin-token"
+                       placeholder="${placeholder}"
+                       value=""
+                       autocomplete="off"
+                       class="w-full px-3 py-2 rounded-xl font-body text-sm text-white placeholder:text-white/25 outline-none transition-all"
+                       style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:12px"
+                       onfocus="this.style.borderColor='rgba(255,215,0,0.4)'"
+                       onblur="this.style.borderColor='rgba(255,255,255,0.1)'" />
+                <button type="submit"
+                        class="px-3 py-2 rounded-xl font-ui text-xs transition-all hover:brightness-110 active:scale-[0.98]"
+                        style="background:linear-gradient(135deg,#FFD700,#F0A500);color:var(--color-bg-deep);letter-spacing:0.08em">
+                  Salva
+                </button>
+              </div>
+            </form>
+          `
+            : ''}
+
+          ${this.adminTokenFeedback
+            ? `<div class="font-body" style="font-size:10px;color:rgba(74,222,128,0.95)">${this.adminTokenFeedback}</div>`
+            : ''}
         </div>
       `;
     }
