@@ -1,0 +1,2354 @@
+[
+  {
+    "id": 1,
+    "teamA": {
+      "defence": 14,
+      "attack": 37
+    },
+    "teamB": {
+      "defence": 30,
+      "attack": 32
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1772446242546
+  },
+  {
+    "id": 2,
+    "teamA": {
+      "defence": 17,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 8
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1772453599521
+  },
+  {
+    "id": 3,
+    "teamA": {
+      "defence": 18,
+      "attack": 36
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 13
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1772464127313
+  },
+  {
+    "id": 399,
+    "teamA": {
+      "defence": 15,
+      "attack": 14
+    },
+    "teamB": {
+      "defence": 43,
+      "attack": 30
+    },
+    "score": [
+      8,
+      2
+    ],
+    "createdAt": 1772471725806
+  },
+  {
+    "id": 400,
+    "teamA": {
+      "defence": 30,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 43,
+      "attack": 17
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1772472128417
+  },
+  {
+    "id": 401,
+    "teamA": {
+      "defence": 15,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 7,
+      "attack": 26
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1772472587069
+  },
+  {
+    "id": 402,
+    "teamA": {
+      "defence": 18,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 43,
+      "attack": 26
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1772473038010
+  },
+  {
+    "id": 403,
+    "teamA": {
+      "defence": 6,
+      "attack": 2
+    },
+    "teamB": {
+      "defence": 19,
+      "attack": 32
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1772532514585
+  },
+  {
+    "id": 404,
+    "teamA": {
+      "defence": 28,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 13
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1772539588909
+  },
+  {
+    "id": 405,
+    "teamA": {
+      "defence": 2,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 3
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1772551029239
+  },
+  {
+    "id": 406,
+    "teamA": {
+      "defence": 2,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 6
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1772558166295
+  },
+  {
+    "id": 407,
+    "teamA": {
+      "defence": 18,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 30,
+      "attack": 19
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1772558802441
+  },
+  {
+    "id": 408,
+    "teamA": {
+      "defence": 28,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 30,
+      "attack": 2
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1772559264832
+  },
+  {
+    "id": 409,
+    "teamA": {
+      "defence": 18,
+      "attack": 2
+    },
+    "teamB": {
+      "defence": 13,
+      "attack": 12
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1772559812761
+  },
+  {
+    "id": 410,
+    "teamA": {
+      "defence": 16,
+      "attack": 34
+    },
+    "teamB": {
+      "defence": 36,
+      "attack": 20
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1772618867303
+  },
+  {
+    "id": 411,
+    "teamA": {
+      "defence": 15,
+      "attack": 16
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 4
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1772626246950
+  },
+  {
+    "id": 412,
+    "teamA": {
+      "defence": 20,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 32
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1772637403295
+  },
+  {
+    "id": 413,
+    "teamA": {
+      "defence": 6,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 36,
+      "attack": 8
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1772644183166
+  },
+  {
+    "id": 414,
+    "teamA": {
+      "defence": 18,
+      "attack": 20
+    },
+    "teamB": {
+      "defence": 15,
+      "attack": 4
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1772644784079
+  },
+  {
+    "id": 415,
+    "teamA": {
+      "defence": 30,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 15,
+      "attack": 20
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1772645310540
+  },
+  {
+    "id": 416,
+    "teamA": {
+      "defence": 18,
+      "attack": 16
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 20
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1772645747787
+  },
+  {
+    "id": 417,
+    "teamA": {
+      "defence": 16,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 8
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1772646111331
+  },
+  {
+    "id": 418,
+    "teamA": {
+      "defence": 20,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 26
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1772646773480
+  },
+  {
+    "id": 419,
+    "teamA": {
+      "defence": 20,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 13,
+      "attack": 8
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1772647235434
+  },
+  {
+    "id": 420,
+    "teamA": {
+      "defence": 32,
+      "attack": 25
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 12
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1772705933861
+  },
+  {
+    "id": 421,
+    "teamA": {
+      "defence": 28,
+      "attack": 32
+    },
+    "teamB": {
+      "defence": 16,
+      "attack": 25
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1772712716174
+  },
+  {
+    "id": 422,
+    "teamA": {
+      "defence": 5,
+      "attack": 25
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 17
+    },
+    "score": [
+      8,
+      0
+    ],
+    "createdAt": 1772723117878
+  },
+  {
+    "id": 423,
+    "teamA": {
+      "defence": 16,
+      "attack": 32
+    },
+    "teamB": {
+      "defence": 5,
+      "attack": 19
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1772723626498
+  },
+  {
+    "id": 424,
+    "teamA": {
+      "defence": 28,
+      "attack": 19
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 1
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1772730620131
+  },
+  {
+    "id": 425,
+    "teamA": {
+      "defence": 6,
+      "attack": 19
+    },
+    "teamB": {
+      "defence": 43,
+      "attack": 20
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1772731033398
+  },
+  {
+    "id": 426,
+    "teamA": {
+      "defence": 17,
+      "attack": 2
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 20
+    },
+    "score": [
+      1,
+      8
+    ],
+    "createdAt": 1772731364523
+  },
+  {
+    "id": 427,
+    "teamA": {
+      "defence": 30,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 12
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1772731950390
+  },
+  {
+    "id": 428,
+    "teamA": {
+      "defence": 34,
+      "attack": 25
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 13
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1772732443761
+  },
+  {
+    "id": 429,
+    "teamA": {
+      "defence": 25,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 2,
+      "attack": 12
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1772733032168
+  },
+  {
+    "id": 430,
+    "teamA": {
+      "defence": 26,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 20,
+      "attack": 17
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1772733494567
+  },
+  {
+    "id": 431,
+    "teamA": {
+      "defence": 25,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 2
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1772733976260
+  },
+  {
+    "id": 432,
+    "teamA": {
+      "defence": 28,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 17
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1772734426765
+  },
+  {
+    "id": 433,
+    "teamA": {
+      "defence": 17,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 26
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1772734798341
+  },
+  {
+    "id": 434,
+    "teamA": {
+      "defence": 41,
+      "attack": 21
+    },
+    "teamB": {
+      "defence": 40,
+      "attack": 4
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1772792261645
+  },
+  {
+    "id": 435,
+    "teamA": {
+      "defence": 43,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 40
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1772799037469
+  },
+  {
+    "id": 436,
+    "teamA": {
+      "defence": 2,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 21
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1772799587849
+  },
+  {
+    "id": 437,
+    "teamA": {
+      "defence": 25,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 21
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1772800177524
+  },
+  {
+    "id": 438,
+    "teamA": {
+      "defence": 41,
+      "attack": 27
+    },
+    "teamB": {
+      "defence": 1,
+      "attack": 3
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1772810411239
+  },
+  {
+    "id": 439,
+    "teamA": {
+      "defence": 34,
+      "attack": 21
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 1
+    },
+    "score": [
+      1,
+      8
+    ],
+    "createdAt": 1772816802004
+  },
+  {
+    "id": 440,
+    "teamA": {
+      "defence": 34,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 3
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1772817336175
+  },
+  {
+    "id": 441,
+    "teamA": {
+      "defence": 34,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 21
+    },
+    "score": [
+      8,
+      2
+    ],
+    "createdAt": 1772817682774
+  },
+  {
+    "id": 442,
+    "teamA": {
+      "defence": 32,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 4
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1772818149256
+  },
+  {
+    "id": 443,
+    "teamA": {
+      "defence": 2,
+      "attack": 21
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 17
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1772818625387
+  },
+  {
+    "id": 444,
+    "teamA": {
+      "defence": 25,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 4
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1772819221165
+  },
+  {
+    "id": 445,
+    "teamA": {
+      "defence": 25,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 13
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1772820064263
+  },
+  {
+    "id": 446,
+    "teamA": {
+      "defence": 25,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 4
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1772820674367
+  },
+  {
+    "id": 447,
+    "teamA": {
+      "defence": 25,
+      "attack": 22
+    },
+    "teamB": {
+      "defence": 13,
+      "attack": 4
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1772821128150
+  },
+  {
+    "id": 448,
+    "teamA": {
+      "defence": 18,
+      "attack": 25
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 4
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1772821633154
+  },
+  {
+    "id": 449,
+    "teamA": {
+      "defence": 25,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 22
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1772822196273
+  },
+  {
+    "id": 450,
+    "teamA": {
+      "defence": 41,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 11
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1773051356634
+  },
+  {
+    "id": 451,
+    "teamA": {
+      "defence": 30,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 11
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773058429928
+  },
+  {
+    "id": 452,
+    "teamA": {
+      "defence": 41,
+      "attack": 11
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 22
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1773068902887
+  },
+  {
+    "id": 453,
+    "teamA": {
+      "defence": 6,
+      "attack": 11
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 17
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773076359957
+  },
+  {
+    "id": 454,
+    "teamA": {
+      "defence": 43,
+      "attack": 11
+    },
+    "teamB": {
+      "defence": 6,
+      "attack": 8
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773076856542
+  },
+  {
+    "id": 455,
+    "teamA": {
+      "defence": 17,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 43,
+      "attack": 13
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1773077333694
+  },
+  {
+    "id": 456,
+    "teamA": {
+      "defence": 13,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 43,
+      "attack": 8
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773077792700
+  },
+  {
+    "id": 457,
+    "teamA": {
+      "defence": 17,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 8
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773078415624
+  },
+  {
+    "id": 458,
+    "teamA": {
+      "defence": 17,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 8
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1773078905344
+  },
+  {
+    "id": 459,
+    "teamA": {
+      "defence": 43,
+      "attack": 19
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 2
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1773138592872
+  },
+  {
+    "id": 460,
+    "teamA": {
+      "defence": 30,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 8
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1773145237860
+  },
+  {
+    "id": 461,
+    "teamA": {
+      "defence": 15,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 5,
+      "attack": 1
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1773155461903
+  },
+  {
+    "id": 462,
+    "teamA": {
+      "defence": 15,
+      "attack": 32
+    },
+    "teamB": {
+      "defence": 5,
+      "attack": 3
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1773162728448
+  },
+  {
+    "id": 463,
+    "teamA": {
+      "defence": 28,
+      "attack": 2
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 12
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773163224853
+  },
+  {
+    "id": 464,
+    "teamA": {
+      "defence": 19,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 2
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1773163616439
+  },
+  {
+    "id": 465,
+    "teamA": {
+      "defence": 28,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 19,
+      "attack": 14
+    },
+    "score": [
+      8,
+      1
+    ],
+    "createdAt": 1773164039456
+  },
+  {
+    "id": 466,
+    "teamA": {
+      "defence": 2,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 8
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1773164793718
+  },
+  {
+    "id": 467,
+    "teamA": {
+      "defence": 28,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 2,
+      "attack": 12
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773165285931
+  },
+  {
+    "id": 468,
+    "teamA": {
+      "defence": 20,
+      "attack": 32
+    },
+    "teamB": {
+      "defence": 36,
+      "attack": 11
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1773223679550
+  },
+  {
+    "id": 469,
+    "teamA": {
+      "defence": 16,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 30,
+      "attack": 11
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773230913596
+  },
+  {
+    "id": 470,
+    "teamA": {
+      "defence": 16,
+      "attack": 11
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 36
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1773241740093
+  },
+  {
+    "id": 471,
+    "teamA": {
+      "defence": 36,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 15,
+      "attack": 8
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1773249030110
+  },
+  {
+    "id": 472,
+    "teamA": {
+      "defence": 34,
+      "attack": 32
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 8
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773249501229
+  },
+  {
+    "id": 473,
+    "teamA": {
+      "defence": 34,
+      "attack": 11
+    },
+    "teamB": {
+      "defence": 15,
+      "attack": 36
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773249765037
+  },
+  {
+    "id": 474,
+    "teamA": {
+      "defence": 16,
+      "attack": 22
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 26
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1773250220941
+  },
+  {
+    "id": 475,
+    "teamA": {
+      "defence": 16,
+      "attack": 20
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 8
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1773250711979
+  },
+  {
+    "id": 476,
+    "teamA": {
+      "defence": 16,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 2
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1773250993231
+  },
+  {
+    "id": 477,
+    "teamA": {
+      "defence": 18,
+      "attack": 20
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 4
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773251776203
+  },
+  {
+    "id": 478,
+    "teamA": {
+      "defence": 19,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 26
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773310323714
+  },
+  {
+    "id": 479,
+    "teamA": {
+      "defence": 28,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 30
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773317374551
+  },
+  {
+    "id": 480,
+    "teamA": {
+      "defence": 25,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 32
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1773317913654
+  },
+  {
+    "id": 481,
+    "teamA": {
+      "defence": 25,
+      "attack": 22
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 13
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773318672698
+  },
+  {
+    "id": 482,
+    "teamA": {
+      "defence": 19,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 30,
+      "attack": 31
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773328278750
+  },
+  {
+    "id": 483,
+    "teamA": {
+      "defence": 25,
+      "attack": 1
+    },
+    "teamB": {
+      "defence": 20,
+      "attack": 22
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773328853958
+  },
+  {
+    "id": 484,
+    "teamA": {
+      "defence": 6,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 19
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773335550160
+  },
+  {
+    "id": 485,
+    "teamA": {
+      "defence": 19,
+      "attack": 2
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 12
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773336042445
+  },
+  {
+    "id": 486,
+    "teamA": {
+      "defence": 28,
+      "attack": 6
+    },
+    "teamB": {
+      "defence": 19,
+      "attack": 17
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1773336419021
+  },
+  {
+    "id": 487,
+    "teamA": {
+      "defence": 25,
+      "attack": 20
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 32
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1773336822669
+  },
+  {
+    "id": 488,
+    "teamA": {
+      "defence": 28,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 30,
+      "attack": 8
+    },
+    "score": [
+      8,
+      2
+    ],
+    "createdAt": 1773337280597
+  },
+  {
+    "id": 489,
+    "teamA": {
+      "defence": 22,
+      "attack": 20
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 13
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773337926521
+  },
+  {
+    "id": 490,
+    "teamA": {
+      "defence": 18,
+      "attack": 25
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 20
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1773338257332
+  },
+  {
+    "id": 491,
+    "teamA": {
+      "defence": 41,
+      "attack": 16
+    },
+    "teamB": {
+      "defence": 6,
+      "attack": 17
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1773396650672
+  },
+  {
+    "id": 492,
+    "teamA": {
+      "defence": 28,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 30,
+      "attack": 13
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773397517685
+  },
+  {
+    "id": 493,
+    "teamA": {
+      "defence": 6,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 40,
+      "attack": 16
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773403772643
+  },
+  {
+    "id": 494,
+    "teamA": {
+      "defence": 18,
+      "attack": 34
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 25
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1773404341884
+  },
+  {
+    "id": 495,
+    "teamA": {
+      "defence": 41,
+      "attack": 6
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 26
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1773414797664
+  },
+  {
+    "id": 496,
+    "teamA": {
+      "defence": 1,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 32
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1773422011128
+  },
+  {
+    "id": 497,
+    "teamA": {
+      "defence": 16,
+      "attack": 8
+    },
+    "teamB": {
+      "defence": 6,
+      "attack": 17
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1773422746884
+  },
+  {
+    "id": 498,
+    "teamA": {
+      "defence": 13,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 17
+    },
+    "score": [
+      4,
+      8
+    ],
+    "createdAt": 1773423342536
+  },
+  {
+    "id": 499,
+    "teamA": {
+      "defence": 18,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 25
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773423864215
+  },
+  {
+    "id": 500,
+    "teamA": {
+      "defence": 17,
+      "attack": 25
+    },
+    "teamB": {
+      "defence": 13,
+      "attack": 4
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1773424483349
+  },
+  {
+    "id": 501,
+    "teamA": {
+      "defence": 16,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 13
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1773424989440
+  },
+  {
+    "id": 502,
+    "teamA": {
+      "defence": 17,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 13
+    },
+    "score": [
+      1,
+      8
+    ],
+    "createdAt": 1773425355575
+  },
+  {
+    "id": 503,
+    "teamA": {
+      "defence": 18,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 4
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773426090773
+  },
+  {
+    "id": 504,
+    "teamA": {
+      "defence": 25,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 17
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773426839405
+  },
+  {
+    "id": 505,
+    "teamA": {
+      "defence": 41,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 43,
+      "attack": 6
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773656380561
+  },
+  {
+    "id": 506,
+    "teamA": {
+      "defence": 15,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 32,
+      "attack": 3
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773663300011
+  },
+  {
+    "id": 507,
+    "teamA": {
+      "defence": 17,
+      "attack": 11
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 3
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1773664207233
+  },
+  {
+    "id": 508,
+    "teamA": {
+      "defence": 22,
+      "attack": 1
+    },
+    "teamB": {
+      "defence": 5,
+      "attack": 32
+    },
+    "score": [
+      8,
+      2
+    ],
+    "createdAt": 1773673946857
+  },
+  {
+    "id": 509,
+    "teamA": {
+      "defence": 15,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 6,
+      "attack": 3
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1773681609109
+  },
+  {
+    "id": 510,
+    "teamA": {
+      "defence": 18,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 15,
+      "attack": 26
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773682606953
+  },
+  {
+    "id": 511,
+    "teamA": {
+      "defence": 26,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 15,
+      "attack": 8
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1773682942093
+  },
+  {
+    "id": 512,
+    "teamA": {
+      "defence": 15,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 13,
+      "attack": 8
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1773683345197
+  },
+  {
+    "id": 513,
+    "teamA": {
+      "defence": 28,
+      "attack": 19
+    },
+    "teamB": {
+      "defence": 6,
+      "attack": 26
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1773742525611
+  },
+  {
+    "id": 514,
+    "teamA": {
+      "defence": 19,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 8
+    },
+    "score": [
+      8,
+      5
+    ],
+    "createdAt": 1773749319820
+  },
+  {
+    "id": 515,
+    "teamA": {
+      "defence": 28,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 2,
+      "attack": 8
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1773749688561
+  },
+  {
+    "id": 516,
+    "teamA": {
+      "defence": 18,
+      "attack": 19
+    },
+    "teamB": {
+      "defence": 5,
+      "attack": 26
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1773760190604
+  },
+  {
+    "id": 517,
+    "teamA": {
+      "defence": 22,
+      "attack": 19
+    },
+    "teamB": {
+      "defence": 5,
+      "attack": 26
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1773760789087
+  },
+  {
+    "id": 518,
+    "teamA": {
+      "defence": 2,
+      "attack": 13
+    },
+    "teamB": {
+      "defence": 6,
+      "attack": 19
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773768133968
+  },
+  {
+    "id": 519,
+    "teamA": {
+      "defence": 26,
+      "attack": 22
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 32
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1773768631933
+  },
+  {
+    "id": 520,
+    "teamA": {
+      "defence": 28,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 2,
+      "attack": 26
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773769220740
+  },
+  {
+    "id": 521,
+    "teamA": {
+      "defence": 28,
+      "attack": 2
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 12
+    },
+    "score": [
+      2,
+      8
+    ],
+    "createdAt": 1773769589184
+  },
+  {
+    "id": 522,
+    "teamA": {
+      "defence": 28,
+      "attack": 22
+    },
+    "teamB": {
+      "defence": 18,
+      "attack": 12
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1773770109616
+  },
+  {
+    "id": 523,
+    "score": [
+      2,
+      8
+    ],
+    "teamA": {
+      "attack": 19,
+      "defence": 22
+    },
+    "teamB": {
+      "defence": 1,
+      "attack": 26
+    },
+    "createdAt": 1773767971000
+  },
+  {
+    "id": 524,
+    "teamA": {
+      "defence": 36,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 40,
+      "attack": 11
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773828989786
+  },
+  {
+    "id": 525,
+    "teamA": {
+      "defence": 15,
+      "attack": 11
+    },
+    "teamB": {
+      "defence": 40,
+      "attack": 8
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773838757762
+  },
+  {
+    "id": 526,
+    "teamA": {
+      "defence": 16,
+      "attack": 36
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 40
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773847176823
+  },
+  {
+    "id": 527,
+    "teamA": {
+      "defence": 20,
+      "attack": 10
+    },
+    "teamB": {
+      "defence": 5,
+      "attack": 36
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1773854641758
+  },
+  {
+    "id": 528,
+    "teamA": {
+      "defence": 30,
+      "attack": 36
+    },
+    "teamB": {
+      "defence": 14,
+      "attack": 4
+    },
+    "score": [
+      8,
+      2
+    ],
+    "createdAt": 1773855119616
+  },
+  {
+    "id": 529,
+    "teamA": {
+      "defence": 5,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 26
+    },
+    "score": [
+      3,
+      8
+    ],
+    "createdAt": 1773855524319
+  },
+  {
+    "id": 530,
+    "teamA": {
+      "defence": 15,
+      "attack": 34
+    },
+    "teamB": {
+      "defence": 20,
+      "attack": 13
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1773856001688
+  },
+  {
+    "id": 531,
+    "teamA": {
+      "defence": 16,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 26,
+      "attack": 11
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1773856421327
+  },
+  {
+    "id": 532,
+    "teamA": {
+      "defence": 13,
+      "attack": 20
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 26
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1773856875883
+  },
+  {
+    "id": 533,
+    "teamA": {
+      "defence": 20,
+      "attack": 4
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 13
+    },
+    "score": [
+      8,
+      3
+    ],
+    "createdAt": 1773857238411
+  },
+  {
+    "id": 534,
+    "teamA": {
+      "defence": 20,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 22
+    },
+    "score": [
+      7,
+      8
+    ],
+    "createdAt": 1773922654534
+  },
+  {
+    "id": 535,
+    "teamA": {
+      "defence": 20,
+      "attack": 3
+    },
+    "teamB": {
+      "defence": 1,
+      "attack": 17
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1773933068987
+  },
+  {
+    "id": 536,
+    "teamA": {
+      "defence": 1,
+      "attack": 32
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 20
+    },
+    "score": [
+      6,
+      8
+    ],
+    "createdAt": 1773940226602
+  },
+  {
+    "id": 537,
+    "teamA": {
+      "defence": 43,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 23,
+      "attack": 8
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1773940859347
+  },
+  {
+    "id": 538,
+    "teamA": {
+      "defence": 17,
+      "attack": 12
+    },
+    "teamB": {
+      "defence": 19,
+      "attack": 8
+    },
+    "score": [
+      8,
+      6
+    ],
+    "createdAt": 1773941907892
+  },
+  {
+    "id": 539,
+    "teamA": {
+      "defence": 18,
+      "attack": 25
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 20
+    },
+    "score": [
+      5,
+      8
+    ],
+    "createdAt": 1773942677152
+  },
+  {
+    "id": 540,
+    "teamA": {
+      "defence": 34,
+      "attack": 17
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 26
+    },
+    "score": [
+      8,
+      7
+    ],
+    "createdAt": 1773943256213
+  },
+  {
+    "id": 541,
+    "teamA": {
+      "defence": 18,
+      "attack": 26
+    },
+    "teamB": {
+      "defence": 34,
+      "attack": 25
+    },
+    "score": [
+      8,
+      4
+    ],
+    "createdAt": 1773943628821
+  },
+  {
+    "id": 542,
+    "teamA": {
+      "defence": 26,
+      "attack": 25
+    },
+    "teamB": {
+      "defence": 22,
+      "attack": 17
+    },
+    "createdAt": 1773944334636,
+    "score": [
+      4,
+      8
+    ]
+  }
+]
