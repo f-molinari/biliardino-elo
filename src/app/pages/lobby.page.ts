@@ -93,7 +93,7 @@ class LobbyPage extends Component {
   private lobbyStateListener: ((state: ILobbyState) => void) | null = null;
   // Last confirmations for fish sync
   private lastConfirmations: IConfirmationWithFish[] = [];
-  // True once the first server response (or cached state) has been applied
+  // True once the first real server response has been applied
   private serverResponded = false;
 
   // ── Render ───────────────────────────────────────────────────
@@ -106,9 +106,8 @@ class LobbyPage extends Component {
     // onLobbyStateChange() which updates the DOM.
     if (LobbyService.isInitialized()) {
       const cached = LobbyService.getState();
-      this.applyLobbyState(cached);
+      this.applyLobbyState(cached, { fromServer: false });
       this.resolvePlayers();
-      this.serverResponded = true;
     }
 
     return `
@@ -359,7 +358,7 @@ class LobbyPage extends Component {
           </div>
         `;
       }
-      if (appState.lobbyActive) {
+      if (this.lobbyExists || appState.lobbyActive) {
         return this.renderConfirmKickCard();
       } else if (appState.isAdmin) {
         return this.renderAdminBroadcastCard();
@@ -715,10 +714,17 @@ class LobbyPage extends Component {
    * Apply the ILobbyState to local component state.
    * Used both for initial render and for real-time updates.
    */
-  private applyLobbyState(state: ILobbyState): void {
+  private applyLobbyState(
+    state: ILobbyState,
+    opts: { fromServer?: boolean } = {}
+  ): void {
+    const fromServer = opts.fromServer ?? true;
+
     // Lobby metadata
     this.lobbyExists = state.exists;
-    this.serverResponded = true;
+    if (fromServer) {
+      this.serverResponded = true;
+    }
     if (state.match) this.lobbyData = state.match as IRunningMatchDTO;
     if (state.exists && state.ttl > 0) {
       // Only sync TTL if server differs significantly (avoid jitter)
@@ -1015,6 +1021,15 @@ class LobbyPage extends Component {
     const feedback = this.$id('admin-broadcast-feedback');
     const durationSelect = this.$id('admin-duration-select') as HTMLSelectElement | null;
     if (!btn) return;
+    const token = localStorage.getItem('biliardino_admin_token');
+
+    if (!token) {
+      if (feedback) {
+        feedback.textContent = 'TOKEN ADMIN API MANCANTE: INSERISCILO NEL MENU UTENTE';
+        feedback.style.color = '#F87171';
+      }
+      return;
+    }
 
     // Trigger strong haptic + particle feedback on broadcast start
     // Uncomment to test with any click
@@ -1032,7 +1047,6 @@ class LobbyPage extends Component {
     btn.textContent = 'INVIO IN CORSO...';
 
     try {
-      const token = localStorage.getItem('biliardino_admin_token');
       const res = await fetch(`${API_BASE_URL}/send-broadcast`, {
         method: 'POST',
         headers: {
@@ -1100,6 +1114,8 @@ class LobbyPage extends Component {
 
       if (!res.ok) throw new Error('Errore nella conferma');
 
+      haptics.trigger('success');
+
       // Update single source of truth, then re-render layout
       this.confirmed.add(this.myPlayerId);
       this.rerenderMain();
@@ -1108,6 +1124,7 @@ class LobbyPage extends Component {
       await LobbyService.refresh();
     } catch (err: any) {
       console.error('[LobbyPage] Confirm kick error:', err);
+      haptics.trigger('error');
       this.confirmKick?.showFeedback(
         err.message || 'ERRORE CONFERMA',
         '#F87171'
