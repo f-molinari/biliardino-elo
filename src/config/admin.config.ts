@@ -3,11 +3,12 @@
  * Solo questi utenti possono vedere il pulsante match making
  */
 const ADMIN_PLAYER_IDS = [
-  25, // Andrea Gargaro
-  18, // Francesco Molinari
-  22, // Michele Sette
   13, // Michele Lillo
-  21 // Luigi Denora
+  16, // Andrea Difonzo
+  18, // Francesco Molinari
+  21, // Luigi Denora
+  22, // Michele Sette
+  25 // Andrea Gargaro
 ];
 
 export function isPlayerAdmin(playerId: number | null | undefined): boolean {

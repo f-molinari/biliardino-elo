@@ -236,12 +236,14 @@ export function attachMatchHistoryInteractions(root: HTMLElement): () => void {
   const onClick = (event: Event): void => {
     const target = event.target as HTMLElement | null;
 
-    const playerLink = target?.closest('[data-player-link]') as HTMLElement | null;
-    if (playerLink) return;
+    const toggle = target?.closest('[data-match-toggle]') as HTMLElement | null;
+    if (!toggle) return;
 
-    const card = target?.closest('[data-match-card]') as HTMLElement | null;
+    const card = toggle.closest('[data-match-card]') as HTMLElement | null;
     if (!card) return;
     if (card.dataset.expandable !== 'true') return;
+
+    event.preventDefault();
 
     const container = card.closest('[data-match-history]') as HTMLElement | null;
     const alreadyExpanded = card.dataset.expanded === 'true';
