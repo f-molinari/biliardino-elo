@@ -9,7 +9,7 @@
  * Route: / (default, public)
  */
 
-import { attachMatchHistoryInteractions, renderMatchHistory } from '@/app/components/match-history.component';
+import { MatchHistoryComponent } from '@/app/components/match-history.component';
 import { refreshCoreData, registerAppRefreshHandler } from '@/services/app-refresh.service';
 import { expectedScore, getMatchPlayerElo } from '@/services/elo.service';
 import { getAllMatches } from '@/services/match.service';
@@ -61,7 +61,7 @@ const RECENT_MATCHES_COUNT = 30;
 class LeaderboardPage extends Component {
   private sortKey: SortKey = 'rank';
   private sortAsc = false;
-  private matchHistoryCleanup: (() => void) | null = null;
+  private matchHistory: MatchHistoryComponent | null = null;
   private unregisterRefreshHandler: (() => void) | null = null;
   private isDestroyed = false;
   private heroContent: 'podium' | 'live-match' = 'podium';
@@ -103,10 +103,6 @@ class LeaderboardPage extends Component {
     const todayRankDeltas = this.getTodayRankDeltas();
     const selectedPlayerId = Number(localStorage.getItem('biliardino_player_id') || 0);
 
-    const root = this.$('#leaderboard-page') ?? this.el;
-    if (root) {
-      this.matchHistoryCleanup = attachMatchHistoryInteractions(root);
-    }
     this.unregisterRefreshHandler = registerAppRefreshHandler(() => this.handlePullRefresh());
 
     // GSAP animations — fast initial animations for header + podium
@@ -154,7 +150,12 @@ class LeaderboardPage extends Component {
       // Render match history
       const historySlot = this.$('#leaderboard-history-slot');
       if (historySlot) {
-        historySlot.innerHTML = this.renderRecentMatches();
+        this.matchHistory = new MatchHistoryComponent({
+          matches: getAllMatches(),
+          limit: RECENT_MATCHES_COUNT,
+          selectedPlayerId
+        });
+        this.matchHistory.mountInto(historySlot);
         refreshIcons();
 
         // Animate history rows in (only visible ones)
@@ -174,10 +175,8 @@ class LeaderboardPage extends Component {
 
   override destroy(): void {
     this.isDestroyed = true;
-    if (this.matchHistoryCleanup) {
-      this.matchHistoryCleanup();
-      this.matchHistoryCleanup = null;
-    }
+    this.matchHistory?.destroy();
+    this.matchHistory = null;
     if (this.unregisterRefreshHandler) {
       this.unregisterRefreshHandler();
       this.unregisterRefreshHandler = null;
@@ -909,16 +908,6 @@ class LeaderboardPage extends Component {
     `;
   }
 
-  // ── Recent Matches (Cronologia Partite) ────────────────────
-
-  private renderRecentMatches(): string {
-    return renderMatchHistory({
-      matches: getAllMatches(),
-      limit: RECENT_MATCHES_COUNT,
-      selectedPlayerId: Number(localStorage.getItem('biliardino_player_id') || 0)
-    });
-  }
-
   private async handlePullRefresh(): Promise<void> {
     await refreshCoreData();
 
@@ -999,18 +988,13 @@ class LeaderboardPage extends Component {
     const historySlot = this.$('#leaderboard-history-slot');
     if (!historySlot) return;
 
-    if (this.matchHistoryCleanup) {
-      this.matchHistoryCleanup();
-      this.matchHistoryCleanup = null;
-    }
-
-    historySlot.innerHTML = this.renderRecentMatches();
-
-    const root = this.$('#leaderboard-page') ?? this.el;
-    if (root) {
-      this.matchHistoryCleanup = attachMatchHistoryInteractions(root);
-    }
-
+    const selectedPlayerId = Number(localStorage.getItem('biliardino_player_id') || 0);
+    this.matchHistory = new MatchHistoryComponent({
+      matches: getAllMatches(),
+      limit: RECENT_MATCHES_COUNT,
+      selectedPlayerId
+    });
+    this.matchHistory.mountInto(historySlot);
     refreshIcons();
   }
 

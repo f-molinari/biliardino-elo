@@ -1,6 +1,7 @@
 import { getPlayerById } from '@/services/player.service';
 import gsap from 'gsap';
 import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
+import { Component } from '../components/component.base';
 import { html, rawHtml } from '../utils/html-template.util';
 import cardTemplate from './match-history-card.component.html?raw';
 import historyTemplate from './match-history.component.html?raw';
@@ -459,6 +460,36 @@ function renderProfileAvatarLink(player: IPlayer | undefined): string {
 
 interface MatchHistoryAnimatedCard extends HTMLElement {
   _matchHistoryTimeline?: gsap.core.Timeline;
+}
+
+export class MatchHistoryComponent extends Component {
+  private _cleanup: (() => void) | null = null;
+
+  constructor(private options: MatchHistoryOptions) {
+    super();
+  }
+
+  render(): string {
+    return renderMatchHistory(this.options);
+  }
+
+  override mount(): void {
+    if (!this.el) return;
+    this._cleanup = attachMatchHistoryInteractions(this.el);
+  }
+
+  override destroy(): void {
+    this._cleanup?.();
+    this._cleanup = null;
+  }
+
+  /** Renders into container and mounts interactions in one step. */
+  mountInto(container: HTMLElement): void {
+    this.destroy();
+    container.innerHTML = this.render();
+    this.setElement(container);
+    this.mount();
+  }
 }
 
 function animateCardTransition(card: HTMLElement, expanded: boolean): void {
