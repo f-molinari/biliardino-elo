@@ -155,12 +155,13 @@ class LeaderboardPage extends Component {
       // Render match history
       const historySlot = this.$('#leaderboard-history-slot');
       if (historySlot) {
-        this.matchHistory = new MatchHistoryComponent({
+        historySlot.innerHTML = renderMatchHistory({
           matches: getAllMatches(),
           limit: RECENT_MATCHES_COUNT,
           selectedPlayerId
         });
-        this.matchHistory.mountInto(historySlot);
+        this.matchHistory = new MatchHistoryComponent();
+        this.matchHistory.mount(historySlot);
         refreshIcons();
 
         // Animate history rows in (only visible ones)
@@ -1000,13 +1001,15 @@ class LeaderboardPage extends Component {
       this.matchHistory = null;
     }
 
-    historySlot.innerHTML = this.renderRecentMatches();
+    const selectedPlayerId = Number(localStorage.getItem('biliardino_player_id') || 0);
+    historySlot.innerHTML = renderMatchHistory({
+      matches: getAllMatches(),
+      limit: RECENT_MATCHES_COUNT,
+      selectedPlayerId
+    });
 
-    const root = this.$('#leaderboard-page') ?? this.el;
-    if (root) {
-      this.matchHistory = new MatchHistoryComponent();
-      this.matchHistory.mount(root);
-    }
+    this.matchHistory = new MatchHistoryComponent();
+    this.matchHistory.mount(historySlot);
 
     refreshIcons();
   }
