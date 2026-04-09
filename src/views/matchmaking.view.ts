@@ -373,7 +373,7 @@ export class MatchmakingView {
       return;
     }
 
-    const match = findBestMatch(selectedPlayerIds, priorityPlayerIds, 0);
+    const match = findBestMatch(selectedPlayerIds, priorityPlayerIds);
 
     if (!match) {
       alert('Impossibile generare partite con i giocatori selezionati.');
