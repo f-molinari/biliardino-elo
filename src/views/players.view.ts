@@ -77,8 +77,8 @@ export class PlayersView {
     const attackRolePercentage = stats.matches > 0 ? ((stats.matchesAsAttack / stats.matches) * 100).toFixed(0) : '0';
     const defenceRolePercentage = stats.matches > 0 ? ((stats.matchesAsDefence / stats.matches) * 100).toFixed(0) : '0';
 
-    // Calcola il ruolo come nella classifica (player.defence * 100)
-    let rolePercentage = Math.round(player.role * 100);
+    // Calcola il ruolo con la nuova logica (-1/0/1)
+    let rolePercentage = player.role === -1 ? 100 : (player.role === 0 ? 50 : 0);
     const isDefender = rolePercentage >= 50;
     if (rolePercentage < 50) {
       rolePercentage = 100 - rolePercentage;
@@ -219,8 +219,9 @@ export class PlayersView {
       const eloWithMalus = myPlayerElo !== undefined ? Math.round(myPlayerElo) : '?';
 
       // ELO reale: rimuovi il malus dal valore con malus
-      // Il malus è: (isDef ? 1 - player.defence : player.defence) * 100
-      const malus = (isDefence ? 1 - player.role : player.role) * 100;
+      // Il malus dipende dal ruolo preferito e dalla posizione giocata
+      const defencePref = player.role === -1 ? 100 : (player.role === 0 ? 50 : 0);
+      const malus = isDefence ? defencePref : (100 - defencePref);
       const realElo = myPlayerElo !== undefined ? Math.round(myPlayerElo + malus) : '?';
       const delta = isTeamA ? match.deltaELO[0] : match.deltaELO[1];
 

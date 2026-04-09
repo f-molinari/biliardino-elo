@@ -32,6 +32,37 @@ export class RankingView {
     return RankingView.LIVE_WINDOWS.some(w => minutes >= w.start && minutes < w.end);
   }
 
+  /**
+   * Helper per ottenere il display del ruolo (etichetta, colore e tipo)
+   */
+  private static getRoleDisplay(role: -1 | 0 | 1): { label: string; color: string; roleType: string } {
+    if (role === -1) {
+      return { label: '🛡️', color: '#0077cc', roleType: 'DIF 100%' };
+    } else if (role === 0) {
+      return { label: '⚖️', color: '#6c757d', roleType: 'BAL 50%' };
+    } else {
+      return { label: '⚔️', color: '#dc3545', roleType: 'ATT 100%' };
+    }
+  }
+
+  /**
+   * Helper per ottenere la percentuale di difesa
+   */
+  private static getDefencePercentage(role: -1 | 0 | 1): number {
+    if (role === -1) return 100;
+    if (role === 0) return 50;
+    return 0;
+  }
+
+  /**
+   * Helper per ottenere la percentuale di attacco
+   */
+  private static getAttackPercentage(role: -1 | 0 | 1): number {
+    if (role === -1) return 0;
+    if (role === 0) return 50;
+    return 100;
+  }
+
   private static sortKey: SortKey = 'rank';
   private static sortAsc: boolean = false;
   // Indici colonne: 0=#, 1=Classe, 2=Nome, 3=Elo, 4=Ruolo, 5=Match, 6=V/S, 7=%Win, 8=Goal F/S, 9=Forma
@@ -322,21 +353,9 @@ export class RankingView {
       const isSecond = rank === 2;
       const isThird = rank === 3;
 
-      // Mostra sempre il ruolo prevalente (ATT o DIF) e la percentuale (max 50%)
-      let role = '';
-      let defenceValue = player.role * 100;
-      let label = '🛡️';
-      let color = '#0077cc';
-      if (defenceValue === 50) {
-        label = '⚖️';
-        color = '#6c757d';
-      }
-      if (defenceValue < 50) {
-        defenceValue = 100 - defenceValue;
-        label = '⚔️';
-        color = '#dc3545';
-      }
-      role = `<span style="font-size:0.9em;color:${color};">${label} ${defenceValue}%</span>`;
+      // Mostra il ruolo prevalente (ATT, BAL o DIF) e la percentuale
+      const roleDisplay = RankingView.getRoleDisplay(player.role);
+      const role = `<span style="font-size:0.9em;color:${roleDisplay.color};">${roleDisplay.label} ${roleDisplay.roleType}</span>`;
 
       // Usa matchesDelta precalcolato per ultimi 5 risultati e Elo guadagnato
       const matchesDelta = player.matchesDelta || [];
@@ -810,10 +829,10 @@ export class RankingView {
       const avgEloB = Math.round((defB.elo + attB.elo) / 2);
 
       // Calcola percentuali dei ruoli
-      const defPercA = Math.round(defA.role * 100);
-      const attPercA = 100 - Math.round(attA.role * 100);
-      const defPercB = Math.round(defB.role * 100);
-      const attPercB = 100 - Math.round(attB.role * 100);
+      const defPercA = RankingView.getDefencePercentage(defA.role);
+      const attPercA = RankingView.getAttackPercentage(attA.role);
+      const defPercB = RankingView.getDefencePercentage(defB.role);
+      const attPercB = RankingView.getAttackPercentage(attB.role);
 
       // Calcola probabilità di vittoria
       const winProbA = expectedScore(avgEloA, avgEloB);

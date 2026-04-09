@@ -100,10 +100,11 @@ export class AddPlayerView {
     const row = document.createElement('tr');
     row.dataset.playerId = player.id.toString();
 
+    const rolePercentage = player.role === -1 ? 100 : (player.role === 0 ? 50 : 0);
     row.innerHTML = `
       <td>${player.name}</td>
       <td>${player.elo}</td>
-      <td>${player.role * 100}</td>
+      <td>${rolePercentage}</td>
     `;
 
     return row;
