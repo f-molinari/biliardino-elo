@@ -160,11 +160,10 @@ function checkProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlaye
   const priorityScore = teamMatchessNormalized * config.priorityWeight;
 
   // PLAYERS ELO DIFFERENCE SCORE
-  const maxEloPlayersDiff = MaxEloDiff * 2;
   const playersMaxElo = Math.max(defA.elo, attA.elo, defB.elo, attB.elo);
   const playersMinElo = Math.min(defA.elo, attA.elo, defB.elo, attB.elo);
   const playersEloDiff = playersMaxElo - playersMinElo;
-  const playersEloDiffNormalized = 1 - Math.min(1, playersEloDiff / maxEloPlayersDiff);
+  const playersEloDiffNormalized = 1 - Math.min(1, playersEloDiff / MaxEloDiff);
   const playersDifferenceScore = playersEloDiffNormalized * config.playersDifferenceWeight;
 
   // DIVERSITY SCORE
