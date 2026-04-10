@@ -7,7 +7,7 @@ export const MatchesToRank = 10;
 export const MatchesToTransition = 1; // Numero di partite dopo le quali il moltiplicatore K diventa 1
 export const RankTreshold = 100;
 export const DerankTreshold = Math.round(RankTreshold * 0.2); // 20 punti
-export const MaxEloDiff = RankTreshold + DerankTreshold - 1;
+export const MaxEloDiff = RankTreshold * 2 + DerankTreshold - 1; // qui consideriamo un rank di differenza nel mm
 const EloScalingFactorFormula = 150;
 
 export function updateMatch(match: IMatch): void {

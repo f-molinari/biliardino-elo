@@ -55,10 +55,10 @@ type DiversityMap = Record<number, Record<number, number> & Priority>;
 type Diversity = { teamDef: DiversityMap; teamAtt: DiversityMap; opponent: DiversityMap };
 
 const config: IMatchmakingConfig = {
-  matchBalanceWeight: 0.1,
-  playersDifferenceWeight: 0.25,
-  priorityWeight: 0.2,
-  diversityTeamWeight: 0.25,
+  matchBalanceWeight: 0.15,
+  playersDifferenceWeight: 0.3,
+  priorityWeight: 0.15,
+  diversityTeamWeight: 0.2,
   diversityOpponentWeight: 0.15,
   randomness: 0.05
 };
