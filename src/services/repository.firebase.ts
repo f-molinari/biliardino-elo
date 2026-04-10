@@ -93,8 +93,7 @@ export async function fetchPlayers(): Promise<IPlayer[]> {
       name: data.name,
       elo: 1000,
       startElo: 1000,
-      role: data.defence >= 90 ? -1 : (data.defence <= 10 ? 1 : 0), // TODO fix
-      // role: data.role, // TODO fix
+      role: data.role,
       matches: 0,
       bestElo: -1,
       goalsAgainst: 0,

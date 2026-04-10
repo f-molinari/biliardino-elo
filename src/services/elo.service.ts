@@ -19,7 +19,8 @@ export function updateMatch(match: IMatch): void {
   const teamBP2 = getPlayerById(match.teamB.attack);
 
   if (!teamAP1 || !teamAP2 || !teamBP1 || !teamBP2) {
-    throw new Error('One or more players not found for match Elo calculation.');
+    // throw new Error('One or more players not found for match Elo calculation.');
+    return;
   }
 
   const [goalsA, goalsB] = match.score;
