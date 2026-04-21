@@ -4,19 +4,26 @@
   {{pageHeader}}
 
   <!-- ── Hero Card ───────────────────────────────────────── -->
-  <article id="hero-card" class="glass-card rounded-2xl p-5 md:p-6 lg:p-10 relative overflow-visible"
+  <article id="hero-card" class="glass-card rounded-2xl p-5 md:p-6 lg:p-5 relative overflow-visible"
     style="border-color:{{playerColor}}33; box-shadow:0 0 40px {{playerColor}}15,var(--shadow-card)"
-    aria-label="Profilo giocatore">
+    class="glass-card rounded-2xl p-3 md:p-4 lg:p-6 relative overflow-visible" aria-label="Profilo giocatore">
 
-    <!-- Rank watermark -->
-    <span
-      class="pointer-events-none select-none absolute inset-0 flex items-start justify-end font-display overflow-hidden"
-      style="z-index:0;background:linear-gradient(180deg,{{playerColor}}15 0%,{{playerColor}}08 40%,transparent 85%);
-             -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-             font-size:clamp(18rem,40vw,32rem);line-height:0.8;padding:0.02em"
-      aria-hidden="true">#{{rankWatermark}}</span>
+    <!-- Freccia sinistra (giocatore precedente) -->
+    <button id="prev-player-btn"
+      class="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center bg-black/40 hover:bg-black/70 transition-colors rounded-full w-12 h-12 shadow-lg border border-white/10"
+      style="transform:translateY(-50%);" aria-label="Giocatore precedente">
+      <i data-lucide="chevron-left" class="w-7 h-7 text-white"></i>
+    </button>
 
-    <div class="relative z-10 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 md:gap-10 items-center">
+    <!-- Freccia destra (giocatore successivo) -->
+    <button id="next-player-btn"
+      class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center bg-black/40 hover:bg-black/70 transition-colors rounded-full w-12 h-12 shadow-lg border border-white/10"
+      style="transform:translateY(-50%);" aria-label="Giocatore successivo">
+      <i data-lucide="chevron-right" class="w-7 h-7 text-white"></i>
+    </button>
+    <!-- Watermark removed -->
+
+    <div class="relative z-10 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 md:gap-10 items-center px-8 md:px-16">
 
       <!-- Left: identity + quick stats -->
       <div class="flex flex-col items-center md:items-start gap-4">

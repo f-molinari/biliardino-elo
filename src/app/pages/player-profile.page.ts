@@ -353,6 +353,7 @@ export default class PlayerProfilePage extends Component {
   }
 
   private renderPageHeader(): string {
+    // Header vuoto, le frecce sono ora nel template
     return '';
   }
 
@@ -1117,6 +1118,62 @@ export default class PlayerProfilePage extends Component {
     if (!player) return;
 
     Chart.register(...registerables);
+    refreshIcons();
+    // Fix: reset padding e posizione delle frecce e contenitore principale
+    const heroCard = this.$('#hero-card');
+    if (heroCard) {
+      heroCard.classList.remove('px-0', 'pl-0', 'pr-0');
+    }
+    const mainGrid = heroCard?.querySelector('.grid');
+    if (mainGrid) {
+      mainGrid.classList.remove('px-0', 'pl-0', 'pr-0');
+      mainGrid.classList.add('px-8', 'md:px-16');
+    }
+    const prevBtnLayout = this.$('#prev-player-btn');
+    const nextBtnLayout = this.$('#next-player-btn');
+    if (prevBtnLayout) {
+      prevBtnLayout.classList.remove('left-0', 'left-[0px]');
+      prevBtnLayout.classList.add('-left-10', 'md:-left-14');
+    }
+    if (nextBtnLayout) {
+      nextBtnLayout.classList.remove('right-0', 'right-[0px]');
+      nextBtnLayout.classList.add('-right-10', 'md:-right-14');
+    }
+
+    // Pulsanti navigazione giocatore (binding e visibilità)
+    const allPlayers = getAllPlayers()
+      .filter(p => p.rank && p.rank[2] > 0)
+      .sort((a, b) => a.rank[2] - b.rank[2]);
+    const currentIdx = allPlayers.findIndex(p => p.id === id);
+    const prevPlayer = currentIdx > 0 ? allPlayers[currentIdx - 1] : null;
+    const nextPlayer = currentIdx >= 0 && currentIdx < allPlayers.length - 1 ? allPlayers[currentIdx + 1] : null;
+    const prevBtn = this.$('#prev-player-btn');
+    const nextBtn = this.$('#next-player-btn');
+    if (prevBtn) {
+      if (prevPlayer) {
+        prevBtn.addEventListener('click', () => {
+          globalThis.location.href = `/profile/${prevPlayer.id}`;
+        });
+        prevBtn.style.opacity = '1';
+        prevBtn.style.pointerEvents = '';
+      } else {
+        prevBtn.style.opacity = '0.3';
+        prevBtn.style.pointerEvents = 'none';
+      }
+    }
+    if (nextBtn) {
+      if (nextPlayer) {
+        nextBtn.addEventListener('click', () => {
+          globalThis.location.href = `/profile/${nextPlayer.id}`;
+        });
+        nextBtn.style.opacity = '1';
+        nextBtn.style.pointerEvents = '';
+      } else {
+        nextBtn.style.opacity = '0.3';
+        nextBtn.style.pointerEvents = 'none';
+      }
+    }
+    // Forza il refresh delle icone dopo il binding dei pulsanti
     refreshIcons();
 
     this.chartRole = player.bestRole as 0 | 1;
