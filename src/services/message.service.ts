@@ -1,13 +1,12 @@
 import { IMessage, IMessagesResponse } from '@/models/message.interface';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+import { LobbyService } from './lobby.service';
+import { API_BASE_URL } from '@/config/env.config';
 
 export class MessageService {
   /**
    * Invia un messaggio durante il confirmation
    */
   static async sendMessage(
-    matchTime: string,
     playerId: number,
     playerName: string,
     fishType: string,
@@ -17,7 +16,6 @@ export class MessageService {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        matchTime,
         playerId,
         playerName,
         fishType,
@@ -35,32 +33,31 @@ export class MessageService {
   }
 
   /**
-   * Carica i messaggi per una partita
+   * Carica i messaggi dalla lobby corrente (via LobbyService).
+   * Il LobbyService mantiene lo stato sincronizzato tramite WebSocket.
    */
-  static async getMessages(matchTime: string, since?: number): Promise<IMessagesResponse> {
-    const url = new URL(`${API_BASE_URL}/get-messages`);
-    url.searchParams.set('time', matchTime);
-    if (since) {
-      url.searchParams.set('since', String(since));
+  static async getMessages(): Promise<IMessagesResponse> {
+    const state = LobbyService.getState();
+    if (state) {
+      return { messages: state.messages, count: state.messageCount };
     }
-
-    const res = await fetch(url.toString());
-
-    if (!res.ok) {
-      throw new Error(`Errore caricamento messaggi: ${res.statusText}`);
-    }
-
-    return res.json();
+    // Se LobbyService non è ancora inizializzato, forza un refresh
+    await LobbyService.refresh();
+    const fresh = LobbyService.getState();
+    return { messages: fresh?.messages ?? [], count: fresh?.messageCount ?? 0 };
   }
 
   /**
    * Cancella i messaggi di una partita (solo per admin)
    */
-  static async clearMessages(matchTime: string, token: string): Promise<{ ok: boolean }> {
-    const res = await fetch(`${API_BASE_URL}/clear-messages`, {
+  static async clearMessages(token: string): Promise<{ ok: boolean }> {
+    const res = await fetch(`${API_BASE_URL}/admin-cleanup`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matchTime, token })
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({})
     });
 
     if (!res.ok) {

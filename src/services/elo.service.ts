@@ -9,9 +9,10 @@ export const RankTreshold = 70;
 export const DerankTreshold = Math.round(RankTreshold * 0.2);
 export const MaxEloDiff = RankTreshold * 2 + DerankTreshold - 1; // qui consideriamo un rank di differenza nel mm
 export const FirstRankUp = 1005;
+export const startElo = 1000;
 const EloScalingFactorFormula = 150;
 
-export function updateMatch(match: IMatch): void {
+export function updateMatch(match: IMatch): boolean {
   const teamAP1 = getPlayerById(match.teamA.defence);
   const teamAP2 = getPlayerById(match.teamA.attack);
 
@@ -19,14 +20,14 @@ export function updateMatch(match: IMatch): void {
   const teamBP2 = getPlayerById(match.teamB.attack);
 
   if (!teamAP1 || !teamAP2 || !teamBP1 || !teamBP2) {
-    // throw new Error('One or more players not found for match Elo calculation.');
-    return;
+    console.error('One or more players not found for match Elo calculation.');
+    return false;
   }
 
   const [goalsA, goalsB] = match.score;
 
-  const eloA = (teamAP1.elo + teamAP2.elo) / 2;
-  const eloB = (teamBP1.elo + teamBP2.elo) / 2;
+  const eloA = (teamAP1.elo[0] + teamAP2.elo[1]) / 2;
+  const eloB = (teamBP1.elo[0] + teamBP2.elo[1]) / 2;
 
   const expA = expectedScore(eloA, eloB);
   const expB = 1 - expA;
@@ -53,11 +54,13 @@ export function updateMatch(match: IMatch): void {
   match.teamELO[0] = eloA;
   match.teamELO[1] = eloB;
 
-  match.teamAELO[0] = teamAP1.elo;
-  match.teamAELO[1] = teamAP2.elo;
+  match.teamAELO[0] = teamAP1.elo[0];
+  match.teamAELO[1] = teamAP2.elo[1];
 
-  match.teamBELO[0] = teamBP1.elo;
-  match.teamBELO[1] = teamBP2.elo;
+  match.teamBELO[0] = teamBP1.elo[0];
+  match.teamBELO[1] = teamBP2.elo[1];
+
+  return true;
 }
 
 export function expectedScore(eloA: number, eloB: number): number {

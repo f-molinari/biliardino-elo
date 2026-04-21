@@ -3,26 +3,7 @@
  * Prevents injection attacks and validates input formats
  */
 
-/**
- * Valida e sanitizza il formato matchTime (HH:MM)
- * Previene Redis key injection
- */
-export function validateMatchTime(matchTime: unknown): string {
-  if (typeof matchTime !== 'string') {
-    throw new Error('matchTime deve essere una stringa');
-  }
-
-  // Rimuovi spazi extra
-  const cleaned = matchTime.trim();
-
-  // Valida formato HH:MM
-  const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
-  if (!timeRegex.test(cleaned)) {
-    throw new Error('matchTime deve essere nel formato HH:MM (es: 14:30)');
-  }
-
-  return cleaned;
-}
+/* `validateMatchTime` rimosso: il concetto di matchTime è deprecato nel nuovo flusso lobby */
 
 /**
  * Valida e sanitizza il playerId
@@ -87,13 +68,13 @@ export function validateHost(host: string | undefined): string {
   // Rimuovi porta per comparazione più flessibile
   const hostWithoutPort = host.split(':')[0];
 
-  const isAllowed = allowedHosts.some(allowedHost => {
+  const isAllowed = allowedHosts.some((allowedHost) => {
     if (!allowedHost) return false;
     const allowedHostWithoutPort = allowedHost.split(':')[0];
     return host === allowedHost || hostWithoutPort === allowedHostWithoutPort;
   });
 
-  if (!isAllowed && !host.includes('vercel.app')) {
+  if (!isAllowed) {
     console.warn(`⚠️ Host non permesso: ${host}`);
     throw new Error('Host non autorizzato');
   }
@@ -134,10 +115,15 @@ export function validateNumber(
 export function validateString(
   value: unknown,
   fieldName: string,
-  maxLength = 1000
+  maxLength = 1000,
+  minLength = 1
 ): string {
   if (typeof value !== 'string') {
     throw new Error(`${fieldName} deve essere una stringa`);
+  }
+
+  if (value.length < minLength) {
+    throw new Error(`${fieldName} non può essere vuoto`);
   }
 
   if (value.length > maxLength) {
@@ -166,7 +152,7 @@ export function sanitizeLogOutput(input: unknown): string {
 /**
  * Previene Prototype Pollution validando che l'oggetto non contenga chiavi pericolose
  * Protegge contro attacchi che tentano di modificare Object.prototype
- * 
+ *
  * NOTA: In produzione, usare anche parseJSONSafely() per validare il JSON prima del parse
  */
 export function preventPrototypePollution(obj: any): void {
@@ -193,8 +179,8 @@ export function preventPrototypePollution(obj: any): void {
     }
 
     // Check per constructor e prototype come proprietà proprie
-    if (Object.prototype.hasOwnProperty.call(current, 'constructor') &&
-      path !== '') { // Permetti constructor a livello root (normale per oggetti)
+    if (Object.prototype.hasOwnProperty.call(current, 'constructor')
+      && path !== '') { // Permetti constructor a livello root (normale per oggetti)
       throw new Error(`Proprietà pericolosa rilevata: ${path ? path + '.' : ''}constructor`);
     }
 
@@ -277,10 +263,10 @@ export async function withTimeout<T>(
 export function isSafeRegex(pattern: string): boolean {
   // Pattern noti per causare ReDoS - nested quantifiers
   const dangerousPatterns = [
-    /\([^)]*\+\)\+/,      // (x+)+ pattern
-    /\([^)]*\*\)\*/,      // (x*)* pattern
-    /\([^)]*\+\)\*/,      // (x+)* pattern
-    /\([^)]*\*\)\+/,      // (x*)+ pattern
+    /\([^)]*\+\)\+/, // (x+)+ pattern
+    /\([^)]*\*\)\*/, // (x*)* pattern
+    /\([^)]*\+\)\*/, // (x+)* pattern
+    /\([^)]*\*\)\+/ // (x*)+ pattern
   ];
 
   for (const dangerous of dangerousPatterns) {

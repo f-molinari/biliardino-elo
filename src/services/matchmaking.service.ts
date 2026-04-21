@@ -1,6 +1,5 @@
 import { IPlayer } from '@/models/player.interface';
 import { MaxEloDiff } from './elo.service';
-import { getAllMatches } from './match.service';
 import { getClass, getPlayerById } from './player.service';
 
 export interface IMatchmakingConfig {
@@ -48,11 +47,14 @@ export interface IHeuristicData {
   total: IMatchProposalScore;
 }
 
-// TODO: consider early exit if bad performance (too many players)
+export type MatchmakingRange = { min: number; max: number; diff: number };
+export type MatchmakingRangesArray = [{ [x: number]: MatchmakingRange }, { [x: number]: MatchmakingRange }];
 
-type Priority = { min: number; max: number; diff: number };
-type DiversityMap = Record<number, Record<number, number> & Priority>;
-type Diversity = { teamDef: DiversityMap; teamAtt: DiversityMap; opponent: DiversityMap };
+interface MatchmakingRanges {
+  priority: MatchmakingRange;
+  diversityTeam: MatchmakingRangesArray;
+  diversityOpponent: MatchmakingRangesArray;
+}
 
 const config: IMatchmakingConfig = {
   matchBalanceWeight: 0.15,
@@ -73,17 +75,16 @@ export function findBestMatch(playersId: number[], priorityPlayersId: number[], 
     throw new Error('Some player IDs are invalid');
   }
 
-  const priority = getPriority(players);
-  const maxDiversity = getDiversity(playersId, maxClassDiff);
+  const mmRanges = getPriorityAndDiversity(players, maxClassDiff);
   const defArray: IPlayer[] = [];
   const attArray: IPlayer[] = [];
 
   getPlayersRolesArray(players, defArray, attArray);
 
-  return generateBestMatch(priority, maxDiversity, defArray, attArray, priorityPlayers, maxClassDiff);
+  return generateBestMatch(mmRanges, defArray, attArray, priorityPlayers, maxClassDiff);
 }
 
-function generateBestMatch(priority: Priority, maxDiversity: Diversity, def: IPlayer[], att: IPlayer[], priorityPlayers: IPlayer[], maxClassDiff: number): IMatchProposal | null {
+function generateBestMatch(mmRanges: MatchmakingRanges, def: IPlayer[], att: IPlayer[], priorityPlayers: IPlayer[], maxClassDiff: number): IMatchProposal | null {
   const defCount = def.length;
   const attCount = att.length;
   const bestProposal: IMatchProposal = { teamA: { defence: def[0], attack: att[0] }, teamB: { defence: def[0], attack: att[0] } };
@@ -94,7 +95,7 @@ function generateBestMatch(priority: Priority, maxDiversity: Diversity, def: IPl
 
     for (let j = 0; j < attCount; j++) {
       const p2 = att[j];
-      if (p2 === p1) continue;
+      if (p2 === p1 || getClassDiff2(p1, p2) > maxClassDiff) continue;
 
       for (let k = i + 1; k < defCount; k++) {
         const p3 = def[k];
@@ -107,7 +108,7 @@ function generateBestMatch(priority: Priority, maxDiversity: Diversity, def: IPl
           const classDiff = getClassDiff4(p1, p2, p3, p4);
           if (classDiff > maxClassDiff || !validatePriority(p1, p2, p3, p4, priorityPlayers)) continue;
 
-          bestScore = checkProposal(p1, p2, p3, p4, priority, maxDiversity, bestScore, bestProposal);
+          bestScore = checkProposal(p1, p2, p3, p4, mmRanges, bestScore, bestProposal);
         }
       }
     }
@@ -128,11 +129,11 @@ function validatePriority(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer, pr
   return true;
 }
 
-function getClassDiff4(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer): number {
-  const class1 = Math.max(2, p1.class === -1 ? getClass(p1.elo) : p1.class);
-  const class2 = Math.max(2, p2.class === -1 ? getClass(p2.elo) : p2.class);
-  const class3 = Math.max(2, p3.class === -1 ? getClass(p3.elo) : p3.class);
-  const class4 = Math.max(2, p4.class === -1 ? getClass(p4.elo) : p4.class);
+function getClassDiff4(def1: IPlayer, att1: IPlayer, def2: IPlayer, att2: IPlayer): number {
+  const class1 = Math.min(3, Math.max(1, def1.class[0] === -1 ? getClass(def1.elo[0]) : def1.class[0])); // da 1 a 3 perchè le altre classi sono virtuali
+  const class2 = Math.min(3, Math.max(1, att1.class[1] === -1 ? getClass(att1.elo[1]) : att1.class[1]));
+  const class3 = Math.min(3, Math.max(1, def2.class[0] === -1 ? getClass(def2.elo[0]) : def2.class[0]));
+  const class4 = Math.min(3, Math.max(1, att2.class[1] === -1 ? getClass(att2.elo[1]) : att2.class[1]));
 
   const maxClass = Math.max(class1, class2, class3, class4);
   const minClass = Math.min(class1, class2, class3, class4);
@@ -140,35 +141,35 @@ function getClassDiff4(p1: IPlayer, p2: IPlayer, p3: IPlayer, p4: IPlayer): numb
   return maxClass - minClass;
 }
 
-function getClassDiff2(p1: IPlayer, p2: IPlayer): number {
-  const class1 = Math.max(2, p1.class === -1 ? getClass(p1.elo) : p1.class);
-  const class2 = Math.max(2, p2.class === -1 ? getClass(p2.elo) : p2.class);
+function getClassDiff2(def: IPlayer, att: IPlayer): number {
+  const class1 = Math.min(3, Math.max(1, def.class[0] === -1 ? getClass(def.elo[0]) : def.class[0]));
+  const class2 = Math.min(3, Math.max(1, att.class[1] === -1 ? getClass(att.elo[1]) : att.class[1]));
   return Math.abs(class1 - class2);
 }
 
-function checkProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, priority: Priority, diversity: Diversity, bestScore: number, proposal: IMatchProposal): number {
+function checkProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, mmRanges: MatchmakingRanges, bestScore: number, proposal: IMatchProposal): number {
   // MATCH ELO DIFFERENCE SCORE
-  const teamAElo = (defA.elo + attA.elo) / 2; // il / 2 può essere tolgo se usiamo la somma
-  const teamBElo = (defB.elo + attB.elo) / 2;
+  const teamAElo = (defA.elo[0] + attA.elo[1]) / 2; // il / 2 può essere tolgo se usiamo la somma
+  const teamBElo = (defB.elo[0] + attB.elo[1]) / 2;
   const matchEloDiff = Math.abs(teamAElo - teamBElo);
   const matchEloDiffNormalized = 1 - Math.min(1, matchEloDiff / MaxEloDiff);
   const matchBalanceScore = matchEloDiffNormalized * config.matchBalanceWeight;
 
   // AVERAGE MATCHES PLAYED
-  const localMaxMatches = Math.max(defA.matches, attA.matches, defB.matches, attB.matches);
-  const teamMatchessNormalized = 1 - ((localMaxMatches - priority.min) / priority.diff);
+  const localMaxMatches = Math.max(defA.matches[0], attA.matches[1], defB.matches[0], attB.matches[1]);
+  const teamMatchessNormalized = 1 - ((localMaxMatches - mmRanges.priority.min) / mmRanges.priority.diff);
   const priorityScore = teamMatchessNormalized * config.priorityWeight;
 
   // PLAYERS ELO DIFFERENCE SCORE
-  const playersMaxElo = Math.max(defA.elo, attA.elo, defB.elo, attB.elo);
-  const playersMinElo = Math.min(defA.elo, attA.elo, defB.elo, attB.elo);
+  const playersMaxElo = Math.max(defA.elo[0], attA.elo[1], defB.elo[0], attB.elo[1]);
+  const playersMinElo = Math.min(defA.elo[0], attA.elo[1], defB.elo[0], attB.elo[1]);
   const playersEloDiff = playersMaxElo - playersMinElo;
   const playersEloDiffNormalized = 1 - Math.min(1, playersEloDiff / MaxEloDiff);
   const playersDifferenceScore = playersEloDiffNormalized * config.playersDifferenceWeight;
 
   // DIVERSITY SCORE
-  const diversityTeamScore = getTeammateDiversity(defA.id, attA.id, defB.id, attB.id, diversity) * config.diversityTeamWeight;
-  const diversityOpponentScore = getOpponentDiversity(defA.id, attA.id, defB.id, attB.id, diversity.opponent) * config.diversityOpponentWeight;
+  const diversityTeamScore = getTeammateDiversity(defA, attA, defB, attB, mmRanges.diversityTeam) * config.diversityTeamWeight;
+  const diversityOpponentScore = getOpponentDiversity(defA, attA, defB, attB, mmRanges.diversityOpponent) * config.diversityOpponentWeight;
 
   const randomness = Math.random() * config.randomness;
 
@@ -196,146 +197,94 @@ function checkProposal(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlaye
   return bestScore;
 }
 
-function getPriority(players: IPlayer[]): Priority {
-  const matches = players.map(x => x.matches);
+function getPriorityAndDiversity(players: IPlayer[], maxClassDiff: number): MatchmakingRanges {
+  const matches = players.map(x => x.role === 0 ? Math.max(...x.matches) : (x.role === -1 ? x.matches[0] : x.matches[1]));
   const max = Math.max(...matches, 1);
   const min = Math.min(...matches);
-  return { max, min, diff: max - min };
+  const priority = { min, max, diff: max - min } satisfies MatchmakingRange;
+
+  const diversityTeam: MatchmakingRangesArray = [{}, {}];
+  const diversityOpponent: MatchmakingRangesArray = [{}, {}];
+
+  for (const player of players) {
+    for (const p2 of players) {
+      if (player === p2) continue;
+
+      if (player.role <= 0 && p2.role >= 0 && getClassDiff2(player, p2) <= maxClassDiff) {
+        diversityTeam[0][player.id] ??= { min: Infinity, max: -Infinity, diff: 0 };
+        diversityOpponent[0][player.id] ??= { min: Infinity, max: -Infinity, diff: 0 };
+
+        diversityTeam[0][player.id].min = Math.min(diversityTeam[0][player.id].min, player.teammatesStats[0][p2.id]?.matches ?? 0);
+        diversityTeam[0][player.id].max = Math.max(diversityTeam[0][player.id].max, player.teammatesStats[0][p2.id]?.matches ?? 0);
+
+        diversityOpponent[0][player.id].min = Math.min(diversityOpponent[0][player.id].min, player.opponentsStats[0][p2.id]?.matches ?? 0);
+        diversityOpponent[0][player.id].max = Math.max(diversityOpponent[0][player.id].max, player.opponentsStats[0][p2.id]?.matches ?? 0);
+      }
+
+      if (player.role >= 0 && p2.role <= 0 && getClassDiff2(p2, player) <= maxClassDiff) { // conta solo se il giocatore contro gioca in quel ruolo
+        diversityTeam[1][player.id] ??= { min: Infinity, max: -Infinity, diff: 0 };
+        diversityOpponent[1][player.id] ??= { min: Infinity, max: -Infinity, diff: 0 };
+
+        diversityTeam[1][player.id].min = Math.min(diversityTeam[1][player.id].min, player.teammatesStats[1][p2.id]?.matches ?? 0);
+        diversityTeam[1][player.id].max = Math.max(diversityTeam[1][player.id].max, player.teammatesStats[1][p2.id]?.matches ?? 0);
+
+        diversityOpponent[1][player.id].min = Math.min(diversityOpponent[1][player.id].min, player.opponentsStats[1][p2.id]?.matches ?? 0);
+        diversityOpponent[1][player.id].max = Math.max(diversityOpponent[1][player.id].max, player.opponentsStats[1][p2.id]?.matches ?? 0);
+      }
+    }
+
+    if (diversityTeam[0][player.id]) {
+      diversityTeam[0][player.id].diff = diversityTeam[0][player.id].max - diversityTeam[0][player.id].min;
+    }
+
+    if (diversityTeam[1][player.id]) {
+      diversityTeam[1][player.id].diff = diversityTeam[1][player.id].max - diversityTeam[1][player.id].min;
+    }
+
+    if (diversityOpponent[0][player.id]) {
+      diversityOpponent[0][player.id].diff = diversityOpponent[0][player.id].max - diversityOpponent[0][player.id].min;
+    }
+
+    if (diversityOpponent[1][player.id]) {
+      diversityOpponent[1][player.id].diff = diversityOpponent[1][player.id].max - diversityOpponent[1][player.id].min;
+    }
+  }
+
+  return { priority, diversityTeam, diversityOpponent };
 }
 
-// this can be precompute once
-function getDiversity(playersId: number[], maxClassDiff: number): Diversity {
-  const matches = getAllMatches();
-  const teamDef: DiversityMap = {};
-  const teamAtt: DiversityMap = {};
-  const opponent: DiversityMap = {};
+function getTeammateDiversity(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, ranges: MatchmakingRangesArray): number {
+  const defADiv = ranges[0][defA.id];
+  const defAScore = 1 - ((defA.teammatesStats[0][attA.id]?.matches ?? 0) - defADiv.min) / Math.max(defADiv.diff, 1);
 
-  for (const p1 of playersId) {
-    (teamDef[p1] as Record<number, number>) ??= {};
-    (teamAtt[p1] as Record<number, number>) ??= {};
-    (opponent[p1] as Record<number, number>) ??= {};
+  const attADiv = ranges[1][attA.id];
+  const attAScore = 1 - ((attA.teammatesStats[1][defA.id]?.matches ?? 0) - attADiv.min) / Math.max(attADiv.diff, 1);
 
-    for (const p2 of playersId) { // TODO ottimizzare passando reference anzichè id nella func
-      if (p1 === p2 || getClassDiff2(getPlayerById(p1)!, getPlayerById(p2)!) > maxClassDiff) continue;
+  const defBDiv = ranges[0][defB.id];
+  const defBScore = 1 - ((defB.teammatesStats[0][attB.id]?.matches ?? 0) - defBDiv.min) / Math.max(defBDiv.diff, 1);
 
-      teamDef[p1][p2] = 0;
-      teamAtt[p1][p2] = 0;
-      opponent[p1][p2] = 0;
-    }
-  }
-
-  for (const match of matches) {
-    const teamA = match.teamA;
-    const teamB = match.teamB;
-
-    if (teamDef[teamA.defence]) {
-      if (teamDef[teamA.defence][teamA.attack] !== undefined) teamDef[teamA.defence][teamA.attack]++; // valorizziamo solo quelli in queue
-      if (opponent[teamA.defence][teamB.defence] !== undefined) opponent[teamA.defence][teamB.defence]++;
-      if (opponent[teamA.defence][teamB.attack] !== undefined) opponent[teamA.defence][teamB.attack]++;
-    }
-
-    if (teamDef[teamB.defence]) {
-      if (teamDef[teamB.defence][teamB.attack] !== undefined) teamDef[teamB.defence][teamB.attack]++;
-      if (opponent[teamB.defence][teamA.defence] !== undefined) opponent[teamB.defence][teamA.defence]++;
-      if (opponent[teamB.defence][teamA.attack] !== undefined) opponent[teamB.defence][teamA.attack]++;
-    }
-
-    if (teamAtt[teamA.attack]) {
-      if (teamAtt[teamA.attack][teamA.defence] !== undefined) teamAtt[teamA.attack][teamA.defence]++;
-      if (opponent[teamA.attack][teamB.defence] !== undefined) opponent[teamA.attack][teamB.defence]++;
-      if (opponent[teamA.attack][teamB.attack] !== undefined) opponent[teamA.attack][teamB.attack]++;
-    }
-
-    if (teamAtt[teamB.attack]) {
-      if (teamAtt[teamB.attack][teamB.defence] !== undefined) teamAtt[teamB.attack][teamB.defence]++;
-      if (opponent[teamB.attack][teamA.defence] !== undefined) opponent[teamB.attack][teamA.defence]++;
-      if (opponent[teamB.attack][teamA.attack] !== undefined) opponent[teamB.attack][teamA.attack]++;
-    }
-  }
-
-  // COUNT
-
-  for (const p1 of playersId) {
-    // DEFENCE
-
-    const p1Def = teamDef[p1];
-    let minDef = Infinity, maxDef = -Infinity;
-
-    for (const p2 in p1Def) {
-      const p2Def = p1Def[p2];
-      minDef = Math.min(minDef, p2Def);
-      maxDef = Math.max(maxDef, p2Def);
-    }
-
-    p1Def.min = minDef === Infinity ? 0 : minDef;
-    p1Def.max = Math.max(maxDef, 1);
-    p1Def.diff = p1Def.max - p1Def.min;
-
-    // ATTACK
-
-    const p1Att = teamAtt[p1];
-    let minAtt = Infinity, maxAtt = -Infinity;
-
-    for (const p2 in p1Att) {
-      const p2Att = p1Att[p2];
-      minAtt = Math.min(minAtt, p2Att);
-      maxAtt = Math.max(maxAtt, p2Att);
-    }
-
-    p1Att.min = minAtt === Infinity ? 0 : minAtt;
-    p1Att.max = Math.max(maxAtt, 1);
-    p1Att.diff = p1Att.max - p1Att.min;
-
-    // OPPONENT
-    const p1Opp = opponent[p1];
-    let minOpp = Infinity, maxOpp = -Infinity;
-
-    for (const p2 in p1Opp) {
-      const p2Opp = p1Opp[p2];
-      minOpp = Math.min(minOpp, p2Opp);
-      maxOpp = Math.max(maxOpp, p2Opp);
-    }
-
-    p1Opp.min = minOpp === Infinity ? 0 : minOpp;
-    p1Opp.max = Math.max(maxOpp, 1);
-    p1Opp.diff = p1Opp.max - p1Opp.min;
-  }
-
-  return {
-    teamDef,
-    teamAtt,
-    opponent
-  };
-}
-
-function getTeammateDiversity(defA: number, attA: number, defB: number, attB: number, diversity: Diversity): number {
-  const defADiv = diversity.teamDef[defA];
-  const defAScore = defADiv ? 1 - (defADiv[attA] - defADiv.min) / defADiv.diff : 1;
-
-  const attADiv = diversity.teamAtt[attA];
-  const attAScore = attADiv ? 1 - (attADiv[defA] - attADiv.min) / attADiv.diff : 1;
-
-  const defBDiv = diversity.teamDef[defB];
-  const defBScore = defBDiv ? 1 - (defBDiv[attB] - defBDiv.min) / defBDiv.diff : 1;
-
-  const attBDiv = diversity.teamAtt[attB];
-  const attBScore = attBDiv ? 1 - (attBDiv[defB] - attBDiv.min) / attBDiv.diff : 1;
+  const attBDiv = ranges[1][attB.id];
+  const attBScore = 1 - ((attB.teammatesStats[1][defB.id]?.matches ?? 0) - attBDiv.min) / Math.max(attBDiv.diff, 1);
 
   return (defAScore + attAScore + defBScore + attBScore) / 4;
 }
 
-function getOpponentDiversity(defA: number, attA: number, defB: number, attB: number, opponent: DiversityMap): number {
-  const defAOpp = opponent[defA];
-  const defAScore = defAOpp ? 1 - (defAOpp[defB] + defAOpp[attB] - defAOpp.min * 2) / (defAOpp.diff * 2) : 1;
+function getOpponentDiversity(defA: IPlayer, attA: IPlayer, defB: IPlayer, attB: IPlayer, ranges: MatchmakingRangesArray): number {
+  const defAOpp = defA.opponentsStats[0];
+  const defAOppRange = ranges[0][defA.id];
+  const defAScore = 1 - ((defAOpp[defB.id]?.matches ?? 0) + (defAOpp[attB.id]?.matches ?? 0) - defAOppRange.min * 2) / (Math.max(defAOppRange.diff, 1) * 2);
 
-  const attAOpp = opponent[attA];
-  const attAScore = attAOpp ? 1 - (attAOpp[defB] + attAOpp[attB] - attAOpp.min * 2) / (attAOpp.diff * 2) : 1;
+  const attAOpp = attA.opponentsStats[1];
+  const attAOppRange = ranges[1][attA.id];
+  const attAScore = 1 - ((attAOpp[defB.id]?.matches ?? 0) + (attAOpp[attB.id]?.matches ?? 0) - attAOppRange.min * 2) / (Math.max(attAOppRange.diff, 1) * 2);
 
-  const defBOpp = opponent[defB];
-  const defBScore = defBOpp ? 1 - (defBOpp[defA] + defBOpp[attA] - defBOpp.min * 2) / (defBOpp.diff * 2) : 1;
+  const defBOpp = defB.opponentsStats[0];
+  const defBOppRange = ranges[0][defB.id];
+  const defBScore = 1 - ((defBOpp[defA.id]?.matches ?? 0) + (defBOpp[attA.id]?.matches ?? 0) - defBOppRange.min * 2) / (Math.max(defBOppRange.diff, 1) * 2);
 
-  const attBOpp = opponent[attB];
-  const attBScore = attBOpp ? 1 - (attBOpp[defA] + attBOpp[attA] - attBOpp.min * 2) / (attBOpp.diff * 2) : 1;
+  const attBOpp = attB.opponentsStats[1];
+  const attBOppRange = ranges[1][attB.id];
+  const attBScore = 1 - ((attBOpp[defA.id]?.matches ?? 0) + (attBOpp[attA.id]?.matches ?? 0) - attBOppRange.min * 2) / (Math.max(attBOppRange.diff, 1) * 2);
 
   return (defAScore + attAScore + defBScore + attBScore) / 4;
 }

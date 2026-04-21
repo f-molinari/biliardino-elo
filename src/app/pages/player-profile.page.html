@@ -1,0 +1,369 @@
+<div id="player-profile" class="space-y-5 md:space-y-6">
+
+  <!-- ── Page Header ─────────────────────────────────────── -->
+  {{pageHeader}}
+
+  <!-- ── Hero Card ───────────────────────────────────────── -->
+  <article id="hero-card" class="glass-card rounded-2xl p-5 md:p-6 lg:p-10 relative overflow-visible"
+    style="border-color:{{playerColor}}33; box-shadow:0 0 40px {{playerColor}}15,var(--shadow-card)"
+    aria-label="Profilo giocatore">
+
+    <!-- Rank watermark -->
+    <span
+      class="pointer-events-none select-none absolute inset-0 flex items-start justify-end font-display overflow-hidden"
+      style="z-index:0;background:linear-gradient(180deg,{{playerColor}}15 0%,{{playerColor}}08 40%,transparent 85%);
+             -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+             font-size:clamp(18rem,40vw,32rem);line-height:0.8;padding:0.02em"
+      aria-hidden="true">#{{rankWatermark}}</span>
+
+    <div class="relative z-10 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 md:gap-10 items-center">
+
+      <!-- Left: identity + quick stats -->
+      <div class="flex flex-col items-center md:items-start gap-4">
+
+        <!-- Avatar + Identity -->
+        <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start w-full">
+          <div class="hero-avatar relative shrink-0 -mt-3 sm:-mt-4 z-20">
+            {{avatar}}
+            {{rankBadge}}
+          </div>
+          <div class="flex-1 min-w-0 text-center sm:text-left">
+            <h2 class="font-display tracking-wide mb-3"
+              style="font-size:clamp(1.75rem,5vw,2.5rem);color:var(--color-text-primary);line-height:1">
+              {{playerName}}
+            </h2>
+
+            <!-- Rank badges -->
+            <div class="flex flex-wrap gap-2 justify-center sm:justify-start" role="list" aria-label="Classifiche">
+              <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
+                style="background:var(--color-gold-subtle);border:1px solid var(--glass-border-gold)">
+                <span class="font-ui text-xs uppercase tracking-widest"
+                  style="color:var(--color-gold-dim)">GENERALE</span>
+                <span class="font-display text-lg leading-none" style="color:var(--color-gold)">#{{rankGeneral}}</span>
+              </div>
+              <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
+                style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2)">
+                <span class="font-ui text-xs uppercase tracking-widest" style="color:rgba(96,165,250,0.6)">DIFESA</span>
+                <span class="font-display text-lg leading-none" style="color:#60A5FA">#{{rankDefence}}</span>
+              </div>
+              <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
+                style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2)">
+                <span class="font-ui text-xs uppercase tracking-widest"
+                  style="color:rgba(248,113,113,0.6)">ATTACCO</span>
+                <span class="font-display text-lg leading-none" style="color:#F87171">#{{rankAttack}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Radar chart -->
+      <div class="flex flex-col items-center justify-center shrink-0 pt-2 md:pt-0 md:pl-6 md:border-l"
+        style="border-color:var(--glass-border)" aria-label="Radar statistiche">
+        <p class="font-ui text-[10px] uppercase tracking-widest mb-3" style="color:var(--color-text-muted)">RADAR STATS
+        </p>
+        <div style="width:240px;height:240px;position:relative">
+          <canvas id="radar-chart" aria-label="Grafico radar statistiche"></canvas>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ── ELO Chart ───────────────────────────────────────── -->
+  <!-- ── Statistiche ───────────────────────────────────── -->
+  <section class="glass-card rounded-xl overflow-hidden" aria-label="Statistiche">
+    <button id="stats-collapse-btn" type="button" class="flex items-center gap-2 w-full px-4 py-3.5 text-left"
+      aria-expanded="true" aria-controls="stats-body">
+      <i data-lucide="chart-bar" class="w-3.5 h-3.5 shrink-0" style="color:var(--color-gold)" aria-hidden="true"></i>
+      <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">STATISTICHE</span>
+      <i id="stats-chevron" data-lucide="chevron-down"
+        class="w-4 h-4 transition-transform duration-200 ml-auto shrink-0" style="color:var(--color-text-muted)"
+        aria-hidden="true"></i>
+    </button>
+    {{statsSection}}
+  </section>
+
+  <!-- ── ELO Chart ───────────────────────────────────────── -->
+  <section id="chart-section" class="glass-card rounded-xl overflow-hidden" aria-label="Progressione ELO">
+    <div class="flex items-center gap-3 px-4 py-3.5">
+      <button id="chart-collapse-btn" type="button" class="flex items-center gap-2 flex-1 min-w-0 text-left"
+        aria-expanded="true" aria-controls="chart-body">
+        <i data-lucide="trending-up" class="w-3.5 h-3.5 shrink-0" style="color:var(--color-gold)"
+          aria-hidden="true"></i>
+        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">PROGRESSIONE ELO</span>
+        <i id="chart-chevron" data-lucide="chevron-down"
+          class="w-4 h-4 transition-transform duration-200 ml-auto shrink-0" style="color:var(--color-text-muted)"
+          aria-hidden="true"></i>
+      </button>
+      <!-- Role toggle -->
+      <div class="inline-flex gap-0.5 p-0.5 rounded-lg shrink-0"
+        style="background:rgba(255,255,255,0.06);border:1px solid var(--glass-border)" role="group"
+        aria-label="Seleziona ruolo">
+        <button type="button" data-role="0"
+          class="js-chart-role-btn px-3 py-1 rounded-md font-ui text-xs transition-all" style="{{chartBtnDefStyle}}"
+          aria-pressed="{{chartRole}}">DIF</button>
+        <button type="button" data-role="1"
+          class="js-chart-role-btn px-3 py-1 rounded-md font-ui text-xs transition-all" style="{{chartBtnAttStyle}}"
+          aria-pressed="false">ATT</button>
+      </div>
+    </div>
+    <div id="chart-body" style="border-top:1px solid var(--glass-border)">
+      <div class="relative p-4" style="height:280px">
+        <canvas id="elo-chart" aria-label="Grafico andamento ELO"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Record (collapsible) ─────────────────────────────── -->
+  <section class="glass-card rounded-xl overflow-hidden" aria-label="Record">
+    <!-- Collapsible header -->
+    <div class="flex items-center gap-3 px-4 py-3.5">
+      <button id="record-collapse-btn" type="button" class="flex items-center gap-2 flex-1 min-w-0 text-left"
+        aria-expanded="true" aria-controls="record-body">
+        <i data-lucide="medal" class="w-3.5 h-3.5 shrink-0" style="color:var(--color-gold)" aria-hidden="true"></i>
+        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">RECORD</span>
+        <i id="record-chevron" data-lucide="chevron-down"
+          class="w-4 h-4 transition-transform duration-200 ml-auto shrink-0" style="color:var(--color-text-muted)"
+          aria-hidden="true"></i>
+      </button>
+      <!-- Shared filter -->
+      <div class="inline-flex gap-0.5 p-0.5 rounded-lg shrink-0"
+        style="background:rgba(255,255,255,0.06);border:1px solid var(--glass-border)" role="group"
+        aria-label="Filtra per ruolo">
+        <button type="button" data-filter="2"
+          class="js-record-shared-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:linear-gradient(135deg,var(--color-gold),var(--color-gold-secondary));color:var(--color-bg-deep);font-weight:700"
+          aria-pressed="true">TOTALE</button>
+        <button type="button" data-filter="0"
+          class="js-record-shared-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:rgba(255,255,255,0.06);color:var(--color-text-muted)" aria-pressed="false">DIF</button>
+        <button type="button" data-filter="1"
+          class="js-record-shared-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:rgba(255,255,255,0.06);color:var(--color-text-muted)" aria-pressed="false">ATT</button>
+      </div>
+    </div>
+
+    <!-- Collapsible body -->
+    <div id="record-body" style="border-top:1px solid var(--glass-border)">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 px-4 pb-4 pt-2">
+
+        <!-- Compagni -->
+        <div aria-label="Compagni e avversari highlights">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide="users" class="w-3.5 h-3.5" style="color:var(--color-gold)" aria-hidden="true"></i>
+            <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">COMPAGNI</span>
+          </div>
+          <div id="companion-cards-grid" class="grid grid-cols-2 gap-3">
+            {{companionCards}}
+          </div>
+        </div>
+
+        <!-- Partite -->
+        <div aria-label="Record partite">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide="trophy" class="w-3.5 h-3.5" style="color:var(--color-gold)" aria-hidden="true"></i>
+            <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">PARTITE</span>
+          </div>
+          <div id="record-matches-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {{bestWorstMatches}}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Compagni ──────────────────────────────────────────── -->
+  <section class="glass-card rounded-xl overflow-hidden" aria-label="Compagni">
+    <!-- Collapsible header -->
+    <div class="flex items-center gap-3 px-4 py-3.5">
+      <button id="tm-collapse-btn" type="button" class="flex items-center gap-2 flex-1 min-w-0 text-left"
+        aria-expanded="true" aria-controls="tm-body">
+        <i data-lucide="user-plus" class="w-3.5 h-3.5 shrink-0" style="color:var(--color-gold)" aria-hidden="true"></i>
+        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">COMPAGNI</span>
+        <span class="font-body text-[10px] px-1.5 py-0.5 rounded"
+          style="color:var(--color-text-muted);background:rgba(255,255,255,0.05)">{{tmCount}}</span>
+        <i id="tm-chevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200 ml-auto shrink-0"
+          style="color:var(--color-text-muted)" aria-hidden="true"></i>
+      </button>
+      <!-- Role filter -->
+      <div class="inline-flex gap-0.5 p-0.5 rounded-lg shrink-0"
+        style="background:rgba(255,255,255,0.06);border:1px solid var(--glass-border)" role="group"
+        aria-label="Filtra per ruolo">
+        <button type="button" data-filter="2"
+          class="js-tm-relation-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:linear-gradient(135deg,var(--color-gold),var(--color-gold-secondary));color:var(--color-bg-deep);font-weight:700"
+          aria-pressed="true">TOTALE</button>
+        <button type="button" data-filter="0"
+          class="js-tm-relation-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:rgba(255,255,255,0.06);color:var(--color-text-muted)" aria-pressed="false">DIF</button>
+        <button type="button" data-filter="1"
+          class="js-tm-relation-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:rgba(255,255,255,0.06);color:var(--color-text-muted)" aria-pressed="false">ATT</button>
+      </div>
+    </div>
+
+    <!-- Collapsible body -->
+    <div id="tm-body" style="border-top:1px solid var(--glass-border)">
+      <div class="flex items-center justify-start px-4 pt-1 pb-3 flex-wrap gap-2">
+        <!-- Sort buttons -->
+        <div class="inline-flex gap-1 flex-wrap" role="group" aria-label="Ordina compagni">
+          <button type="button" data-tm-sort="name" class="px-2.5 py-1 rounded-md font-ui text-[10px] transition-all"
+            style="background:transparent;color:var(--color-text-muted);border:1px solid var(--glass-border)">
+            NOME<span class="sort-arrow ml-0.5">↕</span>
+          </button>
+          <button type="button" data-tm-sort="matches" class="px-2.5 py-1 rounded-md font-ui text-[10px] transition-all"
+            style="background:transparent;color:var(--color-text-muted);border:1px solid var(--glass-border)">
+            MATCH<span class="sort-arrow ml-0.5">↕</span>
+          </button>
+          <button type="button" data-tm-sort="winrate" class="px-2.5 py-1 rounded-md font-ui text-[10px] transition-all"
+            style="background:transparent;color:var(--color-text-muted);border:1px solid var(--glass-border)">
+            WIN%<span class="sort-arrow ml-0.5">↕</span>
+          </button>
+          <button type="button" data-tm-sort="delta" class="px-2.5 py-1 rounded-md font-ui text-[10px] transition-all"
+            style="background:rgba(255,215,0,0.1);color:var(--color-gold);border:1px solid rgba(255,215,0,0.3)">
+            ΔELO<span class="sort-arrow ml-0.5">↓</span>
+          </button>
+        </div>
+      </div>
+      <!-- Card grid -->
+      <div id="tm-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 px-4 pb-4">
+        {{teammateTbody}}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Avversari ───────────────────────────────────────────── -->
+  <section class="glass-card rounded-xl overflow-hidden" aria-label="Avversari">
+    <!-- Collapsible header -->
+    <div class="flex items-center gap-3 px-4 py-3.5">
+      <button id="opp-collapse-btn" type="button" class="flex items-center gap-2 flex-1 min-w-0 text-left"
+        aria-expanded="true" aria-controls="opp-body">
+        <i data-lucide="swords" class="w-3.5 h-3.5 shrink-0" style="color:var(--color-gold)" aria-hidden="true"></i>
+        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">AVVERSARI</span>
+        <span class="font-body text-[10px] px-1.5 py-0.5 rounded"
+          style="color:var(--color-text-muted);background:rgba(255,255,255,0.05)">{{oppCount}}</span>
+        <i id="opp-chevron" data-lucide="chevron-down"
+          class="w-4 h-4 transition-transform duration-200 ml-auto shrink-0" style="color:var(--color-text-muted)"
+          aria-hidden="true"></i>
+      </button>
+      <!-- Role filter -->
+      <div class="inline-flex gap-0.5 p-0.5 rounded-lg shrink-0"
+        style="background:rgba(255,255,255,0.06);border:1px solid var(--glass-border)" role="group"
+        aria-label="Filtra per ruolo">
+        <button type="button" data-filter="2"
+          class="js-opp-relation-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:linear-gradient(135deg,var(--color-gold),var(--color-gold-secondary));color:var(--color-bg-deep);font-weight:700"
+          aria-pressed="true">TOTALE</button>
+        <button type="button" data-filter="0"
+          class="js-opp-relation-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:rgba(255,255,255,0.06);color:var(--color-text-muted)" aria-pressed="false">DIF</button>
+        <button type="button" data-filter="1"
+          class="js-opp-relation-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:rgba(255,255,255,0.06);color:var(--color-text-muted)" aria-pressed="false">ATT</button>
+      </div>
+    </div>
+
+    <!-- Collapsible body -->
+    <div id="opp-body" style="border-top:1px solid var(--glass-border)">
+      <div class="flex items-center justify-start px-4 pt-1 pb-3 flex-wrap gap-2">
+        <!-- Sort buttons -->
+        <div class="inline-flex gap-1 flex-wrap" role="group" aria-label="Ordina avversari">
+          <button type="button" data-opp-sort="name" class="px-2.5 py-1 rounded-md font-ui text-[10px] transition-all"
+            style="background:transparent;color:var(--color-text-muted);border:1px solid var(--glass-border)">
+            NOME<span class="sort-arrow ml-0.5">↕</span>
+          </button>
+          <button type="button" data-opp-sort="matches"
+            class="px-2.5 py-1 rounded-md font-ui text-[10px] transition-all"
+            style="background:transparent;color:var(--color-text-muted);border:1px solid var(--glass-border)">
+            MATCH<span class="sort-arrow ml-0.5">↕</span>
+          </button>
+          <button type="button" data-opp-sort="winrate"
+            class="px-2.5 py-1 rounded-md font-ui text-[10px] transition-all"
+            style="background:transparent;color:var(--color-text-muted);border:1px solid var(--glass-border)">
+            WIN%<span class="sort-arrow ml-0.5">↕</span>
+          </button>
+          <button type="button" data-opp-sort="delta" class="px-2.5 py-1 rounded-md font-ui text-[10px] transition-all"
+            style="background:rgba(255,215,0,0.1);color:var(--color-gold);border:1px solid rgba(255,215,0,0.3)">
+            ΔELO<span class="sort-arrow ml-0.5">↓</span>
+          </button>
+        </div>
+      </div>
+      <!-- Card grid -->
+      <div id="opp-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 px-4 pb-4">
+        {{opponentTbody}}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Storico Partite ──────────────────────────────────── -->
+  <section class="glass-card rounded-xl overflow-hidden" aria-label="Storico partite">
+    <div class="flex items-center gap-3 px-4 py-3.5">
+      <button id="history-collapse-btn" type="button" class="flex items-center gap-2 flex-1 min-w-0 text-left"
+        aria-expanded="true" aria-controls="history-body">
+        <i data-lucide="scroll-text" class="w-3.5 h-3.5 shrink-0" style="color:var(--color-gold)"
+          aria-hidden="true"></i>
+        <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold)">STORICO PARTITE</span>
+        <span id="history-match-count" class="font-body text-[10px] px-1.5 py-0.5 rounded"
+          style="color:var(--color-text-muted);background:rgba(255,255,255,0.05)">{{matchCount}}</span>
+        <i id="history-chevron" data-lucide="chevron-down"
+          class="w-4 h-4 transition-transform duration-200 ml-auto shrink-0" style="color:var(--color-text-muted)"
+          aria-hidden="true"></i>
+      </button>
+      <!-- History role filter -->
+      <div class="inline-flex gap-0.5 p-0.5 rounded-lg shrink-0"
+        style="background:rgba(255,255,255,0.06);border:1px solid var(--glass-border)" role="group"
+        aria-label="Filtra storico per ruolo">
+        <button type="button" data-filter="2"
+          class="js-history-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:linear-gradient(135deg,var(--color-gold),var(--color-gold-secondary));color:var(--color-bg-deep);font-weight:700"
+          aria-pressed="true">TUTTO</button>
+        <button type="button" data-filter="0"
+          class="js-history-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:transparent;color:var(--color-text-muted)" aria-pressed="false">DIF</button>
+        <button type="button" data-filter="1"
+          class="js-history-filter px-3 py-1 rounded-md font-ui text-xs transition-all"
+          style="background:transparent;color:var(--color-text-muted)" aria-pressed="false">ATT</button>
+      </div>
+    </div>
+
+    <div id="history-body" style="border-top:1px solid var(--glass-border)">
+
+      <!-- Desktop table -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-left" style="border-collapse:separate;border-spacing:0"
+          aria-label="Tabella storico partite">
+          <thead>
+            <tr style="background:rgba(255,255,255,0.04)">
+              <th scope="col" class="font-ui text-[10px] uppercase tracking-widest px-3 py-2"
+                style="color:var(--color-text-muted)">ELO Δ</th>
+              <th scope="col" class="font-ui text-[10px] uppercase tracking-widest px-3 py-2 text-center"
+                style="color:var(--color-text-muted)">RUOLO</th>
+              <th scope="col" class="font-ui text-[10px] uppercase tracking-widest px-3 py-2 text-center"
+                style="color:var(--color-text-muted)">ELO TEAM</th>
+              <th scope="col" class="font-ui text-[10px] uppercase tracking-widest px-3 py-2"
+                style="color:var(--color-text-muted)">COMPAGNO</th>
+              <th scope="col" class="font-ui text-[10px] uppercase tracking-widest px-3 py-2 text-center"
+                style="color:var(--color-text-muted)">RISULTATO</th>
+              <th scope="col" class="font-ui text-[10px] uppercase tracking-widest px-3 py-2"
+                style="color:var(--color-text-muted)">AVVERSARI</th>
+              <th scope="col" class="font-ui text-[10px] uppercase tracking-widest px-3 py-2 text-center"
+                style="color:var(--color-text-muted)">ELO OPP</th>
+            </tr>
+          </thead>
+          <tbody id="history-desktop-tbody">
+            {{tableRows}}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile cards -->
+      <div id="history-mobile-cards" class="md:hidden flex flex-col gap-2 px-4 pb-4">
+        {{mobileMatchCards}}
+      </div>
+
+    </div><!-- /history-body -->
+  </section>
+
+
+</div>

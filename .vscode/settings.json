@@ -10,7 +10,7 @@
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
   "[typescript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
   "[css]": {
     "editor.defaultFormatter": "vscode.css-language-features"
@@ -25,5 +25,8 @@
   "workbench.colorCustomizations": {
     "titleBar.activeBackground": "#FFFF00",
     "titleBar.activeForeground": "#1E1E1E"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "npx vite": true
   }
 }

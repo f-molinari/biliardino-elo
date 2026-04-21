@@ -1,20 +1,48 @@
-import { initNotification } from './notifications';
+import { refreshIcons } from './app/icons';
+
+declare const __SW_VERSION__: string;
 
 const baseUrl = import.meta.env.BASE_URL || '/';
 
-navigator.serviceWorker.register(`${baseUrl}sw.js`, { scope: baseUrl })
-  .then((registration) => {
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('pwa-version');
+  if (el) el.textContent = __SW_VERSION__;
+  initOfflineBanner();
+});
 
+function initOfflineBanner(): void {
+  const show = (): void => {
+    document.body.classList.add('is-offline');
+    refreshIcons();
+  };
+  const hide = (): void => {
+    document.body.classList.remove('is-offline');
+  };
+
+  window.addEventListener('offline', show);
+  window.addEventListener('online', hide);
+  if (!navigator.onLine) show();
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register(`${baseUrl}sw.js`, { scope: baseUrl })
+    .then(async () => {
+      await navigator.serviceWorker.ready;
+      updateSWVersionInFooter();
+      window.dispatchEvent(new CustomEvent('pwa:sw-ready'));
+    })
+    .catch((error) => {
+      console.warn(`Error registering service worker:\n${error}.`);
+      window.dispatchEvent(new CustomEvent('pwa:sw-error'));
+    });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
     updateSWVersionInFooter();
-
-    initNotification();
-  })
-  .catch((error) => {
-    console.warn(`Error registering service worker:\n${error}.`);
+    window.dispatchEvent(new CustomEvent('pwa:sw-ready'));
   });
-
-
-
+} else {
+  window.dispatchEvent(new CustomEvent('pwa:sw-unsupported'));
+}
 
 /**
  * Requests the current SW version and updates the footer.
@@ -24,7 +52,8 @@ async function updateSWVersionInFooter(): Promise<void> {
     const versionElement = document.getElementById('pwa-version');
     if (!versionElement) return;
 
-    const controller = navigator.serviceWorker.controller;
+    const registration = await navigator.serviceWorker.ready;
+    const controller = navigator.serviceWorker.controller || registration.active;
     if (!controller) {
       versionElement.textContent = 'offline';
       return;

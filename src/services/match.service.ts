@@ -1,11 +1,14 @@
 import { computeMatch } from '@/utils/update-elo.util';
 import { IMatch, IMatchDTO, ITeam } from '../models/match.interface';
+import { computeRanks, updateAllPlayerRecords } from './player.service';
 import { fetchMatches, parseMatchDTO } from './repository.service';
 
 let matches: IMatch[] = [];
 
-await loadAllMatches();
-computeMatches();
+try {
+  await loadAllMatches();
+  computeMatches();
+} catch (e) { console.error('[match.service] Failed to load matches from Firebase:', e); }
 
 export async function loadAllMatches(): Promise<void> {
   matches = await fetchMatches();
@@ -24,7 +27,7 @@ export function addMatch(teamA: ITeam, teamB: ITeam, score: [number, number]): I
 
   matches.push(match);
 
-  computeMatch(match);
+  computeMatch(match, true);
 
   return matchDTO;
 }
@@ -44,7 +47,12 @@ export function editMatch(id: number, teamA: ITeam, teamB: ITeam, score: [number
 }
 
 function computeMatches(): void {
+  console.time('computeMatches');
   for (const match of matches) {
-    computeMatch(match);
+    computeMatch(match, false);
   }
+
+  updateAllPlayerRecords();
+  computeRanks();
+  console.timeEnd('computeMatches');
 }

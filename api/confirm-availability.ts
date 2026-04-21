@@ -1,99 +1,92 @@
-import { list } from '@vercel/blob';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { withSecurityMiddleware } from './_middleware.js';
-import { redis } from './_redisClient.js';
-import { sanitizeLogOutput, validateMatchTime, validatePlayerId } from './_validation.js';
-
-interface SubscriptionData {
-  subscription?: {
-    endpoint: string;
-    [key: string]: any;
-  };
-  playerId?: number;
-  [key: string]: any;
-}
-
-async function findMatchingSubscription(playerId: number, incomingSubscription?: any): Promise<{ exists: boolean; matched: boolean }> {
-  const { blobs } = await list({
-    prefix: `${playerId}-subs/`,
-    token: process.env.BLOB_READ_WRITE_TOKEN
-  });
-
-  if (!blobs.length) return { exists: false, matched: false };
-
-  if (!incomingSubscription) {
-    return { exists: true, matched: false };
-  }
-
-  const subscriptions = await Promise.all(
-    blobs.map(async (b) => {
-      const response = await fetch(b.url);
-      return await response.json() as SubscriptionData;
-    })
-  );
-
-  const incomingEndpoint = incomingSubscription?.endpoint;
-  const matched = subscriptions.some((item) => item?.subscription?.endpoint === incomingEndpoint);
-
-  return { exists: true, matched };
-}
+import { lobbyChannel } from './_realtime.js';
+import { prefixed, redisRaw } from './_redisClient.js';
+import { sanitizeLogOutput, validatePlayerId } from './_validation.js';
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
   setCorsHeaders(res);
 
   if (handleCorsPreFlight(req, res)) return res;
+
+  if (req.method === 'DELETE') {
+    try {
+      const { playerId: rawPlayerId } = req.body as { playerId?: string | number };
+      if (!rawPlayerId) return res.status(400).json({ error: 'Missing playerId' });
+      const playerIdNum = validatePlayerId(rawPlayerId);
+      const field = String(playerIdNum);
+      const pipeline = redisRaw.pipeline();
+      pipeline.hdel(prefixed('availability'), field);
+      pipeline.zrem(prefixed('availability_ts'), field);
+      await pipeline.exec();
+      try {
+        await lobbyChannel().emit('lobby.confirmation_remove', { playerId: playerIdNum, timestamp: Date.now() });
+      } catch (e) {
+        console.warn('Emit cancel event fallito:', (e as Error).message || e);
+      }
+      console.log(`❌ Cancellazione conferma da ${sanitizeLogOutput(String(playerIdNum))}`);
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('Errore cancellazione conferma:', err);
+      return res.status(500).json({ error: 'Errore cancellazione conferma' });
+    }
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { playerId: rawPlayerId, matchTime: rawMatchTime, subscription } = req.body as {
+    const { playerId: rawPlayerId } = req.body as {
       playerId?: string | number;
-      matchTime?: string;
-      subscription?: any;
     };
 
-    if (!rawPlayerId || !rawMatchTime) {
-      return res.status(400).json({ error: 'Missing playerId or matchTime' });
+    if (!rawPlayerId) {
+      return res.status(400).json({ error: 'Missing playerId' });
     }
 
     // Valida e sanitizza input per prevenire injection
     const playerIdNum = validatePlayerId(rawPlayerId);
-    const matchTime = validateMatchTime(rawMatchTime);
 
-    let parsedSubscription = subscription;
-    if (typeof subscription === 'string') {
+    const availabilityKey = 'availability';
+    const field = String(playerIdNum);
+    const confirmedAt = new Date().toISOString();
+    const valueObj = { playerId: playerIdNum, confirmedAt };
+    const ts = Math.floor(Date.now() / 1000);
+
+    // Pipeline unico: hset + zadd + hlen + ttl(lobby) — 1 solo HTTP request verso Upstash
+    const pipeline = redisRaw.pipeline();
+
+    pipeline.hset(prefixed(availabilityKey), { [field]: JSON.stringify(valueObj) });
+    pipeline.zadd(prefixed('availability_ts'), { score: ts, member: field });
+    pipeline.hlen(prefixed(availabilityKey));
+    pipeline.ttl(prefixed('lobby')); // legge TTL lobby nello stesso batch
+
+    const [hsetResult, zaddResult, availabilityCount, lobbyTtl] = await pipeline.exec() as [unknown, unknown, number, number];
+    // hsetResult e zaddResult non sono usati, ma restano per mantenere l'allineamento con il pipeline.
+    const count = availabilityCount;
+
+    // Se la lobby è attiva, allinea il TTL delle chiavi availability in un secondo pipeline
+    if (lobbyTtl > 0) {
       try {
-        parsedSubscription = JSON.parse(subscription);
-      } catch {
-        parsedSubscription = null;
+        const expirePipeline = redisRaw.pipeline();
+        expirePipeline.expire(prefixed(availabilityKey), lobbyTtl);
+        expirePipeline.expire(prefixed('availability_ts'), lobbyTtl);
+        await expirePipeline.exec();
+      } catch (e) {
+        console.warn('Impossibile impostare TTL availability:', (e as Error).message || e);
       }
     }
 
-    // const { exists, matched } = await findMatchingSubscription(playerIdNum, parsedSubscription);
-    // if (!exists) {
-    //   return res.status(401).json({ error: 'Nessuna subscription associata a questo utente' });
-    // }
-    // if (!matched) {
-    //   return res.status(401).json({ error: 'Subscription non valida per questo utente' });
-    // }
+    // Emetti evento per aggiornamenti realtime (non critico, fuori dal pipeline)
+    try {
+      await lobbyChannel().emit('lobby.confirmation_add', { playerId: playerIdNum, timestamp: Date.now() });
+    } catch (e) {
+      console.warn('Emit availability event fallito:', (e as Error).message || e);
+    }
 
-    const key = `availability:${matchTime}:${playerIdNum}`;
-
-    await redis.set(key, {
-      playerId: playerIdNum,
-      matchTime,
-      confirmedAt: new Date().toISOString(),
-      subscription: parsedSubscription
-    }, {
-      ex: 1800 // Expire dopo 30 minuti
-    });
-
-    const keys = await redis.keys(`availability:${matchTime}:*`);
-    const count = keys.length;
-
-    console.log(`✅ Conferma da ${sanitizeLogOutput(String(playerIdNum))} per match ${sanitizeLogOutput(matchTime)} (totale: ${count})`);
+    console.log(`✅ Conferma da ${sanitizeLogOutput(String(playerIdNum))} (totale: ${count})`);
 
     return res.status(200).json({ ok: true, count });
   } catch (err) {

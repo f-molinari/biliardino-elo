@@ -245,6 +245,22 @@
   }
 }
 
+/* When verified, show green check badge overriding the active dot */
+.verified::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #10b981;
+  border-radius: 50%;
+  bottom: 0;
+  right: 0;
+  border: 2px solid #10b981;
+  box-shadow: 0 0 0 2px white;
+  z-index: 3;
+  opacity: 1;
+}
+
 /* State: inactive (red indicator) */
 .inactive {
   .userAvatar {

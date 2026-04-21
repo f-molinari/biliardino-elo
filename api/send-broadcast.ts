@@ -5,8 +5,9 @@ import { withAuth } from './_auth.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
 import { combineMiddlewares, withSecurityMiddleware } from './_middleware.js';
 import { getRandomMessage } from './_randomMessage.js';
+import { lobbyChannel } from './_realtime.js';
 import { redis } from './_redisClient.js';
-import { sanitizeLogOutput, validateMatchTime, validateString } from './_validation.js';
+import { sanitizeLogOutput, validateString } from './_validation.js';
 
 // Verifica configurazione
 if (!process.env.VITE_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
@@ -41,13 +42,11 @@ interface NotificationAction {
  *
  * POST /api/send-broadcast
  * Body: {
- *   matchTime: string (es: "14:30"),
  *   title?: string (opzionale),
  *   body?: string (opzionale)
  * }
  */
 async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
-
   setCorsHeaders(res);
   if (handleCorsPreFlight(req, res)) return res;
 
@@ -57,23 +56,21 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
 
   try {
     const {
-      matchTime: rawMatchTime,
       title: rawTitle,
       subtitle: rawSubtitle,
-      body: rawBody
-    } = req.body as {
-      matchTime?: string;
-      title?: string;
-      subtitle?: string;
-      body?: string;
-    };
+      body: rawBody,
+      match: rawMatch,
+      durationSeconds: rawDurationSeconds
+    } = req.body;
 
-    if (!rawMatchTime) {
-      return res.status(400).json({ error: 'matchTime è obbligatorio' });
-    }
+    // Lobby TTL: optional override, must be between 60 s and 24 h. Default: 5400 s (90 min)
+    const LOBBY_TTL_DEFAULT = 5400;
+    const parsedDuration = rawDurationSeconds !== undefined ? parseInt(String(rawDurationSeconds), 10) : NaN;
+    const lobbyTtl = (!isNaN(parsedDuration) && parsedDuration >= 60 && parsedDuration <= 86400)
+      ? parsedDuration
+      : LOBBY_TTL_DEFAULT;
 
-    // Valida e sanitizza input
-    const matchTime = validateMatchTime(rawMatchTime);
+    // Valida e sanitizza input (se mancante, sarà usata la chiave 'default')
     const customTitle = rawTitle ? validateString(rawTitle, 'title', 100) : undefined;
     const customBody = rawBody ? validateString(rawBody, 'body', 500) : undefined;
 
@@ -81,8 +78,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       console.error('BLOB_READ_WRITE_TOKEN non configurato');
       return res.status(500).json({
-        error: 'Configurazione server incompleta',
-        details: 'BLOB_READ_WRITE_TOKEN mancante'
+        error: 'Configurazione server incompleta'
       });
     }
 
@@ -119,7 +115,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
     }
 
     const url = process.env.BASE_URL || '.';
-    const matchDate = new Date(matchTime).toLocaleTimeString('it-IT', { hour: '2-digit' });
+
     // Invia tutte le notifiche in parallelo
     const results = await Promise.allSettled(
       validSubscriptions.map(async (data) => {
@@ -128,7 +124,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
         const title = customTitle || _randomMessage.title;
         const body = customBody || _randomMessage.body;
         const actions: NotificationAction[] = [
-          { action: 'cancel', title: 'Ignora', url: `${url}/confirm.html?c=false&time=${matchTime}` }
+          { action: 'cancel', title: 'Ignora', url: `${url}/lobby` }
         ];
 
         await webpush.sendNotification(
@@ -138,16 +134,16 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
             notification: {
               title,
               body,
-              navigate: `${url}/confirm.html?time=${matchTime}`,
-              tag: `match`,
+              navigate: `${url}/lobby`,
+              tag: `lobby`,
               requireInteraction: true,
-              icon: '/icons/icon-192.jpg',
-              badge: '/icons/icon-192.jpg',
+              icon: '/icons/icon-192.png',
+              badge: '/icons/icon-192.png',
               app_badge: '0',
               actions: actions?.map(a => ({
                 action: a.action,
                 title: a.title,
-                navigate: a.url,
+                navigate: a.url
               }))
             }
           }),
@@ -156,7 +152,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
               'Content-Type': 'application/notification+json'
             },
             urgency: 'high',
-            TTL: 86400
+            TTL: lobbyTtl
           }
         );
 
@@ -176,25 +172,33 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       }
     });
 
-    console.log(`✅ Broadcast completato: ${sent}/${validSubscriptions.length} inviati (Match: ${matchTime})`);
+    console.log(`✅ Broadcast completato: ${sent}/${validSubscriptions.length} inviati`);
 
     // Crea registry lobby in Redis
     try {
-      const lobbyKey = `lobby:${matchTime}`;
+      const lobbyKey = `lobby`;
       await redis.set(
         lobbyKey,
         {
           createdAt: new Date().toISOString(),
-          matchTime,
           notificationsSent: sent,
-          active: true
+          active: true,
+          durationSeconds: lobbyTtl,
+          ...(rawMatch ? { match: rawMatch } : {})
         },
         {
-          ex: 1800 // TTL 30 minuti (1800 secondi)
+          ex: lobbyTtl
         }
       );
 
-      console.log(`🏁 Lobby registry creata: ${lobbyKey} (TTL: 30 min)`);
+      console.log(`🏁 Lobby registry creata: ${lobbyKey} (TTL: ${lobbyTtl}s / ${Math.round(lobbyTtl / 60)} min)`);
+
+      // Emit event for real-time updates
+      try {
+        await lobbyChannel().emit('lobby.created', { timestamp: Date.now() });
+      } catch (pubErr) {
+        console.warn('Emit lobby-created event fallito:', (pubErr as Error).message || pubErr);
+      }
     } catch (err) {
       console.error('❌ Errore creazione lobby registry:', err);
       // Non bloccare la risposta se fallisce
@@ -204,8 +208,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       sent,
       failed,
       total: validSubscriptions.length,
-      matchTime,
-      lobbyActive: true
+      lobbyActive: true,
+      durationSeconds: lobbyTtl
     });
   } catch (err) {
     console.error('Errore broadcast:', err);
@@ -220,6 +224,6 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
 // Applica auth + security middleware
 export default combineMiddlewares(
   handler,
-  (h) => withAuth(h, 'admin'),
-  (h) => withSecurityMiddleware(h, { timeout: 60000 }) // 60s per notifiche multiple
+  h => withAuth(h, 'admin'),
+  h => withSecurityMiddleware(h, { timeout: 60000 }) // 60s per notifiche multiple
 );

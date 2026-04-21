@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { IMessage } from '../src/models/message.interface.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
-import { redis } from './_redisClient.js';
+import { lobbyChannel } from './_realtime.js';
+import { prefixed, redisRaw } from './_redisClient.js';
 import { validatePlayerId, validateString } from './_validation.js';
 
 interface SendMessageBody {
-  matchTime: string;
   playerId: number;
   playerName: string;
   fishType: string;
@@ -29,22 +29,19 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
   }
 
   try {
-    const { matchTime, playerId, playerName, fishType, text, sentAt, timestamp } = req.body as SendMessageBody;
+    const { playerId, playerName, fishType, text, sentAt, timestamp } = req.body as SendMessageBody;
 
     // Validazioni
-    if (!validateString(matchTime, 1, 20)) {
-      return res.status(400).json({ error: 'Invalid matchTime' });
-    }
     if (!validatePlayerId(playerId)) {
       return res.status(400).json({ error: 'Invalid playerId' });
     }
-    if (!validateString(playerName, 1, 100)) {
+    if (!validateString(playerName, 'playerName', 100)) {
       return res.status(400).json({ error: 'Invalid playerName' });
     }
-    if (!validateString(fishType, 1, 20)) {
+    if (!validateString(fishType, 'fishType', 20)) {
       return res.status(400).json({ error: 'Invalid fishType' });
     }
-    if (!validateString(text, 1, 500)) {
+    if (!validateString(text, 'text', 500)) {
       return res.status(400).json({ error: 'Message must be 1-500 chars' });
     }
 
@@ -65,17 +62,19 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelR
       timestamp
     };
 
-    // Chiave Redis per i messaggi di questa partita
-    const messagesKey = `messages:${matchTime}`;
-    const messageDataKey = `message:${messageId}`;
+    // Pipeline: set + lpush + expire in 1 HTTP request to Upstash
+    const pipeline = redisRaw.pipeline();
+    pipeline.set(prefixed(`message:${messageId}`), JSON.stringify(message), { ex: 5400 });
+    pipeline.lpush(prefixed('messages'), messageId);
+    pipeline.expire(prefixed('messages'), 5400);
+    await pipeline.exec();
 
-    // Salva il messaggio
-    await redis.set(messageDataKey, JSON.stringify(message), { ex: 240 }); // TTL 4 minuti
-    await redis.lpush(messagesKey, messageId); // Aggiungi a lista
-    await redis.expire(messagesKey, 240); // TTL 4 minuti per la lista
-
-    // Incrementa counter per questa partita
-    await redis.incr(`message-count:${matchTime}`);
+    // Emit event for real-time updates
+    try {
+      await lobbyChannel().emit('lobby.message', { playerId, timestamp: Date.now() });
+    } catch (e) {
+      console.warn('Emit message event fallito:', (e as Error).message || e);
+    }
 
     return res.status(201).json(message);
   } catch (error) {
