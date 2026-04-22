@@ -23,53 +23,61 @@
     </button>
     <!-- Watermark removed -->
 
-    <div class="relative z-10 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 md:gap-10 items-center px-8 md:px-16">
-
-      <!-- Left: identity + quick stats -->
-      <div class="flex flex-col items-center md:items-start gap-4">
-
-        <!-- Avatar + Identity -->
-        <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start w-full">
-          <div class="hero-avatar relative shrink-0 -mt-3 sm:-mt-4 z-20">
-            {{avatar}}
-            {{rankBadge}}
+    <div class="relative z-10 grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-4 md:gap-8 items-center px-4 md:px-10">
+      <!-- Avatar -->
+      <div class="flex flex-col items-center gap-2">
+        <div class="hero-avatar relative shrink-0 -mt-3 sm:-mt-4 z-20">{{avatar}}{{rankBadge}}</div>
+      </div>
+      <!-- Info centrali -->
+      <div class="flex flex-col items-center gap-2 w-full">
+        <h2 class="font-display tracking-wide mb-1 text-center"
+          style="font-size:clamp(1.75rem,5vw,2.5rem);color:var(--color-text-primary);line-height:1">
+          {{playerName}}
+        </h2>
+        <div class="flex flex-wrap gap-2 justify-center" role="list" aria-label="Classifiche">
+          <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
+            style="background:var(--color-gold-subtle);border:1px solid var(--glass-border-gold)">
+            <span class="font-ui text-xs uppercase tracking-widest" style="color:var(--color-gold-dim)">GENERALE</span>
+            <span class="font-display text-lg leading-none" style="color:var(--color-gold)">#{{rankGeneral}}</span>
           </div>
-          <div class="flex-1 min-w-0 text-center sm:text-left">
-            <h2 class="font-display tracking-wide mb-3"
-              style="font-size:clamp(1.75rem,5vw,2.5rem);color:var(--color-text-primary);line-height:1">
-              {{playerName}}
-            </h2>
-
-            <!-- Rank badges -->
-            <div class="flex flex-wrap gap-2 justify-center sm:justify-start" role="list" aria-label="Classifiche">
-              <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
-                style="background:var(--color-gold-subtle);border:1px solid var(--glass-border-gold)">
-                <span class="font-ui text-xs uppercase tracking-widest"
-                  style="color:var(--color-gold-dim)">GENERALE</span>
-                <span class="font-display text-lg leading-none" style="color:var(--color-gold)">#{{rankGeneral}}</span>
-              </div>
-              <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
-                style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2)">
-                <span class="font-ui text-xs uppercase tracking-widest" style="color:rgba(96,165,250,0.6)">DIFESA</span>
-                <span class="font-display text-lg leading-none" style="color:#60A5FA">#{{rankDefence}}</span>
-              </div>
-              <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
-                style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2)">
-                <span class="font-ui text-xs uppercase tracking-widest"
-                  style="color:rgba(248,113,113,0.6)">ATTACCO</span>
-                <span class="font-display text-lg leading-none" style="color:#F87171">#{{rankAttack}}</span>
-              </div>
-            </div>
+          <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
+            style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2)">
+            <span class="font-ui text-xs uppercase tracking-widest" style="color:rgba(96,165,250,0.6)">DIFESA</span>
+            <span class="font-display text-lg leading-none" style="color:#60A5FA">#{{rankDefence}}</span>
+          </div>
+          <div class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg" role="listitem"
+            style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2)">
+            <span class="font-ui text-xs uppercase tracking-widest" style="color:rgba(248,113,113,0.6)">ATTACCO</span>
+            <span class="font-display text-lg leading-none" style="color:#F87171">#{{rankAttack}}</span>
+          </div>
+        </div>
+        <div class="flex gap-2 justify-center mt-1">
+          <div class="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-lg"
+            style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2)">
+            <span class="font-ui text-[10px] uppercase tracking-widest" style="color:rgba(96,165,250,0.6)">RATING
+              DIFESA</span>
+            <span class="font-display text-base leading-none flex items-center gap-1" style="color:#60A5FA">
+              <i data-lucide="shield" class="w-4 h-4" style="color:#60A5FA"></i>
+              {{ratingDef}}
+            </span>
+          </div>
+          <div class="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-lg"
+            style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2)">
+            <span class="font-ui text-[10px] uppercase tracking-widest" style="color:rgba(248,113,113,0.6)">RATING
+              ATTACCO</span>
+            <span class="font-display text-base leading-none flex items-center gap-1" style="color:#F87171">
+              <i data-lucide="sword" class="w-4 h-4" style="color:#F87171"></i>
+              {{ratingAtt}}
+            </span>
           </div>
         </div>
       </div>
-
-      <!-- Right: Radar chart -->
+      <!-- Radar chart -->
       <div class="flex flex-col items-center justify-center shrink-0 pt-2 md:pt-0 md:pl-6 md:border-l"
         style="border-color:var(--glass-border)" aria-label="Radar statistiche">
         <p class="font-ui text-[10px] uppercase tracking-widest mb-3" style="color:var(--color-text-muted)">RADAR STATS
         </p>
-        <div style="width:240px;height:240px;position:relative">
+        <div style="width:220px;height:220px;position:relative">
           <canvas id="radar-chart" aria-label="Grafico radar statistiche"></canvas>
         </div>
       </div>

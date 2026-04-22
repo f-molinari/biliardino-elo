@@ -157,6 +157,15 @@ export default class PlayerProfilePage extends Component {
     this.radarDataDif = this.computeRadarDataForRole(player, 0, radarRanges);
     this.radarDataAtt = this.computeRadarDataForRole(player, 1, radarRanges);
 
+    // Calcolo rating attacco/difesa (media valori radar / 60, arrotondato a 2 decimali)
+    const calcRadarRating = (arr: number[]): number => {
+      if (!arr.length) return 0;
+      const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+      return Math.round((avg / 60) * 100) / 100;
+    };
+    const ratingDef = player.matches[0] >= MatchesToRank ? calcRadarRating(this.radarDataDif) : '-';
+    const ratingAtt = player.matches[1] >= MatchesToRank ? calcRadarRating(this.radarDataAtt) : '-';
+
     // Match history — combined, sorted chronologically, then reversed (newest first)
     const combinedHistory = [...player.history[0], ...player.history[1]]
       .sort((a, b) => a.createdAt - b.createdAt)
@@ -176,13 +185,15 @@ export default class PlayerProfilePage extends Component {
         playerId: id,
         playerClass: player.class[bestRole]
       })),
+      ratingDef,
+      ratingAtt,
       rankBadge: rawHtml(''),
       playerName: player.name.toUpperCase(),
       className: className.toUpperCase(),
-      rankWatermark: rankGeneral > 0 ? String(rankGeneral) : '---',
-      rankGeneral: rankGeneral > 0 ? String(rankGeneral) : '---',
-      rankDefence: (rankDefence > 0 && player.matches[0] >= MatchesToRank) ? String(rankDefence) : '---',
-      rankAttack: (rankAttack > 0 && player.matches[1] >= MatchesToRank) ? String(rankAttack) : '---',
+      rankWatermark: rankGeneral > 0 ? String(rankGeneral) : '-',
+      rankGeneral: rankGeneral > 0 ? String(rankGeneral) : '-',
+      rankDefence: (rankDefence > 0 && player.matches[0] >= MatchesToRank) ? String(rankDefence) : '-',
+      rankAttack: (rankAttack > 0 && player.matches[1] >= MatchesToRank) ? String(rankAttack) : '-',
       // Chart toggle initial styles
       chartBtnDefStyle: bestRole === 0
         ? 'background:linear-gradient(135deg,var(--color-gold),var(--color-gold-secondary));color:var(--color-bg-deep);font-weight:700'
