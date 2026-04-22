@@ -350,7 +350,7 @@ class LeaderboardPage extends Component {
           </h1>
           <p class="font-ui"
              style="font-size:12px; color:rgba(255,255,255,0.5); letter-spacing:0.1em">
-            SEASON 2025–2026 · RANKING UFFICIALE
+            SEASON 2025–2026
           </p>
         </div>
       </div>
