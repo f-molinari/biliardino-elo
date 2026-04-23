@@ -284,11 +284,8 @@ export function updatePlayerRecords(playerId: number, role: number, ranges: Rang
   const player = getPlayerById(playerId);
   if (!player) throw new Error('Player not found when updating records.');
 
-  player.stats[0] = computeStats(player, 0, ranges);
-  player.stats[1] = computeStats(player, 1, ranges);
-
-  player.rating[0] = getRating(player, 0);
-  player.rating[1] = getRating(player, 1);
+  player.stats[role] = computeStats(player, role, ranges);
+  player.rating[role] = getRating(player, role);
 
   const teammatesStats = player.teammatesStats[role];
   for (const idMate in teammatesStats) {

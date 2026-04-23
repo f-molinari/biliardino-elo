@@ -1079,12 +1079,12 @@ class MatchmakingPage extends Component {
     await saveMatch(matchDTO);
     haptics.trigger('success');
 
-    // Clear Redis confirmations
-    try {
-      await this.clearConfirmations();
-    } catch (e) {
-      console.error('Error clearing confirmations:', e);
-    }
+    // // Clear Redis confirmations
+    // try {
+    //   await this.clearConfirmations();
+    // } catch (e) {
+    //   console.error('Error clearing confirmations:', e);
+    // }
 
     // Clear running match
     try {
