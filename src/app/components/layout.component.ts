@@ -5,10 +5,10 @@
  */
 
 import { html, rawHtml } from '../utils/html-template.util';
+import { bottomNav } from './bottom-nav.component';
 import { renderFieldBackground } from './field-background.component';
 import { HeaderComponent } from './header.component';
 import template from './layout.component.html?raw';
-import { bottomNav } from './bottom-nav.component';
 import { mobileDrawer } from './mobile-drawer.component';
 
 declare const __SW_VERSION__: string;
@@ -26,10 +26,7 @@ export class LayoutComponent {
   mount(): void {
     const versionEl = document.getElementById('pwa-version');
     if (versionEl) versionEl.textContent = __SW_VERSION__;
-
     this.header.mount();
-    mobileDrawer.mount();
-    bottomNav.mount();
   }
 
   destroy(): void {

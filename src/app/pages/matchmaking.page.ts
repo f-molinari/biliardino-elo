@@ -1048,6 +1048,8 @@ class MatchmakingPage extends Component {
       status.textContent = complete ? 'PRONTO' : `MIN. ${MIN_PLAYERS}`;
       status.style.color = complete ? '#4ADE80' : 'rgba(255,255,255,0.3)';
     }
+
+    this.refreshPlayerListPanel();
   }
 
   private updateGenerateButton(): void {

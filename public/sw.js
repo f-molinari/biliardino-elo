@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 // Updated automatically by scripts/generate-sw-version.js
-const VERSION = '2.1.2604241316+20260424131324';
+const VERSION = '2.1.2604261435+20260426143233';
 const CACHE_NAME = `calcio-balilla-${VERSION}`;
 
 // self.__WB_MANIFEST è iniettato da vite-plugin-pwa a build time con tutti i chunk Vite
@@ -131,7 +131,7 @@ function staleWhileRevalidate(request) {
     const res = await networkFetch;
     if (res?.ok) {
       const cloned = res.clone();
-      caches.open(CACHE_NAME).then(c => c.put(request, cloned)).catch(() => {});
+      caches.open(CACHE_NAME).then(c => c.put(request, cloned)).catch(() => { });
       return res;
     }
 
@@ -180,7 +180,7 @@ function networkFirst(request) {
       if (res.ok) {
         // Cachea copia fresca (anche se poi updateCache lo rifarà, ma così non perdiamo l'attimo)
         const cloned = res.clone();
-        caches.open(CACHE_NAME).then(c => c.put(request, cloned)).catch(() => {});
+        caches.open(CACHE_NAME).then(c => c.put(request, cloned)).catch(() => { });
       }
       return res; // Restituiamo anche eventuali errori (404, 500) per trasparenza
     }
