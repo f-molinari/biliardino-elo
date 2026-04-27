@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=pgohuqyprktlbcmyqyxc"
+    },
+    "vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com"
+    },
+    "tokensave": {
+      "command": "C:\\Users\\ldenora\\.cargo\\bin\\tokensave.exe",
+      "args": [
+        "serve"
+      ],
+      "type": "stdio",
+      "tools": [
+        "*"
+      ]
+    }
+  }
+}

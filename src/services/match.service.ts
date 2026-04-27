@@ -1,11 +1,15 @@
 import { computeMatch } from '@/utils/update-elo.util';
 import { IMatch, IMatchDTO, ITeam } from '../models/match.interface';
+import { computeEloDayStart, computeRanks, getAllPlayers, getPlayerRanges, updateAllPlayerRecords } from './player.service';
 import { fetchMatches, parseMatchDTO } from './repository.service';
+import { CACHE_HASH_MATCHES_KEY } from './repository.supabase';
 
 let matches: IMatch[] = [];
 
-await loadAllMatches();
-computeMatches();
+try {
+  await loadAllMatches();
+  computeMatches();
+} catch (e) { console.error('[match.service] Failed to load matches from Firebase:', e); }
 
 export async function loadAllMatches(): Promise<void> {
   matches = await fetchMatches();
@@ -24,7 +28,7 @@ export function addMatch(teamA: ITeam, teamB: ITeam, score: [number, number]): I
 
   matches.push(match);
 
-  computeMatch(match);
+  computeMatch(match, true);
 
   return matchDTO;
 }
@@ -44,7 +48,43 @@ export function editMatch(id: number, teamA: ITeam, teamB: ITeam, score: [number
 }
 
 function computeMatches(): void {
+  let computeDayStart = true;
+
   for (const match of matches) {
-    computeMatch(match);
+    if (computeDayStart && isToday(match.createdAt)) {
+      computeRanks('rankAtDayStart');
+      computeEloDayStart();
+      computeDayStart = false;
+    }
+
+    computeMatch(match, false);
   }
+
+  if (computeDayStart) {
+    computeRanks('rankAtDayStart');
+    computeEloDayStart();
+  }
+
+  const ranges = getPlayerRanges();
+  updateAllPlayerRecords(ranges);
+  computeRanks('rank');
+
+  console.log(getAllPlayers());
+}
+
+function isToday(ts: number): boolean {
+  const d = new Date(ts);
+  const now = new Date();
+
+  return (
+    d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate()
+  );
+}
+
+export async function reloadMatchesAndRecompute(): Promise<void> {
+  localStorage.removeItem(CACHE_HASH_MATCHES_KEY);
+  await loadAllMatches();
+  computeMatches();
 }

@@ -1,0 +1,1562 @@
+/**
+ * LobbyPage -- Real-time match lobby with team display, countdown timer,
+ * chat panel, and fish aquarium.
+ *
+ * Route: /lobby
+ * Dynamically imported by the router.
+ *
+ * Ports business logic from confirm.view.ts into the Component-based SPA
+ * architecture (vanilla TS, no React).
+ */
+
+import { API_BASE_URL } from '@/config/env.config';
+import type { IConfirmationWithFish, ILobbyState } from '@/models/lobby.interface';
+import type { IRunningMatchDTO } from '@/models/match.interface';
+import type { IMessage } from '@/models/message.interface';
+import type { IPlayer } from '@/models/player.interface';
+import { CursorService, type RemoteCursor } from '@/services/cursor.service';
+import { LobbyService } from '@/services/lobby.service';
+import { MessageService } from '@/services/message.service';
+import { getPlayerById } from '@/services/player.service';
+import { getDisplayElo } from '@/utils/get-display-elo.util';
+import haptics from '@/utils/haptics.util';
+import gsap from 'gsap';
+import { BroadcastKickComponent } from '../components/broadcast-kick.component';
+import { Component } from '../components/component.base';
+import { getInitials, renderPlayerAvatar } from '../components/player-avatar.component';
+import { refreshIcons } from '../icons';
+
+// ── Constants ────────────────────────────────────────────────────
+
+const LOBBY_TTL_DEFAULT = 5400; // 90 min
+const CHAT_MAX_LENGTH = 50;
+const FISH_TYPES = ['Squalo', 'Barracuda', 'Tonno', 'Spigola', 'Sogliola'] as const;
+const FISH_EMOJI = ['🐟', '🐠', '🐡', '🦈', '🐙', '🦑', '🐳', '🐬', '🦐', '🦭', '🪼'];
+const LABEL_COLORS = [
+  '#1e90ff', '#e74c3c', '#8e44ad', '#e67e22', '#2ecc71',
+  '#f39c12', '#16a085', '#c0392b', '#2980b9', '#d35400'
+];
+
+const CLASS_COLORS: Record<number, string> = {
+  0: '#FFD700',
+  1: '#4A90D9',
+  2: '#27AE60',
+  3: '#C0C0C0',
+  4: '#8B7D6B'
+};
+
+function getClassColor(playerClass: number): string {
+  return CLASS_COLORS[playerClass] ?? '#8B7D6B';
+}
+
+// ── Fish movement descriptor ─────────────────────────────────────
+
+interface FishMovement {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  speed: number;
+  element: HTMLElement;
+  sprite: HTMLElement | null;
+}
+
+// ── Page Component ───────────────────────────────────────────────
+
+class LobbyPage extends Component {
+  // State
+  private lobbyData: IRunningMatchDTO | null = null;
+  private lobbyExists = false;
+  private players: Map<number, IPlayer> = new Map();
+  private messages: IMessage[] = [];
+  private confirmed: Set<number> = new Set();
+  private countdownTotal = LOBBY_TTL_DEFAULT;
+  private countdownSeconds = LOBBY_TTL_DEFAULT;
+
+  // Intervals / animation
+  private countdownInterval: ReturnType<typeof setInterval> | null = null;
+  private animFrameId: number | null = null;
+  private lastMessageTimestamp = 0;
+
+  // Fish tracking
+  private fishMap = new Map<number, HTMLElement>();
+  private fishMovement = new Map<number, FishMovement>();
+  private myFishControlled = false;
+  private remoteFishControlled = new Set<number>();
+  private cursorListener: ((cursors: RemoteCursor[]) => void) | null = null;
+  private aquariumMouseMove: ((e: MouseEvent) => void) | null = null;
+  private aquariumMouseLeave: (() => void) | null = null;
+
+  // Current player
+  private myPlayerId: number | null = null;
+
+  private confirmKick: BroadcastKickComponent | null = null;
+
+  // LobbyService listener references
+  private lobbyStateListener: ((state: ILobbyState) => void) | null = null;
+  private chatMessageListener: ((msg: IMessage) => void) | null = null;
+  // Last confirmations for fish sync
+  private lastConfirmations: IConfirmationWithFish[] = [];
+  // True once the first real server response has been applied
+  private serverResponded = false;
+
+  // ── Render ───────────────────────────────────────────────────
+
+  override async render(): Promise<string> {
+    this.myPlayerId = Number(localStorage.getItem('biliardino_player_id')) || null;
+
+    // Don't await server — render immediately with whatever cached state exists.
+    // The actual data will arrive via LobbyService polling/SSE and trigger
+    // onLobbyStateChange() which updates the DOM.
+    if (LobbyService.isInitialized()) {
+      const cached = LobbyService.getState();
+      this.applyLobbyState(cached, { fromServer: false });
+      this.resolvePlayers();
+    }
+
+    return `
+      <div class="space-y-4" id="lobby-page">
+        ${this.renderHeader()}
+        <div id="lobby-main">
+          ${this.renderMain()}
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Main content layout (confirmed vs unconfirmed) ───────────
+
+  /** Resolve IPlayer objects for team members from the local cache. */
+  private resolvePlayers(): void {
+    for (const id of this.getLobbyPlayerIds()) {
+      if (!this.players.has(id)) {
+        const p = getPlayerById(id);
+        if (p) this.players.set(id, p);
+      }
+    }
+  }
+
+  private renderMain(): string {
+    if (!this.canAccessLobbyPanels) {
+      return `
+        <div class="space-y-4">
+          <div id="teams-section">
+            ${this.renderTeams()}
+          </div>
+        </div>
+      `;
+    }
+
+    const color = this.getCountdownColor();
+
+    // Stable layout for participants: only labels/lock states change.
+    return `
+      <div class="space-y-3">
+
+        <div id="confirmed-ttl-bar"
+             class="flex items-center justify-between px-4 py-2.5 rounded-xl"
+             style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08)">
+          <div class="flex items-center gap-2">
+            <i data-lucide="timer" style="width:13px;height:13px;color:${color}"></i>
+            <span class="font-ui"
+                  style="font-size:11px; color:rgba(255,255,255,0.4); letter-spacing:0.1em">
+              ${this.isMyPresenceConfirmed ? 'LOBBY SCADE TRA' : 'CONFERMA LA PRESENZA'}
+            </span>
+          </div>
+          <span id="confirmed-countdown-text" class="font-display"
+                style="font-size:16px; color:${color}; letter-spacing:0.08em; transition:color 0.5s">
+            ${this.formatCountdown(this.countdownSeconds)}
+          </span>
+        </div>
+
+        <div class="flex flex-col lg:grid lg:grid-cols-[1fr_320px] gap-4 md:gap-5">
+          <div class="space-y-4">
+            <div id="teams-section">
+              ${this.renderTeams()}
+            </div>
+            ${this.renderAquarium(true)}
+            ${this.renderAbandonButton()}
+          </div>
+          ${this.renderChat()}
+        </div>
+
+      </div>
+    `;
+  }
+
+  // ── Re-render main content on state transitions ──────────────
+
+  private rerenderMain(): void {
+    const mainEl = this.$id('lobby-main');
+    if (!mainEl) return;
+
+    // Clear fish state — aquarium DOM will be recreated
+    this.fishMap.clear();
+    this.fishMovement.clear();
+
+    mainEl.innerHTML = this.renderMain();
+    refreshIcons();
+
+    this.bindChatEvents();
+    this.bindConfirmButton();
+
+    this.bindConfirmKick();
+    this.bindAbandonButton();
+    this.bindCursorTracking();
+
+    // Re-spawn aquarium decorations (new DOM nodes)
+    this.spawnBubbles();
+    this.spawnGodRays();
+
+    gsap.from('#lobby-aquarium', { opacity: 0, y: 10, duration: 0.35, ease: 'power2.out' });
+    gsap.from('#lobby-chat', { opacity: 0, y: 10, duration: 0.35, ease: 'power2.out', delay: 0.08 });
+    gsap.from('.team-card', { opacity: 0, y: 15, stagger: 0.08, duration: 0.3, ease: 'power2.out', delay: 0.05 });
+  }
+
+  // ── Mount / Destroy ──────────────────────────────────────────
+
+  override mount(): void {
+    console.log('[LobbyPage] mount() called');
+    refreshIcons();
+
+    // Start countdown
+    this.countdownInterval = setInterval(() => this.tickCountdown(), 1000);
+
+    // Subscribe to LobbyService state changes for real-time updates
+    this.lobbyStateListener = (state: ILobbyState) => this.onLobbyStateChange(state);
+    LobbyService.onStateChange(this.lobbyStateListener);
+
+    // Subscribe to instant chat broadcast delivery
+    this.chatMessageListener = (msg: IMessage) => {
+      // Dedup: ignora se già presente (ottimistico o duplicato)
+      if (this.messages.some(m => m.id === msg.id)) return;
+      // Ignora se è il nostro ottimistico non ancora confermato (stesso sentAt+player)
+      const hasOptimistic = this.messages.some(
+        m => m.playerId === msg.playerId && m.sentAt === msg.sentAt && m.id.startsWith('optimistic-')
+      );
+      if (hasOptimistic) return;
+      if (msg.sentAt <= this.lastMessageTimestamp && this.messages.some(m => m.sentAt === msg.sentAt && m.playerId === msg.playerId)) return;
+
+      this.lastMessageTimestamp = Math.max(this.lastMessageTimestamp, msg.sentAt);
+      this.messages.push(msg);
+      this.appendMessage(msg);
+    };
+    LobbyService.onChatMessage(this.chatMessageListener);
+
+    // Kick off server fetch (non-blocking). Ensure we unblock the initial UI once
+    // the first acquire() cycle completes, even if no state-change event was emitted.
+    LobbyService.acquire()
+      .then((state) => {
+        if (!this.serverResponded && LobbyService.hasFetchedFromServer()) {
+          this.applyLobbyState(state);
+          this.rerenderMain();
+          this.syncFish(this.lastConfirmations);
+        } else if (!this.serverResponded && !LobbyService.hasFetchedFromServer()) {
+          // Fetch failed: retry once after a short delay
+          setTimeout(() => {
+            LobbyService.refresh().then((retryState) => {
+              if (!this.serverResponded) {
+                this.applyLobbyState(retryState);
+                this.rerenderMain();
+                this.syncFish(this.lastConfirmations);
+              }
+            }).catch(() => {
+              if (!this.serverResponded) {
+                this.serverResponded = true;
+                this.rerenderMain();
+              }
+            });
+          }, 2000);
+        }
+      })
+      .catch(() => {
+        // Fail-open: stop showing loading forever and allow fallback admin UI.
+        if (!this.serverResponded) {
+          this.serverResponded = true;
+          this.rerenderMain();
+        }
+      });
+
+    // Start fish animation
+    this.startFishAnimation();
+
+    // Render initial fish from data fetched during render()
+    if (this.lastConfirmations.length > 0) {
+      this.syncFish(this.lastConfirmations);
+    }
+
+    // Render initial chat messages
+    if (this.messages.length > 0) {
+      this.renderMessages();
+    }
+
+    // Spawn aquarium decorations
+    this.spawnBubbles();
+    this.spawnGodRays();
+
+    // Bind events
+    this.bindChatEvents();
+    this.bindConfirmButton();
+
+    this.bindConfirmKick();
+    this.bindAbandonButton();
+    this.bindCursorTracking();
+
+    // GSAP entrance animations
+    gsap.from('#lobby-header', {
+      opacity: 0,
+      y: -20,
+      duration: 0.4,
+      ease: 'power2.out'
+    });
+
+    gsap.from('.team-card', {
+      opacity: 0,
+      y: 20,
+      stagger: 0.1,
+      duration: 0.4,
+      ease: 'power2.out',
+      delay: 0.1
+    });
+
+    gsap.from('#lobby-chat', {
+      opacity: 0,
+      x: 20,
+      duration: 0.4,
+      ease: 'power2.out',
+      delay: 0.15
+    });
+
+    gsap.from('#lobby-aquarium', {
+      opacity: 0,
+      y: 20,
+      duration: 0.5,
+      ease: 'power2.out',
+      delay: 0.2
+    });
+  }
+
+  override destroy(): void {
+    // Unsubscribe from LobbyService (don't destroy — it's global)
+    if (this.lobbyStateListener) {
+      LobbyService.offStateChange(this.lobbyStateListener);
+      this.lobbyStateListener = null;
+    }
+    if (this.chatMessageListener) {
+      LobbyService.offChatMessage(this.chatMessageListener);
+      this.chatMessageListener = null;
+    }
+    LobbyService.release();
+
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+    if (this.animFrameId !== null) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+    this.confirmKick?.destroy();
+    CursorService.leave();
+  }
+
+  // ── Section renderers ────────────────────────────────────────
+
+  private renderHeader(): string {
+    return `
+      <div id="lobby-header" class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 md:gap-3 min-w-0">
+          <i data-lucide="users" class="text-(--color-gold) shrink-0"
+             style="width:26px;height:26px"></i>
+          <div class="min-w-0">
+            <h1 class="text-white font-display"
+                style="font-size:clamp(26px,6vw,42px); letter-spacing:0.12em; line-height:1">
+              LOBBY
+            </h1>
+            <p class="font-ui truncate"
+               style="font-size:11px; color:rgba(255,255,255,0.5); letter-spacing:0.1em">
+              CONFERMA LA TUA PRESENZA
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderTeams(): string {
+    if (!this.lobbyData) {
+      if (!this.serverResponded) {
+        // Still waiting for first server response — show loading card
+        return `
+          <div class="team-card glass-card rounded-xl p-6 text-center">
+            <i data-lucide="loader" class="mx-auto mb-3 animate-spin"
+               style="width:28px;height:28px;color:var(--color-gold)"></i>
+            <p class="font-display text-xl text-(--color-gold) mb-2"
+               style="letter-spacing:0.12em">
+              CARICAMENTO LOBBY
+            </p>
+            <p class="font-body text-sm" style="color:rgba(255,255,255,0.4)">
+              Connessione al server in corso…
+            </p>
+            <div class="mt-3">
+              <span class="inline-block px-3 py-1 rounded-full font-ui"
+                    style="font-size:10px; letter-spacing:0.1em; color:var(--color-gold);
+                           background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.2)">
+                IN ATTESA DEL SERVER
+              </span>
+            </div>
+          </div>
+        `;
+      }
+      if (this.lobbyExists) {
+        const alreadyConfirmed = this.myPlayerId ? this.confirmed.has(this.myPlayerId) : false;
+        if (!alreadyConfirmed) return this.renderConfirmKickCard();
+        // Already confirmed — no card needed, panels are visible via canAccessLobbyPanels
+        return '';
+      }
+      return `
+        <div class="team-card glass-card rounded-xl p-6 text-center">
+          <i data-lucide="users" class="mx-auto mb-3"
+             style="width:32px;height:32px;color:rgba(255,255,255,0.3)"></i>
+          <p class="font-display text-xl text-(--color-gold) mb-2"
+             style="letter-spacing:0.12em">
+            NESSUNA LOBBY ATTIVA
+          </p>
+          <p class="font-body text-sm" style="color:rgba(255,255,255,0.4)">
+            Aspetta la notifica per giocare!
+          </p>
+        </div>
+      `;
+    }
+
+    // Active lobby exists, but this user is not one of the 4 players.
+    // Do not show match composition/details in this view.
+    if (!this.isLobbyParticipant()) {
+      return `
+        <div class="team-card glass-card rounded-xl p-6 text-center">
+          <i data-lucide="shield" class="mx-auto mb-3"
+             style="width:30px;height:30px;color:rgba(255,255,255,0.35)"></i>
+          <p class="font-display text-xl text-(--color-gold) mb-2"
+             style="letter-spacing:0.12em">
+            LOBBY ATTIVA
+          </p>
+          <p class="font-body text-sm" style="color:rgba(255,255,255,0.45)">
+            Dettagli partita nascosti in questa schermata.
+          </p>
+        </div>
+      `;
+    }
+
+    const { teamA, teamB } = this.lobbyData;
+
+    return `
+      <div class="rounded-xl overflow-hidden"
+           style="background:rgba(15,42,32,0.85); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px)">
+
+        <!-- Match header -->
+        <div class="px-4 md:px-5 py-3 flex items-center justify-between"
+             style="background:rgba(10,25,18,0.8); border-bottom:1px solid rgba(255,215,0,0.2)">
+          <span class="font-ui" style="font-size:12px; color:var(--color-gold); letter-spacing:0.1em">
+            2v2 &middot; STANDARD MODE
+          </span>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="clock" style="width:11px;height:11px;color:var(--color-gold)"></i>
+            <span class="hidden sm:block font-ui"
+                  style="font-size:11px; color:rgba(255,255,255,0.5)">
+              SEASON MATCH
+            </span>
+          </div>
+        </div>
+
+        <!-- Teams layout -->
+        <div class="flex flex-col md:grid md:grid-cols-[1fr_64px_1fr]">
+
+          <!-- Team Red -->
+          <div class="team-card p-4 md:p-5"
+               style="border-bottom:1px solid rgba(229,62,62,0.15)">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-3 h-3 rounded-full" style="background:var(--color-team-red, #E53E3E)"></div>
+              <span class="font-display"
+                    style="font-size:17px; color:var(--color-team-red, #E53E3E); letter-spacing:0.15em">
+                TEAM ROSSO
+              </span>
+            </div>
+            <div class="space-y-2">
+              ${this.renderPlayerRow(teamA.defence, 'DIF', '#E53E3E')}
+              ${this.renderPlayerRow(teamA.attack, 'ATT', '#E53E3E')}
+            </div>
+          </div>
+
+          <!-- VS center -->
+          <div class="flex md:flex-col items-center justify-center py-2 md:py-0"
+               style="border-bottom:1px solid rgba(49,130,206,0.15)">
+            <div class="font-display flex items-center justify-center"
+                 style="font-size:24px; color:var(--color-gold); letter-spacing:0.1em">
+              VS
+            </div>
+          </div>
+
+          <!-- ROSSIlue -->
+          <div class="team-card p-4 md:p-5">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-3 h-3 rounded-full" style="background:var(--color-team-blue, #3182CE)"></div>
+              <span class="font-display"
+                    style="font-size:17px; color:var(--color-team-blue, #3182CE); letter-spacing:0.15em">
+                ROSSILU
+              </span>
+            </div>
+            <div class="space-y-2">
+              ${this.renderPlayerRow(teamB.defence, 'DIF', '#3182CE')}
+              ${this.renderPlayerRow(teamB.attack, 'ATT', '#3182CE')}
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Ready status bar -->
+        <div class="px-4 md:px-5 py-3 flex items-center justify-between"
+             style="border-top:1px solid rgba(255,255,255,0.06); background:rgba(10,25,18,0.4)">
+          <div class="flex items-center gap-2">
+            <i data-lucide="check-circle-2"
+               style="width:13px;height:13px;color:${this.confirmed.size >= 4 ? '#4ADE80' : 'rgba(255,255,255,0.3)'}"></i>
+            <span id="ready-count" class="font-ui"
+                  style="font-size:11px; color:${this.confirmed.size >= 4 ? '#4ADE80' : 'rgba(255,255,255,0.4)'}; letter-spacing:0.08em">
+              ${this.confirmed.size}/4 PRONTI
+            </span>
+          </div>
+          <button id="confirm-btn"
+                  class="shrink-0 px-4 py-1.5 rounded-lg font-ui transition-all duration-200 hover:brightness-110"
+                  style="${
+                    this.isMyPresenceConfirmed
+                      ? 'background:rgba(248,113,113,0.15); border:1px solid rgba(248,113,113,0.4); font-size:12px; letter-spacing:0.1em; color:#F87171'
+                      : 'background:linear-gradient(135deg, #FFD700, #F0A500); font-size:12px; letter-spacing:0.1em; color:var(--color-bg-deep)'
+                  }; display:${this.isLobbyParticipant() ? 'block' : 'none'}">
+            ${this.isMyPresenceConfirmed ? 'ANNULLA CONFERMA' : 'CONFERMA PRESENZA'}
+          </button>
+        </div>
+
+      </div>
+    `;
+  }
+
+  private renderPlayerRow(playerId: number, role: string, teamColor: string): string {
+    const player = this.players.get(playerId);
+    const name = player?.name ?? `Giocatore #${playerId}`;
+    const initials = player ? getInitials(player.name) : '??';
+    const playerClass = player?.class ?? 4;
+    const color = getClassColor(playerClass);
+    const elo = player ? getDisplayElo(player) : '---';
+    const isConfirmed = this.confirmed.has(playerId);
+    const isMe = playerId === this.myPlayerId;
+
+    return `
+      <div class="player-row flex items-center justify-between p-2.5 md:p-3 rounded-lg"
+           data-player-id="${playerId}"
+           style="background:${isConfirmed ? `${teamColor}26` : 'rgba(255,255,255,0.04)'};
+                  border:1px solid ${isConfirmed ? `${teamColor}66` : 'rgba(255,255,255,0.08)'};
+                  transition:all 0.3s">
+        <div class="flex items-center gap-2 min-w-0">
+          ${renderPlayerAvatar({ initials, color, size: 'sm', playerId, playerClass })}
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-white truncate font-ui"
+                    style="font-size:13px; font-weight:600">
+                ${name.toUpperCase()}${isMe ? ' (TU)' : ''}
+              </span>
+              <span class="px-1.5 py-0.5 rounded font-ui shrink-0"
+                    style="font-size:9px; letter-spacing:0.08em; color:${teamColor};
+                           background:${teamColor}22; border:1px solid ${teamColor}44">
+                ${role}
+              </span>
+            </div>
+            <div class="font-ui" style="font-size:10px; color:var(--color-gold)">
+              ${elo} ELO
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 ml-2">
+          <span class="ready-dot w-2.5 h-2.5 rounded-full"
+                data-player-id="${playerId}"
+                style="background:${isConfirmed ? '#4ADE80' : '#6B7280'}; transition:background 0.3s"></span>
+          <span class="font-ui"
+                style="font-size:10px; letter-spacing:0.08em;
+                       color:${isConfirmed ? '#4ADE80' : 'rgba(255,255,255,0.4)'}">
+            ${isConfirmed ? 'PRONTO' : 'IN ATTESA'}
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderChat(): string {
+    return `
+      <div id="lobby-chat" class="rounded-xl overflow-hidden flex flex-col"
+           style="background:rgba(15,42,32,0.85); border:1px solid rgba(255,255,255,0.1);
+                  backdrop-filter:blur(8px)">
+
+        <!-- Chat header -->
+        <div class="px-4 py-3 flex items-center gap-2 shrink-0"
+             style="background:rgba(10,25,18,0.8); border-bottom:1px solid rgba(255,215,0,0.2)">
+          <i data-lucide="message-circle" style="width:14px;height:14px;color:var(--color-gold)"></i>
+          <span class="font-ui"
+                style="font-size:13px; color:var(--color-gold); letter-spacing:0.1em">
+            LOBBY CHAT
+          </span>
+          <div class="ml-auto flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse"></span>
+            <span class="font-ui"
+                  style="font-size:10px; color:rgba(255,255,255,0.4)">
+              LIVE
+            </span>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-3 space-y-3 min-h-0"
+             style="min-height:200px; max-height:380px">
+          <div id="chat-empty" class="text-center py-8 font-ui"
+               style="font-size:12px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
+            NESSUN MESSAGGIO
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div id="chat-input-area" class="shrink-0"
+             style="border-top:1px solid rgba(255,255,255,0.06)">
+          ${this.isMyPresenceConfirmed
+            ? `
+            <div class="p-3">
+              <div id="chat-error" class="font-ui mb-1"
+                   style="font-size:10px; color:#ff4444; display:none; letter-spacing:0.05em"></div>
+              <form id="chat-form" class="flex gap-2">
+                <div class="relative flex-1 min-w-0">
+                  <input id="chat-input" type="text" maxlength="${CHAT_MAX_LENGTH}"
+                         placeholder="Scrivi un messaggio..."
+                         class="w-full px-3 py-2 rounded-lg text-white placeholder-white/25 outline-none font-body"
+                         style="background:rgba(10,25,18,0.8); border:1px solid rgba(255,255,255,0.1);
+                                font-size:12px; padding-right:42px"
+                         autocomplete="off" />
+                  <span id="chat-char-counter" class="absolute right-2.5 top-1/2 font-ui pointer-events-none"
+                        style="transform:translateY(-50%); font-size:10px; color:rgba(255,255,255,0.3);
+                               opacity:0; transition:opacity 0.15s,color 0.2s; letter-spacing:0.03em; white-space:nowrap">
+                    0/${CHAT_MAX_LENGTH}
+                  </span>
+                </div>
+                <button type="submit"
+                        class="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:brightness-110 shrink-0"
+                        style="background:linear-gradient(135deg, #FFD700, #F0A500)">
+                  <i data-lucide="send" style="width:14px;height:14px;color:var(--color-bg-deep)"></i>
+                </button>
+              </form>
+            </div>
+          `
+            : `
+            <div class="px-4 py-4 flex items-center justify-center gap-2">
+              <i data-lucide="lock" style="width:13px;height:13px;color:rgba(255,255,255,0.3)"></i>
+              <span class="font-ui"
+                    style="font-size:11px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
+                CONFERMA LA PRESENZA PER CHATTARE
+              </span>
+            </div>
+          `}
+        </div>
+
+      </div>
+    `;
+  }
+
+  private renderAquarium(tall = false): string {
+    const fishAreaH = tall ? '320px' : '180px';
+    return `
+      <div id="lobby-aquarium" class="rounded-xl overflow-hidden relative"
+           style="background:linear-gradient(180deg, rgba(0,40,80,0.6) 0%, rgba(0,20,50,0.9) 100%);
+                  border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px)">
+
+        <!-- Header -->
+        <div class="px-4 md:px-5 py-3 flex items-center gap-2 relative z-10"
+             style="background:rgba(10,25,18,0.8); border-bottom:1px solid rgba(255,215,0,0.2)">
+          <i data-lucide="fish" style="width:14px;height:14px;color:var(--color-gold)"></i>
+          <span class="font-ui"
+                style="font-size:13px; color:var(--color-gold); letter-spacing:0.1em">
+            ACQUARIO
+          </span>
+          <span id="fish-count" class="ml-auto font-ui"
+                style="font-size:10px; color:rgba(255,255,255,0.4)">
+            ${this.confirmed.size} PESCI
+          </span>
+        </div>
+
+        <!-- Fish area -->
+        <div id="aquarium" class="relative" style="height:${fishAreaH}; overflow:hidden; cursor:none">
+          <div id="god-rays" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+          <div id="remote-cursors" class="absolute inset-0 pointer-events-none z-10"></div>
+          ${!this.isMyPresenceConfirmed
+            ? `
+            <div id="aquarium-lock"
+                 class="absolute inset-0 flex flex-col items-center justify-center gap-2 z-20"
+                 style="background:rgba(0,10,25,0.6); backdrop-filter:blur(3px)">
+              <i data-lucide="lock" style="width:22px;height:22px;color:rgba(255,255,255,0.35)"></i>
+              <span class="font-ui"
+                    style="font-size:10px; color:rgba(255,255,255,0.35); letter-spacing:0.12em; text-align:center; line-height:1.8">
+                CONFERMA LA PRESENZA<br>PER SBLOCCARE IL MINIGIOCO
+              </span>
+            </div>
+          `
+            : ''}
+        </div>
+
+      </div>
+    `;
+  }
+
+  private renderAbandonButton(): string {
+    const canAbandon = this.isMyPresenceConfirmed;
+
+    return `
+      <div class="pb-2">
+        <button id="abandon-lobby-btn"
+                ${canAbandon ? '' : 'disabled'}
+                class="w-full py-3 rounded-xl font-ui transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                style="background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.35);
+                       font-size:13px; letter-spacing:0.12em; color:#F87171;
+                       opacity:${canAbandon ? '1' : '0.45'}; cursor:${canAbandon ? 'pointer' : 'not-allowed'}">
+          <span class="flex items-center justify-center gap-2">
+            <i data-lucide="log-out" style="width:14px;height:14px"></i>
+            ABBANDONA LOBBY
+          </span>
+        </button>
+      </div>
+    `;
+  }
+
+  // ── Countdown ────────────────────────────────────────────────
+
+  private formatCountdown(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  private tickCountdown(): void {
+    if (this.countdownSeconds <= 0) return;
+
+    this.countdownSeconds--;
+    const color = this.getCountdownColor();
+    const circumference = 2 * Math.PI * 28;
+    const pct = this.countdownTotal > 0
+      ? (this.countdownSeconds / this.countdownTotal) * 100
+      : 0;
+    const offset = circumference * (1 - pct / 100);
+
+    const circle = this.$id('countdown-circle');
+    const text = this.$id('countdown-text');
+    if (circle) {
+      circle.setAttribute('stroke', color);
+      circle.setAttribute('stroke-dashoffset', String(offset));
+    }
+    if (text) {
+      text.textContent = this.formatCountdown(this.countdownSeconds);
+      text.style.color = color;
+    }
+
+    // Update TTL bar in confirmed layout
+    const confirmedText = this.$id('confirmed-countdown-text');
+    if (confirmedText) {
+      confirmedText.textContent = this.formatCountdown(this.countdownSeconds);
+      confirmedText.style.color = color;
+    }
+    const timerIcon = this.$('#confirmed-ttl-bar [data-lucide="timer"]') as HTMLElement | null;
+    if (timerIcon) timerIcon.style.color = color;
+
+    if (this.countdownSeconds <= 0) {
+      this.onCountdownExpired();
+    }
+  }
+
+  private getCountdownColor(): string {
+    if (this.countdownTotal <= 0) return '#F87171';
+    const pct = (this.countdownSeconds / this.countdownTotal) * 100;
+    if (pct > 50) return '#4ADE80';
+    if (pct > 25) return '#FFD700';
+    return '#F87171';
+  }
+
+  private onCountdownExpired(): void {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+    // Could navigate away or show "time's up" state
+  }
+
+  // ── Apply lobby state from LobbyService ────────────────────
+
+  /**
+   * Apply the ILobbyState to local component state.
+   * Used both for initial render and for real-time updates.
+   */
+  private applyLobbyState(
+    state: ILobbyState,
+    opts: { fromServer?: boolean } = {}
+  ): void {
+    const fromServer = opts.fromServer ?? true;
+
+    // Lobby metadata
+    this.lobbyExists = state.exists;
+    if (fromServer) {
+      this.serverResponded = true;
+    }
+    this.lobbyData = state.exists && state.match
+      ? state.match as IRunningMatchDTO
+      : null;
+    if (state.exists && state.ttl > 0) {
+      // Only sync TTL if server differs significantly (avoid jitter)
+      if (Math.abs(this.countdownSeconds - state.ttl) > 5) {
+        this.countdownSeconds = state.ttl;
+      }
+      if (this.countdownTotal < state.ttl) {
+        this.countdownTotal = state.ttl;
+      }
+    }
+
+    // Confirmations
+    this.confirmed.clear();
+    for (const c of state.confirmations) this.confirmed.add(c.playerId);
+    this.lastConfirmations = state.confirmations;
+
+    // Messages
+    this.processMessages(state.messages);
+
+    // Resolve player objects for the teams
+    this.resolvePlayers();
+  }
+
+  /**
+   * Callback from LobbyService when meaningful state changes.
+   * LobbyService already filters out no-op updates (TTL jitter, etc.).
+   */
+  private onLobbyStateChange(state: ILobbyState): void {
+    // Snapshot pre-update layout state
+    const hadPanelAccess = this.canAccessLobbyPanels;
+    const hadLobby = this.hasActiveLobby;
+    const wasServerResponded = this.serverResponded;
+
+    this.applyLobbyState(state);
+
+    // Full re-render when the overall layout shape changes
+    const layoutChanged
+      = hadPanelAccess !== this.canAccessLobbyPanels
+        || hadLobby !== this.hasActiveLobby
+        || (!wasServerResponded && this.serverResponded);
+
+    if (layoutChanged) {
+      this.rerenderMain();
+      this.syncFish(this.lastConfirmations);
+      return;
+    }
+
+    // Targeted DOM patches — no layout rebuild needed
+    this.updateReadyStatus();
+    this.syncFish(this.lastConfirmations);
+    this.updateConfirmButtonState();
+
+    const countEl = this.$id('ready-count');
+    if (countEl) {
+      countEl.textContent = `${this.confirmed.size}/4 PRONTI`;
+      countEl.style.color = this.confirmed.size >= 4 ? '#4ADE80' : 'rgba(255,255,255,0.4)';
+    }
+
+    const fishCount = this.$id('fish-count');
+    if (fishCount) fishCount.textContent = `${this.confirmed.size} PESCI`;
+  }
+
+  private updateReadyStatus(): void {
+    const dots = this.$$('.ready-dot');
+    for (const dot of dots) {
+      const id = Number(dot.dataset.playerId);
+      const isReady = this.confirmed.has(id);
+      dot.style.background = isReady ? '#4ADE80' : '#6B7280';
+
+      // Also update the parent row background
+      const row = dot.closest('.player-row') as HTMLElement | null;
+      if (row) {
+        const statusText = row.querySelector('.font-ui:last-child') as HTMLElement | null;
+        if (statusText && statusText.textContent) {
+          // Check the text is a status indicator
+          if (statusText.textContent.includes('ATTESA') || statusText.textContent.includes('PRONTO')) {
+            statusText.textContent = isReady ? 'PRONTO' : 'IN ATTESA';
+            statusText.style.color = isReady ? '#4ADE80' : 'rgba(255,255,255,0.4)';
+          }
+        }
+      }
+    }
+  }
+
+  // ── Confirm attendance ───────────────────────────────────────
+
+  private bindConfirmButton(): void {
+    const btn = this.$id('confirm-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+      if (!this.myPlayerId) return;
+      const isConfirmed = this.confirmed.has(this.myPlayerId);
+      if (isConfirmed) {
+        await this.handleCancelConfirmation(btn);
+      } else {
+        await this.handleConfirm(btn);
+      }
+    });
+  }
+
+  private bindAbandonButton(): void {
+    const btn = this.$id('abandon-lobby-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      if (!this.isMyPresenceConfirmed) return;
+      await this.handleCancelConfirmation(btn);
+    });
+  }
+
+  private async handleConfirm(btn: HTMLButtonElement): Promise<void> {
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      await this.sendConfirmationRequest('POST');
+
+      // Update single source of truth, then re-render the whole main section
+      this.confirmed.add(this.myPlayerId!);
+      this.rerenderMain();
+
+      // Sync state from server and reset poll timer
+      await LobbyService.refreshNow();
+    } catch (err: any) {
+      console.error('[LobbyPage] Confirm error:', err);
+      btn.disabled = false;
+      this.updateConfirmButtonState();
+    }
+  }
+
+  private async handleCancelConfirmation(btn: HTMLButtonElement): Promise<void> {
+    if (!this.myPlayerId) return;
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      await this.sendConfirmationRequest('DELETE');
+
+      // Update single source of truth, then re-render the whole main section
+      this.confirmed.delete(this.myPlayerId);
+      this.rerenderMain();
+    } catch (err: any) {
+      console.error('[LobbyPage] Cancel confirm error:', err);
+      btn.disabled = false;
+      this.updateConfirmButtonState();
+    }
+  }
+
+  private updateConfirmButtonState(): void {
+    const btn = this.$id('confirm-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    if (!this.isLobbyParticipant()) {
+      btn.style.display = 'none';
+      return;
+    }
+    btn.style.display = 'block';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    const confirmed = this.myPlayerId ? this.confirmed.has(this.myPlayerId) : false;
+    if (confirmed) {
+      btn.textContent = 'ANNULLA CONFERMA';
+      btn.style.background = 'rgba(248,113,113,0.15)';
+      btn.style.border = '1px solid rgba(248,113,113,0.4)';
+      btn.style.color = '#F87171';
+    } else {
+      btn.textContent = 'CONFERMA PRESENZA';
+      btn.style.background = 'linear-gradient(135deg, #FFD700, #F0A500)';
+      btn.style.border = '';
+      btn.style.color = 'var(--color-bg-deep)';
+    }
+  }
+
+  private get isMyPresenceConfirmed(): boolean {
+    return !!(this.myPlayerId && this.lobbyExists && this.confirmed.has(this.myPlayerId));
+  }
+
+  private isLobbyParticipant(): boolean {
+    if (!this.myPlayerId) return false;
+    return this.getLobbyPlayerIds().includes(this.myPlayerId);
+  }
+
+  private renderConfirmKickCard(): string {
+    this.confirmKick?.destroy();
+    this.confirmKick = new BroadcastKickComponent();
+    return `
+      <div class="team-card glass-card rounded-xl p-6 text-center overflow-visible">
+        <p class="font-display text-xl text-(--color-gold) mb-2"
+           style="letter-spacing:0.12em">
+          LOBBY ATTIVA
+        </p>
+        <p class="font-body text-sm mb-6" style="color:rgba(255,255,255,0.4)">
+          Premi la palla per confermare la tua presenza
+        </p>
+        ${this.confirmKick.render()}
+        <p class="font-ui mt-4" style="font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:0.1em">
+          PREMI LA PALLA PER CONFERMARE LA PRESENZA
+        </p>
+      </div>
+    `;
+  }
+
+  // ── Confirm Kick ─────────────────────────────────────────────
+
+  private bindConfirmKick(): void {
+    if (!this.confirmKick) return;
+    this.confirmKick.mount(() => this.handleConfirmKick());
+  }
+
+  private async handleConfirmKick(): Promise<void> {
+    if (!this.confirmKick || !this.myPlayerId) return;
+
+    const kicked = await this.confirmKick.playKick();
+    if (!kicked) return;
+
+    try {
+      await this.sendConfirmationRequest('POST');
+
+      haptics.trigger('success');
+
+      // Update single source of truth, then re-render layout
+      this.confirmed.add(this.myPlayerId);
+      this.rerenderMain();
+
+      // Sync state from server and reset poll timer
+      await LobbyService.refreshNow();
+    } catch (err: any) {
+      console.error('[LobbyPage] Confirm kick error:', err);
+      haptics.trigger('error');
+      this.confirmKick?.showFeedback(
+        err.message || 'ERRORE CONFERMA',
+        '#F87171'
+      );
+      this.confirmKick?.reset();
+    }
+  }
+
+  // ── Chat ─────────────────────────────────────────────────────
+
+  private bindChatEvents(): void {
+    const form = this.$id('chat-form');
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.sendChatMessage();
+    });
+
+    const input = this.$id('chat-input') as HTMLInputElement | null;
+    const counter = this.$id('chat-char-counter') as HTMLElement | null;
+    if (input && counter) {
+      input.addEventListener('input', () => {
+        const len = input.value.length;
+        const remaining = CHAT_MAX_LENGTH - len;
+        counter.textContent = `${len}/${CHAT_MAX_LENGTH}`;
+        counter.style.opacity = len > 0 ? '1' : '0';
+        counter.style.color = remaining <= 0
+          ? '#F87171'
+          : remaining <= 10
+            ? '#FFD700'
+            : 'rgba(255,255,255,0.3)';
+      });
+    }
+  }
+
+  private async sendChatMessage(): Promise<void> {
+    const input = this.$id('chat-input') as HTMLInputElement | null;
+    const errorEl = this.$id('chat-error') as HTMLElement | null;
+    if (!input || !this.myPlayerId) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (text.length > CHAT_MAX_LENGTH) {
+      if (errorEl) {
+        errorEl.textContent = `Massimo ${CHAT_MAX_LENGTH} caratteri`;
+        errorEl.style.display = 'block';
+        setTimeout(() => {
+          errorEl.style.display = 'none';
+        }, 1500);
+      }
+      return;
+    }
+
+    const player = this.players.get(this.myPlayerId);
+    const playerName = player?.name ?? 'Giocatore';
+    const fishType = player ? (FISH_TYPES[player.class] ?? 'Tonno') : 'Tonno';
+    const sentAt = Date.now();
+
+    // Mostra subito il messaggio (ottimistico)
+    const optimisticId = `optimistic-${sentAt}`;
+    const optimisticMsg: IMessage = {
+      id: optimisticId,
+      playerId: this.myPlayerId,
+      playerName,
+      fishType: fishType as IMessage['fishType'],
+      text,
+      sentAt,
+      timestamp: new Date().toISOString()
+    };
+    this.messages.push(optimisticMsg);
+    this.lastMessageTimestamp = Math.max(this.lastMessageTimestamp, sentAt);
+    this.appendMessage(optimisticMsg);
+    input.value = '';
+    haptics.trigger('selection');
+
+    try {
+      const sentMsg = await MessageService.sendMessage(this.myPlayerId, playerName, fishType, text);
+
+      // Sostituisci il messaggio ottimistico con quello reale (stesso sentAt)
+      const idx = this.messages.findIndex(m => m.id === optimisticId);
+      if (idx !== -1) this.messages[idx] = sentMsg;
+
+      // Aggiorna l'id nel DOM per il dedup broadcast
+      const el = this.$id(`msg-${optimisticId}`);
+      if (el) el.id = `msg-${sentMsg.id}`;
+
+      // Broadcast istantaneo a tutti i client
+      await LobbyService.broadcastMessage(sentMsg);
+    } catch (err) {
+      console.error('[LobbyPage] Send message error:', err);
+      // Marca il messaggio ottimistico come fallito
+      const el = this.$id(`msg-${optimisticId}`);
+      if (el) el.style.opacity = '0.4';
+    }
+  }
+
+  private processMessages(messages: IMessage[]): void {
+    if (!messages || messages.length === 0) return;
+
+    const newMessages = messages.filter(
+      m => m.sentAt > this.lastMessageTimestamp
+    );
+
+    if (newMessages.length > 0 || this.messages.length === 0) {
+      if (this.messages.length === 0) {
+        this.messages = messages;
+      } else {
+        this.messages.push(...newMessages);
+      }
+
+      for (const m of messages) {
+        this.lastMessageTimestamp = Math.max(this.lastMessageTimestamp, m.sentAt);
+      }
+
+      this.renderMessages();
+    }
+  }
+
+  private buildMessageEl(msg: IMessage): HTMLElement {
+    const conf = this.lastConfirmations.find(c => c.playerId === msg.playerId);
+    const fishName = conf?.fishName ?? msg.playerName ?? `#${msg.playerId}`;
+    const isMe = msg.playerId === this.myPlayerId;
+    const displayName = isMe ? 'Tu' : fishName;
+    const time = new Date(msg.sentAt).toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const dotColor = LABEL_COLORS[msg.playerId % LABEL_COLORS.length];
+    const dot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></span>`;
+
+    const el = document.createElement('div');
+    el.id = `msg-${msg.id}`;
+
+    if (isMe) {
+      el.className = 'flex justify-end';
+      el.innerHTML = `
+        <div style="max-width:80%">
+          <div class="flex items-center justify-end gap-1.5 mb-0.5">
+            <span class="font-body" style="font-size:10px; color:rgba(255,255,255,0.25)">${time}</span>
+            <span class="font-ui" style="font-size:11px; color:rgba(255,215,0,0.8)">${this.escapeHtml(displayName)}</span>
+            ${dot}
+          </div>
+          <div class="px-2.5 py-1.5 rounded-lg rounded-tr-none font-body"
+               style="background:rgba(255,215,0,0.12); border:1px solid rgba(255,215,0,0.2);
+                      font-size:12px; color:rgba(255,255,255,0.9); line-height:1.5;
+                      word-break:break-word; text-align:right">
+            ${this.escapeHtml(msg.text)}
+          </div>
+        </div>
+      `;
+    } else {
+      el.className = 'flex justify-start';
+      el.innerHTML = `
+        <div style="max-width:80%">
+          <div class="flex items-center gap-1.5 mb-0.5">
+            ${dot}
+            <span class="font-ui" style="font-size:11px; color:rgba(255,255,255,0.6)">${this.escapeHtml(displayName)}</span>
+            <span class="font-body" style="font-size:10px; color:rgba(255,255,255,0.25)">${time}</span>
+          </div>
+          <div class="px-2.5 py-1.5 rounded-lg rounded-tl-none font-body"
+               style="background:rgba(255,255,255,0.06); font-size:12px;
+                      color:rgba(255,255,255,0.8); line-height:1.5; word-break:break-word">
+            ${this.escapeHtml(msg.text)}
+          </div>
+        </div>
+      `;
+    }
+
+    return el;
+  }
+
+  /** Aggiunge un singolo messaggio in fondo al container (senza re-render completo). */
+  private appendMessage(msg: IMessage): void {
+    const container = this.$id('chat-messages');
+    if (!container) return;
+
+    const empty = this.$id('chat-empty');
+    if (empty) empty.remove();
+
+    container.appendChild(this.buildMessageEl(msg));
+    container.scrollTop = container.scrollHeight;
+  }
+
+  private renderMessages(): void {
+    const container = this.$id('chat-messages');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    for (const msg of this.messages) {
+      container.appendChild(this.buildMessageEl(msg));
+    }
+
+    container.scrollTop = container.scrollHeight;
+    refreshIcons();
+  }
+
+  // ── Fish aquarium ────────────────────────────────────────────
+
+  private syncFish(confirmations: IConfirmationWithFish[]): void {
+    const activeIds = new Set(confirmations.map(c => c.playerId));
+
+    // Remove fish for players who left
+    for (const id of Array.from(this.fishMap.keys())) {
+      if (!activeIds.has(id)) this.removeFish(id);
+    }
+
+    // Spawn fish for confirmed players
+    const sorted = [...confirmations].sort(
+      (a, b) => new Date(a.confirmedAt).getTime() - new Date(b.confirmedAt).getTime()
+    );
+    sorted.forEach((conf, i) => {
+      const isMe = conf.playerId === this.myPlayerId;
+      const fishName = conf.fishName || `Giocatore #${conf.playerId}`;
+      const name = isMe ? 'Tu' : fishName;
+      this.spawnFish(conf.playerId, name, i);
+    });
+  }
+
+  private spawnFish(playerId: number, name: string, index: number): void {
+    const aquarium = this.$id('aquarium');
+    if (!aquarium || this.fishMap.has(playerId)) return;
+
+    const isMe = playerId === this.myPlayerId;
+    const labelColor = LABEL_COLORS[index % LABEL_COLORS.length];
+    const fishEmoji = isMe
+      ? '🦈'
+      : FISH_EMOJI[index % FISH_EMOJI.length];
+
+    const fish = document.createElement('div');
+    fish.className = 'absolute pointer-events-none';
+    fish.style.cssText = 'transition:opacity 0.5s; z-index:5;';
+    fish.dataset.playerId = String(playerId);
+    fish.innerHTML = `
+      <div class="fish-sprite" style="width:36px;height:36px;font-size:28px;line-height:1;display:flex;align-items:center;justify-content:center;user-select:none">${fishEmoji}</div>
+      <span class="font-ui block text-center mt-0.5 px-1 py-0.5 rounded"
+            style="font-size:8px; letter-spacing:0.05em; color:white;
+                   background:${labelColor}; white-space:nowrap; max-width:80px;
+                   overflow:hidden; text-overflow:ellipsis">
+        ${isMe ? 'TU' : name}
+      </span>
+    `;
+
+    aquarium.appendChild(fish);
+    this.fishMap.set(playerId, fish);
+
+    const aquariumRect = aquarium.getBoundingClientRect();
+    const margin = 20;
+    const fishSprite = fish.querySelector('.fish-sprite') as HTMLElement | null;
+
+    this.fishMovement.set(playerId, {
+      x: this.rand(margin, aquariumRect.width - margin - 40),
+      y: this.rand(margin, aquariumRect.height - margin - 30),
+      vx: this.rand(-1, 1),
+      vy: this.rand(-0.5, 0.5),
+      speed: this.rand(0.5, 1.5),
+      element: fish,
+      sprite: fishSprite
+    });
+  }
+
+  private removeFish(playerId: number): void {
+    const fish = this.fishMap.get(playerId);
+    if (!fish) return;
+    fish.style.opacity = '0';
+    setTimeout(() => {
+      fish.remove();
+      this.fishMap.delete(playerId);
+      this.fishMovement.delete(playerId);
+    }, 500);
+  }
+
+  // ── Cursor tracking ──────────────────────────────────────────
+
+  private bindCursorTracking(): void {
+    const aquarium = this.$id('aquarium');
+    if (!aquarium || !this.myPlayerId || !this.isMyPresenceConfirmed) return;
+
+    // Join presence channel if not already joined
+    CursorService.join(this.myPlayerId);
+
+    // Register remote cursor listener (replace previous to avoid duplicates)
+    if (this.cursorListener) CursorService.off(this.cursorListener);
+    this.cursorListener = cursors => this.renderRemoteCursors(cursors);
+    CursorService.on(this.cursorListener);
+
+    // Detach old listeners before re-binding
+    if (this.aquariumMouseMove) aquarium.removeEventListener('mousemove', this.aquariumMouseMove);
+    if (this.aquariumMouseLeave) aquarium.removeEventListener('mouseleave', this.aquariumMouseLeave);
+
+    this.aquariumMouseMove = (e: MouseEvent) => {
+      const rect = aquarium.getBoundingClientRect();
+      const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+      const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+
+      // Move own fish to cursor position
+      this.myFishControlled = true;
+      const myFish = this.myPlayerId ? this.fishMap.get(this.myPlayerId) : null;
+      const myMovement = this.myPlayerId ? this.fishMovement.get(this.myPlayerId) : null;
+      if (myFish && myMovement) {
+        const w = aquarium.clientWidth;
+        const h = aquarium.clientHeight;
+        myMovement.x = (xPct / 100) * w - 18;
+        myMovement.y = (yPct / 100) * h - 18;
+        myFish.style.transform = `translate(${myMovement.x}px, ${myMovement.y}px)`;
+      }
+
+      CursorService.move(xPct, yPct);
+    };
+
+    this.aquariumMouseLeave = () => {
+      this.myFishControlled = false;
+      CursorService.move(-1, -1);
+    };
+
+    aquarium.addEventListener('mousemove', this.aquariumMouseMove);
+    aquarium.addEventListener('mouseleave', this.aquariumMouseLeave);
+  }
+
+  private renderRemoteCursors(cursors: RemoteCursor[]): void {
+    const aquarium = this.$id('aquarium');
+    if (!aquarium) return;
+
+    const w = aquarium.clientWidth;
+    const h = aquarium.clientHeight;
+
+    // Rebuild controlled set from current presence snapshot
+    this.remoteFishControlled.clear();
+
+    for (const cursor of cursors) {
+      const fish = this.fishMap.get(cursor.playerId);
+      const movement = this.fishMovement.get(cursor.playerId);
+      if (!fish || !movement) continue;
+
+      if (cursor.x >= 0) {
+        this.remoteFishControlled.add(cursor.playerId);
+        movement.x = (cursor.x / 100) * w - 18;
+        movement.y = (cursor.y / 100) * h - 18;
+        fish.style.transform = `translate(${movement.x}px, ${movement.y}px)`;
+      }
+    }
+  }
+
+  private startFishAnimation(): void {
+    const loop = (): void => {
+      this.updateFishMovement();
+      this.animFrameId = requestAnimationFrame(loop);
+    };
+    this.animFrameId = requestAnimationFrame(loop);
+  }
+
+  private updateFishMovement(): void {
+    const aquarium = this.$id('aquarium');
+    if (!aquarium) return;
+
+    const w = aquarium.clientWidth;
+    const h = aquarium.clientHeight;
+    const margin = 10;
+
+    this.fishMovement.forEach((movement, playerId) => {
+      const { element, sprite } = movement;
+      if (!element || !aquarium.contains(element)) {
+        this.fishMovement.delete(playerId);
+        return;
+      }
+
+      // Skip autonomous update for fish under cursor control (local or remote)
+      if (this.myFishControlled && playerId === this.myPlayerId) return;
+      if (this.remoteFishControlled.has(playerId)) return;
+
+      movement.x += movement.vx * movement.speed;
+      movement.y += movement.vy * movement.speed;
+
+      // Bounce off walls
+      if (movement.x <= margin || movement.x >= w - margin - 40) {
+        movement.vx *= -1;
+        movement.x = Math.max(margin, Math.min(w - margin - 40, movement.x));
+      }
+      if (movement.y <= margin || movement.y >= h - margin - 30) {
+        movement.vy *= -1;
+        movement.y = Math.max(margin, Math.min(h - margin - 30, movement.y));
+      }
+
+      // Random direction changes
+      if (Math.random() < 0.01) {
+        movement.vx += this.rand(-0.3, 0.3);
+        movement.vy += this.rand(-0.2, 0.2);
+        const maxSpeed = 2;
+        const currentSpeed = Math.sqrt(movement.vx ** 2 + movement.vy ** 2);
+        if (currentSpeed > maxSpeed) {
+          movement.vx = (movement.vx / currentSpeed) * maxSpeed;
+          movement.vy = (movement.vy / currentSpeed) * maxSpeed;
+        }
+      }
+
+      element.style.transform = `translate(${movement.x}px, ${movement.y}px)`;
+
+      // Flip fish based on direction
+      if (sprite) {
+        sprite.style.transform = movement.vx < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+      }
+    });
+  }
+
+  // ── Aquarium visual effects ──────────────────────────────────
+
+  private spawnBubbles(): void {
+    const aquarium = this.$id('aquarium');
+    if (!aquarium) return;
+
+    for (let i = 0; i < 14; i++) {
+      const b = document.createElement('div');
+      const size = this.rand(6, 18);
+      b.style.cssText = `
+        position:absolute; border-radius:50%; pointer-events:none; z-index:2;
+        width:${size}px; height:${size}px;
+        left:${this.rand(3, 97)}%;
+        background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), rgba(255,255,255,0.05));
+        animation: bubble-rise ${this.rand(7, 16)}s linear ${this.rand(0, 10)}s infinite;
+      `;
+      aquarium.appendChild(b);
+    }
+
+    // Inject keyframes if not present
+    if (!document.getElementById('lobby-aquarium-styles')) {
+      const style = document.createElement('style');
+      style.id = 'lobby-aquarium-styles';
+      style.textContent = `
+        @keyframes bubble-rise {
+          0% { bottom: -10px; opacity: 0; }
+          10% { opacity: 0.6; }
+          90% { opacity: 0.3; }
+          100% { bottom: 100%; opacity: 0; transform: translateX(${this.rand(-30, 30)}px); }
+        }
+        @keyframes god-ray-sway {
+          0%, 100% { opacity: var(--ray-opacity, 0.5); transform: rotate(var(--ray-angle, -15deg)) translateX(0); }
+          50% { opacity: calc(var(--ray-opacity, 0.5) * 0.6); transform: rotate(var(--ray-angle, -15deg)) translateX(20px); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  private spawnGodRays(): void {
+    const container = this.$id('god-rays');
+    if (!container) return;
+
+    for (let i = 0; i < 4; i++) {
+      const r = document.createElement('div');
+      const baseAngle = -15;
+      const angle = baseAngle + this.rand(-5, 5);
+      const width = this.rand(80, 180);
+      const opacity = this.rand(0.3, 0.5);
+      const dur = this.rand(7, 14);
+      r.style.cssText = `
+        position:absolute; top:-20px; height:120%;
+        left:${20 + i * 18 + this.rand(-5, 5)}%;
+        width:${width}px;
+        background:linear-gradient(180deg, rgba(255,215,0,${opacity * 0.3}) 0%, transparent 100%);
+        transform:rotate(${angle}deg); transform-origin:top center;
+        --ray-angle:${angle}deg; --ray-opacity:${opacity};
+        animation: god-ray-sway ${dur}s ease-in-out infinite;
+        pointer-events:none; z-index:1;
+      `;
+      container.appendChild(r);
+    }
+  }
+
+  // ── Utilities ────────────────────────────────────────────────
+
+  private rand(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
+  }
+
+  private escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  private get hasActiveLobby(): boolean {
+    return this.lobbyExists && !!this.lobbyData;
+  }
+
+  private get canAccessLobbyPanels(): boolean {
+    // Prefer confirmed-presence as primary access signal to avoid UI lockouts
+    // when team composition data is temporarily unavailable.
+    return this.lobbyExists && (this.isMyPresenceConfirmed || this.isLobbyParticipant());
+  }
+
+  private getLobbyPlayerIds(): number[] {
+    if (!this.lobbyData) return [];
+    return [
+      this.lobbyData.teamA.defence,
+      this.lobbyData.teamA.attack,
+      this.lobbyData.teamB.defence,
+      this.lobbyData.teamB.attack
+    ];
+  }
+
+  private async sendConfirmationRequest(method: 'POST' | 'DELETE'): Promise<void> {
+    if (!this.myPlayerId) throw new Error('Giocatore non selezionato');
+
+    const body = method === 'POST'
+      ? {
+          playerId: this.myPlayerId,
+          subscription: localStorage.getItem('biliardino_subscription')
+        }
+      : { playerId: this.myPlayerId };
+
+    const res = await fetch(`${API_BASE_URL}/confirm-availability`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const action = method === 'POST' ? 'conferma' : 'cancellazione';
+      throw new Error(`Errore nella ${action}`);
+    }
+  }
+}
+
+export default LobbyPage;

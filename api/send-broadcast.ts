@@ -1,0 +1,200 @@
+import { list } from '@vercel/blob';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import webpush from 'web-push';
+import { withAuth } from './_auth.js';
+import { handleCorsPreFlight, setCorsHeaders } from './_cors.js';
+import { lobbyEnv } from './_lobbyEnv.js';
+import { combineMiddlewares, withSecurityMiddleware } from './_middleware.js';
+import { getRandomMessage } from './_randomMessage.js';
+import { supabaseAdmin } from './_supabaseAdmin.js';
+import { sanitizeLogOutput, validateString } from './_validation.js';
+
+if (!process.env.VITE_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  console.error('ERRORE: VAPID keys non configurate');
+}
+
+if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  console.error('ERRORE: BLOB_READ_WRITE_TOKEN non configurato');
+}
+
+webpush.setVapidDetails(
+  'mailto:info@biliardino.app',
+  process.env.VITE_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
+
+interface SubscriptionData {
+  subscription: webpush.PushSubscription;
+  playerId: number;
+  playerName: string;
+  createdAt: string;
+}
+
+interface NotificationAction {
+  action: string;
+  title: string;
+  url: string;
+}
+
+async function handler(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
+  setCorsHeaders(res);
+  if (handleCorsPreFlight(req, res)) return res;
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const {
+      title: rawTitle,
+      body: rawBody,
+      match: rawMatch,
+      durationSeconds: rawDurationSeconds,
+      playerIds: rawPlayerIds
+    } = req.body;
+
+    const playerIdFilter: number[] | null =
+      Array.isArray(rawPlayerIds) && rawPlayerIds.length > 0
+        ? rawPlayerIds.map(Number).filter(n => Number.isFinite(n) && n > 0)
+        : null;
+
+    const LOBBY_TTL_DEFAULT = 5400;
+    const parsedDuration = rawDurationSeconds !== undefined ? parseInt(String(rawDurationSeconds), 10) : NaN;
+    const lobbyTtl = (!isNaN(parsedDuration) && parsedDuration >= 60 && parsedDuration <= 86400)
+      ? parsedDuration
+      : LOBBY_TTL_DEFAULT;
+
+    const customTitle = rawTitle ? validateString(rawTitle, 'title', 100) : undefined;
+    const customBody = rawBody ? validateString(rawBody, 'body', 500) : undefined;
+
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return res.status(500).json({ error: 'Configurazione server incompleta' });
+    }
+
+    const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
+
+    if (!blobs || blobs.length === 0) {
+      return res.status(404).json({ error: 'Nessuna subscription trovata' });
+    }
+
+    const subscriptionsData = await Promise.all(
+      blobs.map(async (blob) => {
+        try {
+          const response = await fetch(blob.url);
+          return await response.json() as SubscriptionData;
+        } catch (err) {
+          console.error(`Errore caricamento blob ${blob.pathname}:`, err);
+          return null;
+        }
+      })
+    );
+
+    const validSubscriptions = subscriptionsData.filter((sub): sub is SubscriptionData => sub !== null);
+
+    if (validSubscriptions.length === 0) {
+      return res.status(404).json({ error: 'Nessuna subscription valida' });
+    }
+
+    const targetSubscriptions = playerIdFilter
+      ? validSubscriptions.filter(s => playerIdFilter.includes(s.playerId))
+      : validSubscriptions;
+
+    if (targetSubscriptions.length === 0) {
+      return res.status(404).json({
+        error: playerIdFilter
+          ? 'Nessun giocatore selezionato ha notifiche attive'
+          : 'Nessuna subscription trovata'
+      });
+    }
+
+    const url = process.env.BASE_URL || '.';
+
+    const results = await Promise.allSettled(
+      targetSubscriptions.map(async (data) => {
+        const playerName = data.playerName || 'Giocatore';
+        const _randomMessage = getRandomMessage(playerName.split(' ')[0]);
+        const title = customTitle || _randomMessage.title;
+        const body = customBody || _randomMessage.body;
+        const actions: NotificationAction[] = [
+          { action: 'cancel', title: 'Ignora', url: `${url}/lobby` }
+        ];
+
+        await webpush.sendNotification(
+          data.subscription,
+          JSON.stringify({
+            web_push: 8030,
+            notification: {
+              title,
+              body,
+              navigate: `${url}/lobby`,
+              tag: 'lobby',
+              requireInteraction: true,
+              icon: '/icons/icon-192.png',
+              badge: '/icons/icon-192.png',
+              app_badge: '0',
+              actions: actions.map(a => ({ action: a.action, title: a.title, navigate: a.url }))
+            }
+          }),
+          {
+            headers: { 'Content-Type': 'application/notification+json' },
+            urgency: 'high',
+            TTL: lobbyTtl
+          }
+        );
+
+        console.log(`✅ Notifica inviata a ${sanitizeLogOutput(playerName)}`);
+        return { playerName, success: true };
+      })
+    );
+
+    const sent = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const playerName = targetSubscriptions[index]?.playerName || String(targetSubscriptions[index]?.playerId) || 'Unknown';
+        console.warn('Errore invio a:', playerName, (result.reason as Error)?.message || result.reason);
+      }
+    });
+
+    console.log(`✅ ${playerIdFilter ? 'Notifiche selezionate' : 'Broadcast'} completato: ${sent}/${targetSubscriptions.length} inviati`);
+
+    // Crea lobby su Supabase (Supabase Realtime notifica automaticamente tutti i subscriber)
+    const expiresAt = new Date(Date.now() + lobbyTtl * 1000).toISOString();
+    const { error: insertErr } = await supabaseAdmin
+      .from('lobbies')
+      .insert({
+        status: 'waiting',
+        environment: lobbyEnv,
+        expires_at: expiresAt,
+        duration_seconds: lobbyTtl,
+        ...(rawMatch ? { match: rawMatch } : {})
+      });
+
+    if (insertErr) {
+      console.error('❌ Errore creazione lobby su Supabase:', insertErr.message);
+    } else {
+      console.log(`🏁 Lobby creata su Supabase (env: ${lobbyEnv}, TTL: ${lobbyTtl}s)`);
+    }
+
+    return res.status(200).json({
+      sent,
+      failed,
+      total: targetSubscriptions.length,
+      lobbyActive: true,
+      durationSeconds: lobbyTtl
+    });
+  } catch (err) {
+    console.error('Errore broadcast:', err);
+    return res.status(500).json({
+      error: 'Errore invio broadcast',
+      details: (err as Error).message
+    });
+  }
+}
+
+export default combineMiddlewares(
+  handler,
+  h => withAuth(h, 'admin'),
+  h => withSecurityMiddleware(h, { timeout: 60000 })
+);

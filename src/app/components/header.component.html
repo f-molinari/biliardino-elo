@@ -1,0 +1,64 @@
+<header id="app-header-inner" class="relative z-50 w-full" style="
+    background: linear-gradient(180deg, var(--color-bg-header-from) 0%, var(--color-bg-header-to) 100%);
+    border-bottom: 1px solid var(--glass-border-gold);
+    backdrop-filter: blur(12px);
+  ">
+  <div class="max-w-(--max-width) mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 md:gap-3 group" data-nav>
+      <div class="shrink-0 transition-transform duration-300 group-hover:scale-105">
+        <img src="/logo_vec.svg" alt="logo" class="w-10 h-10 rounded-lg object-cover" />
+      </div>
+      <div class="hidden sm:block">
+        <div class="text-(--color-gold) tracking-[0.15em] font-ui" style="font-size: 11px; font-weight: 500">
+          CAlcio Balilla
+        </div>
+        <div class="text-white tracking-[0.2em] font-display" style="font-size: 20px; line-height: 1">
+          SHARK SEASON
+        </div>
+      </div>
+      <div class="sm:hidden">
+        <div class="text-white tracking-[0.15em] font-display" style="font-size: 17px; line-height: 1">
+          CAlcio Balilla
+        </div>
+      </div>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-1 relative" id="desktop-nav">
+      <div id="desktop-nav-slider" style="position:absolute;bottom:0;left:0;height:2px;border-radius:1px;width:32px;
+          background:var(--color-gold);
+          pointer-events:none;will-change:transform;opacity:0"></div>
+      {{desktopNav}}
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <div id="offline-indicator" aria-label="Offline — dati in cache">
+        <i data-lucide="globe-off"></i>
+        <span class="hidden sm:inline">OFFLINE</span>
+      </div>
+      <button id="user-pill"
+        class="hidden md:flex items-center place-items-center gap-2 p-1 rounded-full transition-all duration-200 hover:bg-white/10"
+        style="border: 1px solid var(--glass-border-gold)" aria-label="Apri profilo utente">
+        <div class="relative">
+          <div id="user-avatar-desktop" class="flex">{{userAvatarDesktop}}</div>
+          <div id="notif-state-dot" class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+            style="background:transparent;display:none;box-shadow:0 0 0 2px var(--color-bg-deep)">
+          </div>
+        </div>
+        <span class="text-white/90 font-ui" data-user-name style="font-size: 13px">{{playerName}}</span>
+        <svg id="user-pill-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white/50 transition-transform">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      <button id="user-pill-mobile" class="md:hidden relative transition-all duration-200 hover:opacity-80"
+        aria-label="Apri profilo utente">
+        <div id="user-avatar-mobile" class="flex">{{userAvatarMobile}}</div>
+        <div id="notif-state-dot-mobile" class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+          style="background:transparent;display:none;box-shadow:0 0 0 2px var(--color-bg-deep)"></div>
+      </button>
+    </div>
+  </div>
+
+  <div class="absolute bottom-0 left-0 right-0 h-px gold-line"></div>
+</header>
