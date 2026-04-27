@@ -1457,10 +1457,15 @@ class MatchmakingPage extends Component {
 
     panel.innerHTML = `
       <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
           <i data-lucide="wifi" style="width:12px;height:12px;color:#4ADE80;flex-shrink:0"></i>
           <span class="font-ui text-[11px] text-[#4ADE80] tracking-[0.08em] shrink-0">CONFERME LIVE</span>
-          <span class="font-body text-[11px] truncate" style="color:rgba(255,255,255,0.5)">${playerNames}</span>
+          <div class="overflow-hidden flex-1 relative h-4">
+            <div class="whitespace-nowrap animate-scroll-infinite absolute inset-0 flex">
+              <span class="font-body text-[11px]" style="color:rgba(255,255,255,0.5)">${playerNames}</span>
+              <span class="font-body text-[11px] ml-6" style="color:rgba(255,255,255,0.5)">${playerNames}</span>
+            </div>
+          </div>
         </div>
         <span class="font-ui px-2 py-0.5 rounded-full text-[11px] text-[#4ADE80] shrink-0"
               style="background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3)">${data.count}</span>

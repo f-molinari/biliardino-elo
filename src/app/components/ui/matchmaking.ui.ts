@@ -79,9 +79,6 @@ export function renderMatchmakingPlayerList({
         </div>
 
         <div class="flex items-center gap-2 shrink-0 ml-2">
-          ${isConfirmed
-            ? `<i data-lucide="wifi" title="Confermato dalla lobby" style="width:13px;height:13px;color:#4ADE80;flex-shrink:0"></i>`
-            : ''}
           <button class="player-toggle-btn w-9 h-9 rounded-full flex items-center justify-center transition-all"
                   data-player-id="${player.id}"
                   data-state="${state}"
