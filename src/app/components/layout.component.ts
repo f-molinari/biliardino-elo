@@ -27,6 +27,8 @@ export class LayoutComponent {
     const versionEl = document.getElementById('pwa-version');
     if (versionEl) versionEl.textContent = __SW_VERSION__;
     this.header.mount();
+    bottomNav.mount();
+    mobileDrawer.mount();
   }
 
   destroy(): void {

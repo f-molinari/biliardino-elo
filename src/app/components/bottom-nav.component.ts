@@ -67,24 +67,24 @@ class BottomNavComponent {
 
     this.handleRouteChange = () => this.updateActiveStates();
     appState.on('route-change', this.handleRouteChange);
-    window.addEventListener('popstate', this.handleRouteChange);
+    globalThis.addEventListener('popstate', this.handleRouteChange);
 
     this.onAdminChange = () => {
       this.updateMenuVisibility();
       this.updateActiveStates();
     };
-    window.addEventListener('user-dropdown:login-success', this.onAdminChange);
-    window.addEventListener('user-dropdown:logout', this.onAdminChange);
+    globalThis.addEventListener('user-dropdown:login-success', this.onAdminChange);
+    globalThis.addEventListener('user-dropdown:logout', this.onAdminChange);
   }
 
   destroy(): void {
     if (this.handleRouteChange) {
       appState.off('route-change', this.handleRouteChange);
-      window.removeEventListener('popstate', this.handleRouteChange);
+      globalThis.removeEventListener('popstate', this.handleRouteChange);
     }
     if (this.onAdminChange) {
-      window.removeEventListener('user-dropdown:login-success', this.onAdminChange);
-      window.removeEventListener('user-dropdown:logout', this.onAdminChange);
+      globalThis.removeEventListener('user-dropdown:login-success', this.onAdminChange);
+      globalThis.removeEventListener('user-dropdown:logout', this.onAdminChange);
     }
     this.navEl?.remove();
   }
