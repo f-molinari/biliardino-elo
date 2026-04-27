@@ -48,10 +48,10 @@ body {
   }
 
   100% {
-    transform: translateX(-50%);
+    transform: translateX(-200%);
   }
 }
 
 .animate-scroll-infinite {
-  animation: scorriInfinito 15s linear infinite;
+  animation: scorriInfinito 10s linear infinite;
 }
